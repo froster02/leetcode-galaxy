@@ -1,0 +1,18 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package configuration
+COPY package.json package-lock.json* ./
+
+# Install project dependencies
+RUN npm install
+
+# Keep node_modules strictly inside the container
+COPY . .
+
+# Expose Vite dev server port
+EXPOSE 5173
+
+# Start the application binding to all interfaces 
+CMD ["npm", "run", "dev", "--", "--host"]
