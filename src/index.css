@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-white font-mono overflow-hidden;
+    margin: 0;
+  }
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+}
