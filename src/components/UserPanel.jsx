@@ -256,6 +256,15 @@ export default function UserPanel({ data, onBack }) {
     const [quickSearch, setQuickSearch] = useState('');
     const [showSearch, setShowSearch] = useState(false);
     const [activeTab, setActiveTab] = useState('stats');
+    const [isMobile, setIsMobile] = useState(false);
+    const [panelExpanded, setPanelExpanded] = useState(false);
+
+    React.useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth <= 768);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
 
     if (!data) return null;
     const { profile, stats, recent, planets, username } = data;
@@ -297,8 +306,9 @@ export default function UserPanel({ data, onBack }) {
     };
 
     const btnStyle = {
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: '8px 14px', borderRadius: 10, fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700,
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: isMobile ? '6px 10px' : '8px 14px', borderRadius: 10, fontFamily: FONT_MONO,
+        fontSize: isMobile ? 10 : 11, fontWeight: 700,
         background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)',
         border: '1px solid rgba(0,245,212,0.2)', color: '#00f5d4', cursor: 'pointer',
         transition: 'all 0.3s ease',
@@ -324,9 +334,12 @@ export default function UserPanel({ data, onBack }) {
     );
 
     return (
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', padding: 16, zIndex: 10, color: '#fff' }}>
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', padding: isMobile ? 8 : 16, zIndex: 10, color: '#fff' }}>
             {/* ── Top buttons ── */}
-            <div style={{ position: 'absolute', top: 16, left: 16, display: 'flex', gap: 10, pointerEvents: 'auto' }}>
+            <div style={{
+                position: 'absolute', top: isMobile ? 8 : 16, left: isMobile ? 8 : 16,
+                display: 'flex', gap: isMobile ? 6 : 10, pointerEvents: 'auto',
+            }}>
                 <button onClick={onBack} className="cyber-btn" style={btnStyle}>
                     <ArrowLeft size={14} /> GALAXY
                 </button>
@@ -362,40 +375,70 @@ export default function UserPanel({ data, onBack }) {
             </AnimatePresence>
 
             {/* Share */}
-            <div style={{ position: 'absolute', top: 16, right: 16, pointerEvents: 'auto' }}>
-                <button onClick={handleShare} className="cyber-btn" style={btnStyle}><Share2 size={14} /> SHARE</button>
+            <div style={{ position: 'absolute', top: isMobile ? 8 : 16, right: isMobile ? 8 : 16, pointerEvents: 'auto' }}>
+                <button onClick={handleShare} className="cyber-btn" style={btnStyle}><Share2 size={14} /> {!isMobile && 'SHARE'}</button>
             </div>
 
             {/* ── Side panel ── */}
             <motion.div
-                initial={{ x: -420, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
+                initial={isMobile ? { y: 300, opacity: 0 } : { x: -420, opacity: 0 }}
+                animate={isMobile ? { y: 0, opacity: 1 } : { x: 0, opacity: 1 }}
                 transition={{ delay: 0.3, duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
                 style={{
-                    marginTop: 56, width: 360, pointerEvents: 'auto',
+                    ...(isMobile ? {
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        width: '100%',
+                        maxHeight: panelExpanded ? '85vh' : '45vh',
+                        transition: 'max-height 0.4s cubic-bezier(0.4,0,0.2,1)',
+                        borderRadius: '20px 20px 0 0',
+                        marginTop: 0,
+                    } : {
+                        marginTop: 56,
+                        width: 360,
+                        borderRadius: 20,
+                        maxHeight: 'calc(100vh - 80px)',
+                    }),
+                    pointerEvents: 'auto',
                     display: 'flex', flexDirection: 'column',
-                    borderRadius: 20, overflow: 'hidden',
-                    background: 'rgba(3,5,8,0.85)',
+                    overflow: 'hidden',
+                    background: 'rgba(3,5,8,0.92)',
                     border: '1px solid rgba(0,245,212,0.1)',
                     backdropFilter: 'blur(30px)',
                     boxShadow: '0 8px 60px rgba(0,0,0,0.6), 0 0 40px rgba(0,245,212,0.03), inset 0 1px 0 rgba(255,255,255,0.03)',
-                    maxHeight: 'calc(100vh - 80px)',
                 }}
             >
+                {/* Mobile drag handle */}
+                {isMobile && (
+                    <div
+                        onClick={() => setPanelExpanded(e => !e)}
+                        style={{
+                            display: 'flex', justifyContent: 'center', padding: '8px 0 4px',
+                            cursor: 'pointer', flexShrink: 0,
+                        }}
+                    >
+                        <div style={{
+                            width: 36, height: 4, borderRadius: 2,
+                            background: 'rgba(255,255,255,0.2)',
+                        }} />
+                    </div>
+                )}
                 {/* ── Profile Header ── */}
                 <div style={{
-                    padding: '20px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                    padding: isMobile ? '14px 16px 12px' : '20px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)',
                     background: 'linear-gradient(180deg, rgba(0,245,212,0.03) 0%, transparent 100%)',
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 16, marginBottom: 12 }}>
                         {/* Avatar */}
                         <motion.div
                             initial={{ rotate: -180, scale: 0 }}
                             animate={{ rotate: 0, scale: 1 }}
                             transition={{ delay: 0.5, type: 'spring', stiffness: 200 }}
                             style={{
-                                width: 56, height: 56, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontFamily: FONT_ORBIT, fontWeight: 900, fontSize: 22, color: '#030508',
+                                width: isMobile ? 44 : 56, height: isMobile ? 44 : 56, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontFamily: FONT_ORBIT, fontWeight: 900, fontSize: isMobile ? 18 : 22, color: '#030508',
                                 background: `linear-gradient(135deg, ${powerTier.color}, #7c3aed)`,
                                 boxShadow: `0 4px 24px ${powerTier.color}40`,
                                 position: 'relative',
@@ -425,8 +468,8 @@ export default function UserPanel({ data, onBack }) {
                     <PowerLevelDisplay level={powerLevel} />
 
                     {/* Progress ring + stat pills row */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <ProgressRing value={totalSolved} max={estimatedTotal} size={90} label="SOLVED" />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 16 }}>
+                        <ProgressRing value={totalSolved} max={estimatedTotal} size={isMobile ? 70 : 90} label="SOLVED" />
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
                             {[
                                 { icon: Zap, color: '#23d18b', count: easySolved, label: 'EASY' },
@@ -466,8 +509,9 @@ export default function UserPanel({ data, onBack }) {
 
                 {/* ── Scrollable content ── */}
                 <div style={{
-                    flex: 1, overflowY: 'auto', padding: '16px 20px',
+                    flex: 1, overflowY: 'auto', padding: isMobile ? '12px 14px' : '16px 20px',
                     scrollbarWidth: 'thin', scrollbarColor: 'rgba(0,245,212,0.15) transparent',
+                    WebkitOverflowScrolling: 'touch',
                 }}>
                     <AnimatePresence mode="wait">
                         {activeTab === 'stats' && (
@@ -635,11 +679,11 @@ export default function UserPanel({ data, onBack }) {
 
                 {/* ── Footer ── */}
                 <div style={{
-                    padding: '10px 20px', borderTop: '1px solid rgba(255,255,255,0.04)',
+                    padding: isMobile ? '8px 14px' : '10px 20px', borderTop: '1px solid rgba(255,255,255,0.04)',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
                     <span style={{ color: '#1f2937', fontSize: 9, fontFamily: FONT_MONO, letterSpacing: '0.1em' }}>
-                        DRAG TO ORBIT // SCROLL TO ZOOM
+                        {isMobile ? 'PINCH TO ZOOM' : 'DRAG TO ORBIT // SCROLL TO ZOOM'}
                     </span>
                     <span style={{
                         color: powerTier.color, fontSize: 9, fontFamily: FONT_ORBIT, fontWeight: 700,

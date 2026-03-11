@@ -163,19 +163,19 @@ function App() {
       <CursorTrail />
 
       {/* Corner decorations */}
-      <div style={{
+      <div className="corner-deco" style={{
         position: 'fixed', top: 0, left: 0, width: 120, height: 120,
         borderTop: '1px solid rgba(0,245,212,0.15)', borderLeft: '1px solid rgba(0,245,212,0.15)',
         pointerEvents: 'none', zIndex: 50,
       }} />
-      <div style={{
+      <div className="corner-deco" style={{
         position: 'fixed', bottom: 0, right: 0, width: 120, height: 120,
         borderBottom: '1px solid rgba(0,245,212,0.15)', borderRight: '1px solid rgba(0,245,212,0.15)',
         pointerEvents: 'none', zIndex: 50,
       }} />
 
       {/* Status bar */}
-      <div style={{
+      <div className="status-bar-bottom" style={{
         position: 'fixed', bottom: 12, left: 16, zIndex: 50, pointerEvents: 'none',
         display: 'flex', alignItems: 'center', gap: 8,
         fontFamily: '"Share Tech Mono", monospace', fontSize: 9, color: 'rgba(0,245,212,0.3)',

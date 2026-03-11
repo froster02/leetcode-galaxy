@@ -309,3 +309,33 @@ body,
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
   animation: shimmer 2s ease-in-out infinite;
 }
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE RESPONSIVE
+   ═══════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  html, body, #root {
+    cursor: default;
+  }
+
+  .noise-overlay,
+  .scanline-overlay,
+  .cursor-particle {
+    display: none !important;
+  }
+
+  .corner-deco {
+    display: none !important;
+  }
+
+  .status-bar-bottom {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .glitch-text::before,
+  .glitch-text::after {
+    display: none;
+  }
+}

@@ -128,7 +128,8 @@ function StatCard({ icon: Icon, value, label, color, delay }) {
             onMouseLeave={() => setHovered(false)}
             style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                padding: '16px 20px', borderRadius: 16, cursor: 'default',
+                padding: '12px 14px', borderRadius: 16, cursor: 'default',
+                minWidth: 0, flex: '1 1 auto', maxWidth: 160,
                 background: hovered ? `rgba(${color === '#00f5d4' ? '0,245,212' : color === '#f5a623' ? '245,166,35' : '139,92,246'},0.06)` : 'rgba(255,255,255,0.02)',
                 border: `1px solid ${hovered ? color + '40' : 'rgba(255,255,255,0.04)'}`,
                 transition: 'all 0.4s cubic-bezier(0.4,0,0.2,1)',
@@ -256,7 +257,15 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
     const [username, setUsername] = useState('');
     const [focused, setFocused] = useState(false);
     const [searchHovered, setSearchHovered] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     const inputRef = useRef();
+
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth <= 768);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -277,8 +286,11 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
     return (
         <div style={{
             position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', padding: 16,
+            alignItems: 'center', justifyContent: 'center',
+            padding: isMobile ? '16px 12px' : 16,
             pointerEvents: 'none', userSelect: 'none', zIndex: 10,
+            overflowY: isMobile ? 'auto' : 'hidden',
+            WebkitOverflowScrolling: 'touch',
         }}>
             <GridBackground />
 
@@ -292,11 +304,13 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                 }}
             >
                 {/* Decorative orbit rings behind title */}
-                <div style={{ position: 'absolute', top: '10%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none' }}>
-                    <OrbitRing size={500} duration={30} color="rgba(0,245,212,0.15)" opacity={0.06} delay={0.5} />
-                    <OrbitRing size={400} duration={25} color="rgba(139,92,246,0.15)" opacity={0.05} delay={0.7} />
-                    <OrbitRing size={300} duration={20} color="rgba(59,130,246,0.15)" opacity={0.04} delay={0.9} />
-                </div>
+                {!isMobile && (
+                    <div style={{ position: 'absolute', top: '10%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none' }}>
+                        <OrbitRing size={500} duration={30} color="rgba(0,245,212,0.15)" opacity={0.06} delay={0.5} />
+                        <OrbitRing size={400} duration={25} color="rgba(139,92,246,0.15)" opacity={0.05} delay={0.7} />
+                        <OrbitRing size={300} duration={20} color="rgba(59,130,246,0.15)" opacity={0.04} delay={0.9} />
+                    </div>
+                )}
 
                 {/* ── Version badge ── */}
                 <motion.div
@@ -382,7 +396,7 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.8 }}
-                    style={{ display: 'flex', gap: 16, marginBottom: 32 }}
+                    style={{ display: 'flex', gap: isMobile ? 8 : 16, marginBottom: isMobile ? 20 : 32, flexWrap: 'wrap', justifyContent: 'center' }}
                 >
                     <StatCard icon={Users} value={4829142} label="EXPLORERS" color="#00f5d4" delay={0.9} />
                     <StatCard icon={Zap} value={3100000} label="SOLVED TODAY" color="#f5a623" delay={1.0} />
@@ -434,12 +448,13 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                                 onChange={(e) => setUsername(e.target.value)}
                                 onFocus={() => setFocused(true)}
                                 onBlur={() => setFocused(false)}
-                                placeholder="ENTER LEETCODE USERNAME"
+                                placeholder={isMobile ? 'USERNAME' : 'ENTER LEETCODE USERNAME'}
                                 style={{
                                     flex: 1, background: 'transparent', color: '#fff',
-                                    border: 'none', padding: '16px 0',
-                                    fontFamily: FONT_MONO, fontSize: 14, outline: 'none',
+                                    border: 'none', padding: isMobile ? '14px 0' : '16px 0',
+                                    fontFamily: FONT_MONO, fontSize: isMobile ? 12 : 14, outline: 'none',
                                     letterSpacing: '0.05em',
+                                    minWidth: 0,
                                 }}
                             />
                             <button
@@ -462,21 +477,23 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                             </button>
                         </div>
                     </div>
-                    <div style={{
-                        display: 'flex', justifyContent: 'space-between',
-                        marginTop: 10, padding: '0 8px',
-                    }}>
-                        <span style={{ color: '#374151', fontSize: 10, fontFamily: FONT_MONO, display: 'flex', alignItems: 'center', gap: 4 }}>
-                            Press <kbd style={{
-                                background: 'rgba(255,255,255,0.06)', padding: '2px 7px',
-                                borderRadius: 4, color: '#6b7280', fontSize: 10,
-                                border: '1px solid rgba(255,255,255,0.08)',
-                            }}>/</kbd> to focus
-                        </span>
-                        <span style={{ color: '#374151', fontSize: 10, fontFamily: FONT_MONO }}>
-                            Enter to launch
-                        </span>
-                    </div>
+                    {!isMobile && (
+                        <div style={{
+                            display: 'flex', justifyContent: 'space-between',
+                            marginTop: 10, padding: '0 8px',
+                        }}>
+                            <span style={{ color: '#374151', fontSize: 10, fontFamily: FONT_MONO, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                Press <kbd style={{
+                                    background: 'rgba(255,255,255,0.06)', padding: '2px 7px',
+                                    borderRadius: 4, color: '#6b7280', fontSize: 10,
+                                    border: '1px solid rgba(255,255,255,0.08)',
+                                }}>/</kbd> to focus
+                            </span>
+                            <span style={{ color: '#374131', fontSize: 10, fontFamily: FONT_MONO }}>
+                                Enter to launch
+                            </span>
+                        </div>
+                    )}
                 </motion.form>
 
                 {/* ── Recently explored ── */}
@@ -520,15 +537,15 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                         <Star size={10} style={{ color: '#374151' }} />
                         <span style={{ height: 1, width: 60, background: 'linear-gradient(90deg, #1f2937, transparent)' }} />
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}>
-                        {FEATURED.map((user, i) => (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: isMobile ? 6 : 8 }}>
+                        {FEATURED.slice(0, isMobile ? 4 : FEATURED.length).map((user, i) => (
                             <FeaturedCard key={user} user={user} index={i} onSelect={onSearch} />
                         ))}
                     </div>
                 </motion.div>
 
                 {/* ── Hint ── */}
-                <CommandHint />
+                {!isMobile && <CommandHint />}
             </motion.div>
         </div>
     );
