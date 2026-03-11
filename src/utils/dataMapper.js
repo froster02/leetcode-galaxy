@@ -2,11 +2,9 @@ export function mapLeetCodeDataToSolarSystem(data) {
     if (!data || !data.profile?.matchedUser) return null;
 
     const user = data.profile.matchedUser;
-    // Account for missing tags payload cleanly
     const tags = data.tags?.matchedUser?.tagProblemCounts || { advanced: [], intermediate: [], fundamental: [] };
     const recent = data.recent?.recentSubmissionList || [];
 
-    // Calculate overall difficulty ratios
     const stats = user.submitStats?.acSubmissionNum || [];
     const totalSolved = stats.find(s => s.difficulty === 'All')?.count || 1;
     const easyRatio = (stats.find(s => s.difficulty === 'Easy')?.count || 0) / totalSolved;
@@ -19,20 +17,24 @@ export function mapLeetCodeDataToSolarSystem(data) {
         ...(tags.fundamental || [])
     ].sort((a, b) => b.problemsSolved - a.problemsSolved);
 
-    // Take top 8 tags to be planets so it's not too crowded
+    // Take top 8 tags as planets
     const topTags = allTags.slice(0, 8);
+    const maxSolved = topTags.length > 0 ? topTags[0].problemsSolved : 1;
 
     const planets = topTags.map((tag, index) => {
-        // Planet distance from sun based on index
-        const radius = 15 + index * 12;
-        const speed = 0.5 / (index + 1); // Inner planets move faster
+        // Orbit radius: spread evenly, 18 to ~70
+        const radius = 18 + index * 7;
+        const speed = 0.4 / (index + 1);
 
-        // Moon generation: 1 moon per solved problem (capped at 60 to not overload rendering per planet)
-        const moonCount = Math.min(tag.problemsSolved, 60);
+        // Planet size: normalize relative to max tag, clamp to 1.2 – 2.8
+        const normalizedSize = tag.problemsSolved / maxSolved; // 0..1
+        const size = 1.2 + normalizedSize * 1.6; // 1.2 to 2.8
+
+        // Moon count: cap at 10 to avoid clutter
+        const moonCount = Math.min(Math.ceil(tag.problemsSolved / 5), 10);
         const moons = [];
 
         for (let i = 0; i < moonCount; i++) {
-            // Assign simulated difficulty based on user's overall ratio
             const rand = Math.random();
             let difficulty = 'Hard';
             if (rand < easyRatio) difficulty = 'Easy';
@@ -42,19 +44,19 @@ export function mapLeetCodeDataToSolarSystem(data) {
                 id: `${tag.tagName}-moon-${i}`,
                 difficulty,
                 isSolved: true,
-                orbitRadius: 2.5 + Math.random() * 4,
-                orbitSpeed: Math.random() * 2 + 0.5,
+                orbitRadius: size + 1.5 + Math.random() * 3,
+                orbitSpeed: Math.random() * 1.5 + 0.5,
                 orbitAngle: Math.random() * Math.PI * 2
             });
         }
 
-        // Add a few dummy "unsolved" moons
-        for (let i = 0; i < 5; i++) {
+        // A few unsolved moons
+        for (let i = 0; i < 3; i++) {
             moons.push({
                 id: `${tag.tagName}-unsolved-${i}`,
-                difficulty: 'Medium', // Default config for unsolved
+                difficulty: 'Medium',
                 isSolved: false,
-                orbitRadius: 2.5 + Math.random() * 4,
+                orbitRadius: size + 1.5 + Math.random() * 3,
                 orbitSpeed: Math.random() * 1 + 0.2,
                 orbitAngle: Math.random() * Math.PI * 2
             });
@@ -65,9 +67,9 @@ export function mapLeetCodeDataToSolarSystem(data) {
             problemsSolved: tag.problemsSolved,
             radius,
             speed,
-            size: Math.max(1, Math.min(4, Math.sqrt(tag.problemsSolved) / 2)),
+            size,
             moons,
-            angle: Math.random() * Math.PI * 2
+            angle: (index / topTags.length) * Math.PI * 2 // spread initial positions evenly
         };
     });
 
