@@ -281,11 +281,11 @@ function CityBlock({ user, gridRow, gridCol, globalMax, isNight }) {
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}>
                 <ringGeometry args={[BLOCK_SIZE / 2 - 0.1, BLOCK_SIZE / 2, 4]} />
                 <meshStandardMaterial
-                    color={isCurrent ? '#00f5d430' : (isNight ? '#0a0e1a' : '#10142a')}
+                    color={isCurrent ? '#00f5d4' : (isNight ? '#0a0e1a' : '#10142a')}
                     emissive={accentColor}
                     emissiveIntensity={isCurrent ? 0.3 : 0.05}
                     transparent
-                    opacity={isCurrent ? 0.6 : 0.15}
+                    opacity={isCurrent ? 0.3 : 0.15}
                     side={2}
                 />
             </mesh>
