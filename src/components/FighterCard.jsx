@@ -155,7 +155,7 @@ export default function FighterCard({ data, username, onBack }) {
                 {/* Back */}
                 <div style={{ marginBottom: 32, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <button onClick={onBack} style={{ fontFamily: 'Orbitron, sans-serif', fontSize: 10, letterSpacing: '0.15em', color: '#555', background: 'none', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, padding: '8px 16px', cursor: 'pointer' }}>
-                        ← RETURN TO ARENA
+                        ← BACK
                     </button>
                     <div style={{ fontFamily: 'Orbitron, sans-serif', fontSize: 10, letterSpacing: '0.2em', color: '#333' }}>FIGHTER PROFILE</div>
                 </div>

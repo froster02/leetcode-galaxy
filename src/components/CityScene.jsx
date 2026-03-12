@@ -1,8 +1,7 @@
-import React, { useRef, useState, useMemo, Suspense } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Text, Grid } from '@react-three/drei';
+import { OrbitControls, Grid, Html } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import * as THREE from 'three';
 
 /* ─────────────────── Game math ─────────────────── */
 export function calcPower(easy, med, hard) { return easy * 1 + med * 3 + hard * 10; }
@@ -48,114 +47,232 @@ export const CODERS = [
     { u: 'just_started', easy: 10, med: 5, hard: 0, rank: 20000 },
 ];
 
-/* ─────────────────── Single 3D Building ─────────────────── */
-function Building({ coder, position, onClick, isSelected }) {
+const DISTRICT_COLORS = ['#00f5d4', '#8b5cf6', '#f5a623', '#3b82f6', '#ef4444', '#ec4899', '#10b981', '#f59e0b'];
+const DIFF_COLORS = { Easy: '#23d18b', Medium: '#f5a623', Hard: '#ff3860' };
+
+/* ─────────────────── City Building ─────────────────── */
+function CityBuilding({ height, width, color, position, label }) {
     const meshRef = useRef();
-    const topRef = useRef();
     const [hovered, setHovered] = useState(false);
 
-    const power = calcPower(coder.easy, coder.med, coder.hard);
-    const maxPow = calcPower(800, 1700, 800);
-    const cls = getFighterClass(coder.hard);
-
-    const H = Math.max(0.5, (power / maxPow) * 18);
-    const W = Math.max(0.6, Math.min(1.4, Math.sqrt(power / maxPow) * 2));
-
-    // Pulsing glow on legend/champion buildings
     useFrame((state) => {
         if (!meshRef.current) return;
-        if (coder.hard >= 150) {
-            const t = state.clock.elapsedTime;
-            meshRef.current.material.emissiveIntensity = hovered
-                ? 1.4
-                : 0.4 + Math.sin(t * 2 + position[0]) * 0.3;
-        }
-        if (isSelected && meshRef.current) {
-            meshRef.current.material.emissiveIntensity = 1.8;
-        }
+        const t = state.clock.elapsedTime;
+        meshRef.current.material.emissiveIntensity = hovered
+            ? 1.5
+            : 0.3 + Math.sin(t * 2 + position[0] + position[2]) * 0.15;
     });
-
-    const color = new THREE.Color(cls.color);
-    const emissive = new THREE.Color(cls.emissive);
 
     return (
         <group position={position}
             onPointerOver={() => { setHovered(true); document.body.style.cursor = 'pointer'; }}
             onPointerOut={() => { setHovered(false); document.body.style.cursor = 'default'; }}
-            onClick={(e) => { e.stopPropagation(); onClick(coder); }}
         >
-            {/* Main building body */}
-            <mesh ref={meshRef} position={[0, H / 2, 0]} castShadow>
-                <boxGeometry args={[W, H, W]} />
-                <meshStandardMaterial
-                    color={color}
-                    emissive={emissive}
-                    emissiveIntensity={hovered || isSelected ? 1.4 : (coder.hard >= 150 ? 0.5 : 0.15)}
-                    metalness={0.3}
-                    roughness={0.5}
-                    transparent
-                    opacity={hovered || isSelected ? 1 : 0.92}
-                />
-            </mesh>
-
-            {/* Rooftop glow cap */}
-            <mesh ref={topRef} position={[0, H + 0.05, 0]}>
-                <boxGeometry args={[W + 0.05, 0.12, W + 0.05]} />
+            <mesh ref={meshRef} position={[0, height / 2, 0]} castShadow>
+                <boxGeometry args={[width, height, width]} />
                 <meshStandardMaterial
                     color={color}
                     emissive={color}
-                    emissiveIntensity={hovered || isSelected ? 4 : 2}
+                    emissiveIntensity={hovered ? 1.5 : 0.3}
+                    metalness={0.3}
+                    roughness={0.5}
+                    transparent
+                    opacity={hovered ? 1 : 0.9}
+                />
+            </mesh>
+            <mesh position={[0, height + 0.05, 0]}>
+                <boxGeometry args={[width + 0.05, 0.1, width + 0.05]} />
+                <meshStandardMaterial
+                    color={color}
+                    emissive={color}
+                    emissiveIntensity={hovered ? 4 : 2}
                     transparent opacity={0.9}
                 />
             </mesh>
-
-            {/* Windows on big buildings */}
-            {H > 4 && [0.35, 0.6, 0.8].map((frac, i) => (
-                <mesh key={i} position={[W / 2 + 0.01, H * frac, 0]}>
-                    <boxGeometry args={[0.02, 0.12, 0.22]} />
+            {height > 5 && [0.3, 0.5, 0.7].map((frac, i) => (
+                <mesh key={i} position={[width / 2 + 0.01, height * frac, 0]}>
+                    <boxGeometry args={[0.02, 0.1, 0.18]} />
                     <meshStandardMaterial color="#ffffff" emissive="#88aaff" emissiveIntensity={0.8} />
                 </mesh>
             ))}
-
-            {/* Floating name label */}
-            {(hovered || isSelected) && (
-                <Text
-                    position={[0, H + 0.8, 0]}
-                    fontSize={0.35}
-                    color={cls.color}
-                    anchorX="center"
-                    anchorY="bottom"
-                    font="https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5WU4xD-IQ.woff2"
-                    maxWidth={3}
+            {/* Hover tooltip */}
+            {hovered && label && (
+                <Html
+                    position={[0, height + 0.6, 0]}
+                    center
+                    distanceFactor={15}
+                    style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
                 >
-                    {coder.u}
-                </Text>
+                    <div style={{
+                        background: 'rgba(3,5,8,0.92)',
+                        border: `1px solid ${color}50`,
+                        borderRadius: 8,
+                        padding: '6px 12px',
+                        backdropFilter: 'blur(8px)',
+                        boxShadow: `0 0 16px ${color}30`,
+                    }}>
+                        <div style={{
+                            fontFamily: 'Orbitron, sans-serif',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color,
+                            letterSpacing: '0.1em',
+                        }}>
+                            {label.difficulty}
+                        </div>
+                        <div style={{
+                            fontFamily: '"Share Tech Mono", monospace',
+                            fontSize: 12,
+                            color: '#e0e0e0',
+                            marginTop: 2,
+                        }}>
+                            {label.count} problems
+                        </div>
+                    </div>
+                </Html>
             )}
         </group>
     );
 }
 
-/* ─────────────────── Grid Ground ─────────────────── */
-function CityGround({ cols, rows }) {
-    const W = cols * 2.6;
-    const D = rows * 2.6;
+/* ─────────────────── District (topic cluster) ─────────────────── */
+function District({ topic, color, centerPosition, maxSolved, districtIndex }) {
+    // Count moons by difficulty to create meaningful buildings
+    const diffCounts = useMemo(() => {
+        const counts = { Easy: 0, Medium: 0, Hard: 0 };
+        (topic.moons || []).forEach(m => {
+            if (m.isSolved && counts[m.difficulty] !== undefined) {
+                counts[m.difficulty]++;
+            }
+        });
+        // Scale counts up proportionally to problemsSolved (moons are sampled subset)
+        const moonTotal = counts.Easy + counts.Medium + counts.Hard;
+        if (moonTotal > 0) {
+            const scale = topic.problemsSolved / moonTotal;
+            counts.Easy = Math.round(counts.Easy * scale);
+            counts.Medium = Math.round(counts.Medium * scale);
+            counts.Hard = Math.round(counts.Hard * scale);
+        } else {
+            // Fallback: rough distribution
+            counts.Easy = Math.round(topic.problemsSolved * 0.4);
+            counts.Medium = Math.round(topic.problemsSolved * 0.4);
+            counts.Hard = Math.max(0, topic.problemsSolved - counts.Easy - counts.Medium);
+        }
+        return counts;
+    }, [topic]);
+
+    const buildings = useMemo(() => {
+        const result = [];
+        const entries = [
+            { diff: 'Easy', count: diffCounts.Easy },
+            { diff: 'Medium', count: diffCounts.Medium },
+            { diff: 'Hard', count: diffCounts.Hard },
+        ].filter(e => e.count > 0);
+
+        const maxCount = Math.max(...entries.map(e => e.count), 1);
+        const spacing = 2.2;
+
+        entries.forEach((entry, i) => {
+            const normalized = entry.count / Math.max(maxSolved, 1);
+            const height = Math.max(1, normalized * 16 + entry.count * 0.05);
+            const width = Math.max(0.6, Math.min(1.3, 0.6 + (entry.count / maxCount) * 0.7));
+            const x = (i - (entries.length - 1) / 2) * spacing;
+            result.push({
+                height, width, x, z: 0,
+                color: DIFF_COLORS[entry.diff],
+                label: { difficulty: entry.diff, count: entry.count },
+            });
+        });
+        return result;
+    }, [diffCounts, maxSolved]);
+
+    const maxHeight = Math.max(...buildings.map(b => b.height), 1);
+
+    return (
+        <group position={centerPosition}>
+            {buildings.map((b, i) => (
+                <CityBuilding
+                    key={i}
+                    height={b.height}
+                    width={b.width}
+                    color={b.color}
+                    position={[b.x, 0, b.z]}
+                    label={b.label}
+                />
+            ))}
+            {/* District label */}
+            <Html
+                position={[0, maxHeight + 1.2, 0]}
+                center
+                distanceFactor={20}
+                style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+            >
+                <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                        fontFamily: 'Orbitron, sans-serif',
+                        fontSize: 11,
+                        fontWeight: 900,
+                        color,
+                        letterSpacing: '0.12em',
+                        textShadow: `0 0 10px ${color}80`,
+                        textTransform: 'uppercase',
+                    }}>
+                        {topic.name}
+                    </div>
+                    <div style={{
+                        fontFamily: '"Share Tech Mono", monospace',
+                        fontSize: 9,
+                        color: `${color}aa`,
+                        letterSpacing: '0.1em',
+                        marginTop: 2,
+                    }}>
+                        {topic.problemsSolved} SOLVED
+                    </div>
+                    {/* Mini difficulty legend */}
+                    <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 4 }}>
+                        {diffCounts.Easy > 0 && (
+                            <span style={{ fontSize: 8, fontFamily: '"Share Tech Mono", monospace', color: DIFF_COLORS.Easy }}>
+                                E:{diffCounts.Easy}
+                            </span>
+                        )}
+                        {diffCounts.Medium > 0 && (
+                            <span style={{ fontSize: 8, fontFamily: '"Share Tech Mono", monospace', color: DIFF_COLORS.Medium }}>
+                                M:{diffCounts.Medium}
+                            </span>
+                        )}
+                        {diffCounts.Hard > 0 && (
+                            <span style={{ fontSize: 8, fontFamily: '"Share Tech Mono", monospace', color: DIFF_COLORS.Hard }}>
+                                H:{diffCounts.Hard}
+                            </span>
+                        )}
+                    </div>
+                </div>
+            </Html>
+        </group>
+    );
+}
+
+/* ─────────────────── City Ground ─────────────────── */
+function CityGround({ radius, isNight }) {
     return (
         <group>
-            {/* Base plane */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[W / 2, 0, D / 2]} receiveShadow>
-                <planeGeometry args={[W + 4, D + 4]} />
-                <meshStandardMaterial color="#06070c" roughness={1} metalness={0} />
+            <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+                <circleGeometry args={[radius + 5, 64]} />
+                <meshStandardMaterial
+                    color={isNight ? '#06070c' : '#0a0d14'}
+                    roughness={1}
+                    metalness={0}
+                />
             </mesh>
-            {/* Grid lines */}
             <Grid
-                position={[W / 2, 0.01, D / 2]}
-                args={[W + 4, D + 4]}
-                cellSize={1.3}
+                position={[0, 0.01, 0]}
+                args={[radius * 2 + 10, radius * 2 + 10]}
+                cellSize={2}
                 cellThickness={0.3}
-                cellColor="#1a1a2e"
-                sectionSize={2.6}
+                cellColor={isNight ? '#0f0f22' : '#1a1a2e'}
+                sectionSize={4}
                 sectionThickness={0.6}
-                sectionColor="#242440"
+                sectionColor={isNight ? '#161633' : '#242440'}
                 infiniteGrid={false}
                 fadeStrength={0}
             />
@@ -163,78 +280,153 @@ function CityGround({ cols, rows }) {
     );
 }
 
-/* ─────────────────── Camera Setup ─────────────────── */
-function IsometricCamera({ target }) {
-    const { camera } = useThree();
-    const iso = Math.PI / 5;  // 36° from horizon
-    const dir = Math.PI / 4; // 45° compass
+/* ─────────────────── Central Monument ─────────────────── */
+function CentralMonument({ username, totalSolved }) {
+    const meshRef = useRef();
+    useFrame((state) => {
+        if (!meshRef.current) return;
+        meshRef.current.rotation.y += 0.005;
+        meshRef.current.material.emissiveIntensity = 0.5 + Math.sin(state.clock.elapsedTime * 1.5) * 0.3;
+    });
 
+    return (
+        <group>
+            <mesh ref={meshRef} position={[0, 3, 0]}>
+                <octahedronGeometry args={[1.5, 0]} />
+                <meshStandardMaterial
+                    color="#00f5d4"
+                    emissive="#00f5d4"
+                    emissiveIntensity={0.5}
+                    metalness={0.6}
+                    roughness={0.2}
+                    transparent
+                    opacity={0.85}
+                />
+            </mesh>
+            <mesh position={[0, 0.5, 0]}>
+                <cylinderGeometry args={[2, 2.5, 1, 8]} />
+                <meshStandardMaterial
+                    color="#111"
+                    emissive="#00f5d4"
+                    emissiveIntensity={0.1}
+                    metalness={0.4}
+                    roughness={0.6}
+                />
+            </mesh>
+            <Html
+                position={[0, 5.5, 0]}
+                center
+                distanceFactor={18}
+                style={{ pointerEvents: 'none', whiteSpace: 'nowrap' }}
+            >
+                <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                        fontFamily: 'Orbitron, sans-serif',
+                        fontSize: 14,
+                        fontWeight: 900,
+                        color: '#00f5d4',
+                        letterSpacing: '0.15em',
+                        textShadow: '0 0 16px rgba(0,245,212,0.6)',
+                        textTransform: 'uppercase',
+                    }}>
+                        {username || 'CODER'}
+                    </div>
+                    <div style={{
+                        fontFamily: '"Share Tech Mono", monospace',
+                        fontSize: 10,
+                        color: 'rgba(0,245,212,0.6)',
+                        letterSpacing: '0.1em',
+                        marginTop: 2,
+                    }}>
+                        POP. {totalSolved}
+                    </div>
+                </div>
+            </Html>
+        </group>
+    );
+}
+
+/* ─────────────────── Camera Setup ─────────────────── */
+function CityCamera() {
+    const { camera } = useThree();
     React.useEffect(() => {
-        camera.position.set(
-            Math.cos(dir) * 28,
-            Math.tan(iso) * 28,
-            Math.sin(dir) * 28
-        );
-        camera.lookAt(target[0], 2, target[2]);
+        camera.position.set(20, 16, 20);
+        camera.lookAt(0, 2, 0);
         camera.updateProjectionMatrix();
     }, []);
     return null;
 }
 
-/* ─────────────────── Scene ─────────────────── */
-function CityScene({ onSelectCoder, selectedUser }) {
-    const cols = 7;
-    const rows = Math.ceil(CODERS.length / cols);
+/* ─────────────────── City Scene (data-driven) ─────────────────── */
+function CitySceneInner({ data, isNight }) {
+    const { planets, username, stats } = data;
+    const totalSolved = stats?.find(s => s.difficulty === 'All')?.count || 0;
+    const maxSolved = Math.max(...planets.map(p => p.problemsSolved), 1);
 
-    const coderGrid = useMemo(() => {
-        return CODERS.map((c, i) => ({
-            coder: c,
-            pos: [(i % cols) * 2.6, 0, Math.floor(i / cols) * 2.6],
-        }));
-    }, []);
-
-    const gridCenter = [(cols * 2.6) / 2, 0, (rows * 2.6) / 2];
+    const districtRadius = Math.max(14, 10 + planets.length * 2);
+    const districts = useMemo(() => {
+        return planets.map((planet, i) => {
+            const angle = (i / planets.length) * Math.PI * 2 - Math.PI / 2;
+            return {
+                topic: planet,
+                color: DISTRICT_COLORS[i % DISTRICT_COLORS.length],
+                position: [
+                    Math.cos(angle) * districtRadius,
+                    0,
+                    Math.sin(angle) * districtRadius,
+                ],
+            };
+        });
+    }, [planets, districtRadius]);
 
     return (
         <>
-            <color attach="background" args={['#05060a']} />
-            <fog attach="fog" args={['#05060a', 30, 80]} />
+            <CityGround radius={districtRadius + 8} isNight={isNight} />
+            <CentralMonument username={username} totalSolved={totalSolved} />
 
-            {/* Lighting */}
-            <ambientLight intensity={0.15} color="#2020ff" />
-            <directionalLight position={[10, 20, 10]} intensity={0.4} color="#ffffff" castShadow />
-            <directionalLight position={[-8, 12, -8]} intensity={0.2} color="#8080ff" />
-            <pointLight position={[gridCenter[0], 6, gridCenter[2]]} intensity={0.6} color="#222244" distance={40} />
-
-            {/* Ground */}
-            <CityGround cols={cols} rows={rows} />
-
-            {/* Buildings */}
-            {coderGrid.map(({ coder, pos }) => (
-                <Building
-                    key={coder.u}
-                    coder={coder}
-                    position={pos}
-                    onClick={onSelectCoder}
-                    isSelected={selectedUser === coder.u}
+            {districts.map(({ topic, color, position }, i) => (
+                <District
+                    key={topic.name}
+                    topic={topic}
+                    color={color}
+                    centerPosition={position}
+                    maxSolved={maxSolved}
+                    districtIndex={i}
                 />
             ))}
 
-            {/* Bloom postprocessing */}
             <EffectComposer>
                 <Bloom
                     mipmapBlur
                     luminanceThreshold={0.4}
                     luminanceSmoothing={0.9}
-                    intensity={2.0}
+                    intensity={isNight ? 2.5 : 1.8}
                     radius={0.8}
                 />
             </EffectComposer>
+        </>
+    );
+}
 
-            {/* Camera + controls */}
-            <IsometricCamera target={gridCenter} />
+/* ─────────────────── Main Export ─────────────────── */
+export default function CityCanvas({ data, isNight }) {
+    return (
+        <Canvas
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+            shadows
+            camera={{ fov: 45, near: 0.1, far: 200 }}
+            gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
+            dpr={[1, 1.5]}
+        >
+            <color attach="background" args={[isNight ? '#020308' : '#05060a']} />
+            <fog attach="fog" args={[isNight ? '#020308' : '#05060a', 35, 90]} />
+            <ambientLight intensity={isNight ? 0.08 : 0.15} color={isNight ? '#1111aa' : '#2020ff'} />
+            <directionalLight position={[10, 20, 10]} intensity={isNight ? 0.15 : 0.4} color="#ffffff" castShadow />
+            <directionalLight position={[-8, 12, -8]} intensity={isNight ? 0.08 : 0.2} color="#8080ff" />
+            <pointLight position={[0, 8, 0]} intensity={isNight ? 0.3 : 0.6} color="#00f5d4" distance={50} />
+            <CityCamera />
             <OrbitControls
-                target={gridCenter}
+                target={[0, 2, 0]}
                 enablePan
                 enableZoom
                 enableRotate
@@ -245,23 +437,7 @@ function CityScene({ onSelectCoder, selectedUser }) {
                 panSpeed={0.8}
                 rotateSpeed={0.5}
             />
-        </>
-    );
-}
-
-/* ─────────────────── Main Export ─────────────────── */
-export default function CityCanvas({ onSelectCoder, selectedUser }) {
-    return (
-        <Canvas
-            className="city-canvas"
-            shadows
-            camera={{ fov: 45, near: 0.1, far: 200 }}
-            gl={{ antialias: true, alpha: false }}
-            dpr={[1, 1.5]}
-        >
-            <Suspense fallback={null}>
-                <CityScene onSelectCoder={onSelectCoder} selectedUser={selectedUser} />
-            </Suspense>
+            {data && <CitySceneInner data={data} isNight={isNight} />}
         </Canvas>
     );
 }

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Share2, Search, X, Target, Zap, Star, Trophy, TrendingUp, Code2, Flame, ChevronRight, Shield, Swords, Crown, Sparkles } from 'lucide-react';
+import { ArrowLeft, Share2, Search, X, Target, Zap, Star, Trophy, TrendingUp, Code2, Flame, ChevronRight, Shield, Swords, Crown, Sparkles, Building2, Moon, Sun } from 'lucide-react';
 import html2canvas from 'html2canvas';
 
 const PLANET_COLORS = ['#00f5d4', '#8b5cf6', '#f5a623', '#3b82f6', '#ef4444', '#ec4899', '#10b981', '#f59e0b'];
@@ -252,7 +252,7 @@ function AchievementBadge({ icon: Icon, label, color, unlocked, delay }) {
 }
 
 /* ── Main component ──────────────────────────────────── */
-export default function UserPanel({ data, onBack }) {
+export default function UserPanel({ data, onBack, viewMode, onViewModeChange, isNight, onToggleNight }) {
     const [quickSearch, setQuickSearch] = useState('');
     const [showSearch, setShowSearch] = useState(false);
     const [activeTab, setActiveTab] = useState('stats');
@@ -292,7 +292,7 @@ export default function UserPanel({ data, onBack }) {
             const canvas = await html2canvas(document.body);
             const link = document.createElement('a');
             link.href = canvas.toDataURL('image/png');
-            link.download = `${username}-galaxy.png`;
+            link.download = `${username}-${viewMode === 'city' ? 'city' : 'galaxy'}.png`;
             link.click();
         } catch (err) { console.error('Share failed', err); }
     };
@@ -338,7 +338,7 @@ export default function UserPanel({ data, onBack }) {
             {/* ── Top buttons ── */}
             <div style={{
                 position: 'absolute', top: isMobile ? 8 : 16, left: isMobile ? 8 : 16,
-                display: 'flex', gap: isMobile ? 6 : 10, pointerEvents: 'auto',
+                display: 'flex', gap: isMobile ? 6 : 10, pointerEvents: 'auto', flexWrap: 'wrap',
             }}>
                 <button onClick={onBack} className="cyber-btn" style={btnStyle}>
                     <ArrowLeft size={14} /> GALAXY
@@ -346,6 +346,27 @@ export default function UserPanel({ data, onBack }) {
                 <button onClick={() => setShowSearch(s => !s)} className="cyber-btn" style={{ ...btnStyle, borderColor: 'rgba(139,92,246,0.25)', color: '#a78bfa' }}>
                     <Search size={14} /> EXPLORE
                 </button>
+                {/* View mode toggles */}
+                <div style={{ display: 'flex', gap: 3, background: 'rgba(0,0,0,0.5)', borderRadius: 10, padding: 2, border: '1px solid rgba(255,255,255,0.06)' }}>
+                    {[
+                        { mode: 'galaxy', icon: Sparkles, label: 'SOLAR' },
+                        { mode: 'city', icon: Building2, label: 'CITY' },
+                        { mode: 'card', icon: Swords, label: 'CARD' },
+                    ].map(({ mode, icon: Icon, label }) => (
+                        <button key={mode} onClick={() => onViewModeChange?.(mode)}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: 4,
+                                padding: isMobile ? '5px 8px' : '6px 12px', borderRadius: 8, fontFamily: FONT_MONO,
+                                fontSize: isMobile ? 9 : 10, fontWeight: 700,
+                                background: viewMode === mode ? 'rgba(0,245,212,0.12)' : 'transparent',
+                                border: viewMode === mode ? '1px solid rgba(0,245,212,0.3)' : '1px solid transparent',
+                                color: viewMode === mode ? '#00f5d4' : '#555', cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                            }}>
+                            <Icon size={12} /> {!isMobile && label}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Quick search dropdown */}
@@ -374,9 +395,16 @@ export default function UserPanel({ data, onBack }) {
                 )}
             </AnimatePresence>
 
-            {/* Share */}
-            <div style={{ position: 'absolute', top: isMobile ? 8 : 16, right: isMobile ? 8 : 16, pointerEvents: 'auto' }}>
-                <button onClick={handleShare} className="cyber-btn" style={btnStyle}><Share2 size={14} /> {!isMobile && 'SHARE'}</button>
+            {/* Share + Night toggle */}
+            <div style={{ position: 'absolute', top: isMobile ? 8 : 16, right: isMobile ? 8 : 16, pointerEvents: 'auto', display: 'flex', gap: 6 }}>
+                {viewMode === 'city' && (
+                    <button onClick={onToggleNight} className="cyber-btn" style={{ ...btnStyle, borderColor: 'rgba(245,166,35,0.25)', color: isNight ? '#f5a623' : '#8b5cf6' }}>
+                        {isNight ? <Sun size={14} /> : <Moon size={14} />}
+                    </button>
+                )}
+                <button onClick={handleShare} className="cyber-btn" style={btnStyle}>
+                    <Share2 size={14} /> {!isMobile && (viewMode === 'city' ? 'SHARE CITY' : 'SHARE')}
+                </button>
             </div>
 
             {/* ── Side panel ── */}
@@ -683,7 +711,7 @@ export default function UserPanel({ data, onBack }) {
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
                     <span style={{ color: '#1f2937', fontSize: 9, fontFamily: FONT_MONO, letterSpacing: '0.1em' }}>
-                        {isMobile ? 'PINCH TO ZOOM' : 'DRAG TO ORBIT // SCROLL TO ZOOM'}
+                        {isMobile ? 'PINCH TO ZOOM' : (viewMode === 'city' ? 'DRAG TO EXPLORE CITY' : 'DRAG TO ORBIT // SCROLL TO ZOOM')}
                     </span>
                     <span style={{
                         color: powerTier.color, fontSize: 9, fontFamily: FONT_ORBIT, fontWeight: 700,

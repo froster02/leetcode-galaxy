@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
+import { motion, AnimatePresence } from 'framer-motion';
 import GalaxyScene from './components/GalaxyScene';
 import LandingUI from './components/LandingUI';
 import SolarSystem from './components/SolarSystem';
 import UserPanel from './components/UserPanel';
 import TransitionOverlay from './components/TransitionOverlay';
+import CityCanvas from './components/CityScene';
+import FighterCard from './components/FighterCard';
 import { useLeetCode } from './hooks/useLeetCode';
 import { mapLeetCodeDataToSolarSystem } from './utils/dataMapper';
 
@@ -87,6 +90,8 @@ function CursorTrail() {
 
 function App() {
   const [phase, setPhase] = useState(1);
+  const [viewMode, setViewMode] = useState('galaxy');
+  const [isNight, setIsNight] = useState(true);
   const [transitionStage, setTransitionStage] = useState(0);
   const [transitionMsg, setTransitionMsg] = useState('');
   const [mappedData, setMappedData] = useState(null);
@@ -96,25 +101,24 @@ function App() {
   });
   const { fetchProfile } = useLeetCode();
 
-  useEffect(() => {
-    const handler = (e) => handleSearch(e.detail);
-    window.addEventListener('quickSearch', handler);
-    return () => window.removeEventListener('quickSearch', handler);
-  }, []);
-
-  const addToRecent = (username) => {
+  const addToRecent = useCallback((username) => {
     setRecentlyExplored(prev => {
       const filtered = prev.filter(u => u !== username);
       const next = [username, ...filtered].slice(0, MAX_RECENT);
       localStorage.setItem('recentExplorers', JSON.stringify(next));
       return next;
     });
-  };
+  }, []);
 
-  const handleSearch = async (username) => {
+  const handleSearch = useCallback(async (username, pushUrl = true) => {
     setPhase(2);
+    setViewMode('galaxy');
     setTransitionStage(1);
     setTransitionMsg('LOCKING COORDINATES...');
+
+    if (pushUrl) {
+      window.history.pushState({}, '', `/u/${encodeURIComponent(username)}`);
+    }
 
     try {
       await new Promise(r => setTimeout(r, 800));
@@ -123,7 +127,7 @@ function App() {
       let rawData;
       try {
         rawData = await fetchProfile(username);
-      } catch (e) {
+      } catch {
         console.warn('Proxy fetch failed, using mock data.');
         rawData = generateMockData(username);
       }
@@ -145,12 +149,46 @@ function App() {
       setPhase(1);
       setTransitionStage(0);
     }
-  };
+  }, [fetchProfile, addToRecent]);
 
-  const handleBack = () => {
+  const handleBack = useCallback((pushUrl = true) => {
     setPhase(1);
     setMappedData(null);
-  };
+    setViewMode('galaxy');
+    if (pushUrl) {
+      window.history.pushState({}, '', '/');
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => handleSearch(e.detail);
+    window.addEventListener('quickSearch', handler);
+    return () => window.removeEventListener('quickSearch', handler);
+  }, [handleSearch]);
+
+  // URL-based profile loading
+  useEffect(() => {
+    const path = window.location.pathname;
+    const match = path.match(/^\/u\/(.+)$/);
+    if (match) {
+      handleSearch(decodeURIComponent(match[1]), false);
+    }
+  }, [handleSearch]);
+
+  // Handle browser back/forward
+  useEffect(() => {
+    const onPop = () => {
+      const path = window.location.pathname;
+      const match = path.match(/^\/u\/(.+)$/);
+      if (match) {
+        handleSearch(decodeURIComponent(match[1]), false);
+      } else {
+        handleBack(false);
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [handleSearch, handleBack]);
 
   return (
     <div style={{
@@ -189,36 +227,70 @@ function App() {
       </div>
 
       {/* 3D Canvas */}
-      <Canvas
-        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-        camera={{ position: [0, 60, 120], fov: 60 }}
-        gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
-        dpr={[1, 1.5]}
-      >
-        <color attach="background" args={['#030508']} />
-        <ambientLight intensity={0.3} />
-        <Stars radius={300} depth={60} count={5000} factor={4} saturation={0} fade speed={0.5} />
+      {phase === 3 && viewMode === 'city' ? (
+        <CityCanvas data={mappedData} isNight={isNight} />
+      ) : (
+        <Canvas
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+          camera={{ position: [0, 60, 120], fov: 60 }}
+          gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
+          dpr={[1, 1.5]}
+        >
+          <color attach="background" args={['#030508']} />
+          <ambientLight intensity={0.3} />
+          <Stars radius={300} depth={60} count={5000} factor={4} saturation={0} fade speed={0.5} />
 
-        {phase === 1 && <GalaxyScene onSelectUser={handleSearch} />}
-        {phase === 2 && <GalaxyScene isTransitioning onSelectUser={handleSearch} />}
-        {phase === 3 && <SolarSystem data={mappedData} />}
+          {phase === 1 && <GalaxyScene onSelectUser={handleSearch} />}
+          {phase === 2 && <GalaxyScene isTransitioning onSelectUser={handleSearch} />}
+          {phase === 3 && viewMode === 'galaxy' && <SolarSystem data={mappedData} />}
 
-        <OrbitControls
-          enablePan={phase === 3}
-          enableZoom={phase === 3}
-          maxDistance={phase === 3 ? 250 : 120}
-          minDistance={5}
-          autoRotate={phase === 1}
-          autoRotateSpeed={0.3}
-          enableDamping
-          dampingFactor={0.05}
-        />
-      </Canvas>
+          <OrbitControls
+            enablePan={phase === 3}
+            enableZoom={phase === 3}
+            maxDistance={phase === 3 ? 250 : 120}
+            minDistance={5}
+            autoRotate={phase === 1}
+            autoRotateSpeed={0.3}
+            enableDamping
+            dampingFactor={0.05}
+          />
+        </Canvas>
+      )}
+
+      {/* Fighter Card overlay with animated reveal */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 15, pointerEvents: 'none', perspective: 1200 }}>
+        <AnimatePresence>
+          {phase === 3 && viewMode === 'card' && (
+            <motion.div
+              key="card-reveal"
+              initial={{ opacity: 0, scale: 0.85, rotateY: -30 }}
+              animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+              exit={{ opacity: 0, scale: 0.85, rotateY: 30 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                position: 'absolute', inset: 0, background: '#030508', overflow: 'auto',
+                pointerEvents: 'auto', transformStyle: 'preserve-3d',
+              }}
+            >
+              <FighterCard data={mappedData} username={mappedData?.username} onBack={() => setViewMode('galaxy')} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* UI Overlays */}
       {phase === 1 && <LandingUI onSearch={handleSearch} recentlyExplored={recentlyExplored} />}
       <TransitionOverlay stage={transitionStage} message={transitionMsg} />
-      {phase === 3 && <UserPanel data={mappedData} onBack={handleBack} />}
+      {phase === 3 && viewMode !== 'card' && (
+        <UserPanel
+          data={mappedData}
+          onBack={handleBack}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          isNight={isNight}
+          onToggleNight={() => setIsNight(n => !n)}
+        />
+      )}
     </div>
   );
 }
