@@ -8,12 +8,12 @@ const FONT_ORBIT = 'Orbitron, sans-serif';
 const FONT_MONO = '"Share Tech Mono", monospace';
 
 /* ── Power Level Calculator ──────────────────────────── */
-function calculatePowerLevel(stats, planets) {
+function calculatePowerLevel(stats, districts) {
     const totalSolved = stats.find(s => s.difficulty === 'All')?.count || 0;
     const easySolved = stats.find(s => s.difficulty === 'Easy')?.count || 0;
     const medSolved = stats.find(s => s.difficulty === 'Medium')?.count || 0;
     const hardSolved = stats.find(s => s.difficulty === 'Hard')?.count || 0;
-    const topicDiversity = planets?.length || 0;
+    const topicDiversity = districts?.length || 0;
 
     return Math.floor(
         easySolved * 1 +
@@ -127,9 +127,9 @@ function ProgressRing({ value, max, size = 100, color = '#00f5d4', label }) {
 }
 
 /* ── SVG Radar Chart ─────────────────────────────────── */
-function RadarChart({ planets, size = 200 }) {
-    if (!planets || planets.length === 0) return null;
-    const top = planets.slice(0, 6);
+function RadarChart({ districts, size = 200 }) {
+    if (!districts || districts.length === 0) return null;
+    const top = districts.slice(0, 6);
     const center = size / 2;
     const maxVal = Math.max(...top.map(p => p.problemsSolved), 1);
     const n = top.length;
@@ -267,7 +267,7 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
     }, []);
 
     if (!data) return null;
-    const { profile, stats, recent, planets, username } = data;
+    const { profile, stats, recent, districts, username } = data;
     const totalSolved = stats.find(s => s.difficulty === 'All')?.count || 0;
     const easySolved = stats.find(s => s.difficulty === 'Easy')?.count || 0;
     const medSolved = stats.find(s => s.difficulty === 'Medium')?.count || 0;
@@ -275,24 +275,24 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
     const estimatedTotal = 3200;
     const ranking = profile?.ranking || 0;
 
-    const powerLevel = useMemo(() => calculatePowerLevel(stats, planets), [stats, planets]);
+    const powerLevel = useMemo(() => calculatePowerLevel(stats, districts), [stats, districts]);
     const powerTier = getPowerTier(powerLevel);
 
     const achievements = useMemo(() => [
         { icon: Zap, label: 'FIRST SOLVE', color: '#23d18b', unlocked: totalSolved >= 1 },
         { icon: Star, label: '100 CLUB', color: '#f5a623', unlocked: totalSolved >= 100 },
         { icon: Flame, label: 'HARD 10', color: '#ff3860', unlocked: hardSolved >= 10 },
-        { icon: Code2, label: 'POLYGLOT', color: '#8b5cf6', unlocked: (planets?.length || 0) >= 5 },
+        { icon: Code2, label: 'POLYGLOT', color: '#8b5cf6', unlocked: (districts?.length || 0) >= 5 },
         { icon: Trophy, label: 'TOP 10K', color: '#fbbf24', unlocked: ranking > 0 && ranking <= 10000 },
         { icon: Crown, label: 'LEGEND', color: '#00f5d4', unlocked: ranking > 0 && ranking <= 1000 },
-    ], [totalSolved, hardSolved, planets, ranking]);
+    ], [totalSolved, hardSolved, districts, ranking]);
 
     const handleShare = async () => {
         try {
             const canvas = await html2canvas(document.body);
             const link = document.createElement('a');
             link.href = canvas.toDataURL('image/png');
-            link.download = `${username}-${viewMode === 'city' ? 'city' : 'galaxy'}.png`;
+            link.download = `${username}-${viewMode === 'city' ? 'city' : 'card'}.png`;
             link.click();
         } catch (err) { console.error('Share failed', err); }
     };
@@ -349,7 +349,6 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                 {/* View mode toggles */}
                 <div style={{ display: 'flex', gap: 3, background: 'rgba(0,0,0,0.5)', borderRadius: 10, padding: 2, border: '1px solid rgba(255,255,255,0.06)' }}>
                     {[
-                        { mode: 'galaxy', icon: Sparkles, label: 'SOLAR' },
                         { mode: 'city', icon: Building2, label: 'CITY' },
                         { mode: 'card', icon: Swords, label: 'CARD' },
                     ].map(({ mode, icon: Icon, label }) => (
@@ -560,11 +559,11 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                                 </div>
 
                                 {sectionTitle('Topic Strengths')}
-                                <RadarChart planets={planets} size={200} />
+                                <RadarChart districts={districts} size={200} />
 
                                 {/* Quick topic list */}
                                 <div style={{ marginTop: 16 }}>
-                                    {planets?.slice(0, 5).map((p, i) => {
+                                    {districts?.slice(0, 5).map((p, i) => {
                                         const c = PLANET_COLORS[i % PLANET_COLORS.length];
                                         return (
                                             <motion.div
@@ -597,11 +596,11 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
 
                         {activeTab === 'topics' && (
                             <motion.div key="topics" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                                {sectionTitle(`All Topics (${planets?.length})`)}
+                                {sectionTitle(`All Districts (${districts?.length})`)}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                    {planets?.map((p, i) => {
+                                    {districts?.map((p, i) => {
                                         const c = PLANET_COLORS[i % PLANET_COLORS.length];
-                                        const maxSolved = planets[0]?.problemsSolved || 1;
+                                        const maxSolved = districts[0]?.problemsSolved || 1;
                                         const pct = (p.problemsSolved / maxSolved) * 100;
                                         return (
                                             <motion.div

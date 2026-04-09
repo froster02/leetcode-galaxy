@@ -1,4 +1,5 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
+import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
@@ -243,7 +244,7 @@ function CityBuilding({ height, width, color, position }) {
 }
 
 /* ─────────────────── Single City Block (township) ─────────────── */
-function CityBlock({ user, gridRow, gridCol, globalMax, isNight }) {
+function CityBlock({ user, gridRow, gridCol, globalMax, isNight, onSelect }) {
     const [hovered, setHovered] = useState(false);
     const isCurrent = user?.isCurrent;
 
@@ -258,14 +259,17 @@ function CityBlock({ user, gridRow, gridCol, globalMax, isNight }) {
     const accentColor = isCurrent ? '#00f5d4' : '#3b82f6';
 
     return (
-        <group position={[worldX, 0, worldZ]}>
+        <group 
+            position={[worldX, 0, worldZ]}
+            onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+            onPointerOut={(e) => { e.stopPropagation(); setHovered(false); document.body.style.cursor = 'auto'; }}
+            onClick={(e) => { e.stopPropagation(); if (user && onSelect) onSelect(user.u); }}
+        >
             {/* Block ground plate */}
             <mesh
                 rotation={[-Math.PI / 2, 0, 0]}
                 position={[0, 0.02, 0]}
                 receiveShadow
-                onPointerOver={() => setHovered(true)}
-                onPointerOut={() => setHovered(false)}
             >
                 <planeGeometry args={[BLOCK_SIZE, BLOCK_SIZE]} />
                 <meshStandardMaterial
@@ -456,8 +460,50 @@ function CityCamera() {
     return null;
 }
 
+/* ─────────────────── Smooth Scene Lighting & Fog ─────────────────── */
+function SceneLighting({ isNight, totalWidth }) {
+    const { scene } = useThree();
+    const bgTarget = useMemo(() => new THREE.Color(isNight ? '#020308' : '#05060a'), [isNight]);
+    const ambTargetColor = useMemo(() => new THREE.Color(isNight ? '#1111aa' : '#2020ff'), [isNight]);
+
+    useFrame((state, delta) => {
+        const d = Math.min(delta * 2, 1);
+        // Background & Fog Lerp
+        scene.background = scene.background || new THREE.Color('#020308');
+        scene.background.lerp(bgTarget, d);
+        if (scene.fog) scene.fog.color.lerp(bgTarget, d);
+
+        // Light intensities
+        scene.traverse((obj) => {
+            if (obj.isAmbientLight) {
+                obj.intensity += ((isNight ? 0.08 : 0.15) - obj.intensity) * d;
+                obj.color.lerp(ambTargetColor, d);
+            }
+            if (obj.isDirectionalLight && obj.position.x > 0) { // Main dir
+                obj.intensity += ((isNight ? 0.15 : 0.4) - obj.intensity) * d;
+            }
+            if (obj.isDirectionalLight && obj.position.x < 0) { // Side dir
+                obj.intensity += ((isNight ? 0.08 : 0.2) - obj.intensity) * d;
+            }
+            if (obj.isPointLight) {
+                obj.intensity += ((isNight ? 0.4 : 0.6) - obj.intensity) * d;
+            }
+        });
+    });
+
+    return (
+        <group>
+            <fog attach="fog" args={['#020308', 30, totalWidth * 0.7]} />
+            <ambientLight intensity={0.15} color="#2020ff" />
+            <directionalLight position={[30, 40, 30]} intensity={0.4} color="#ffffff" castShadow />
+            <directionalLight position={[-20, 30, -20]} intensity={0.2} color="#8080ff" />
+            <pointLight position={[0, 10, 0]} intensity={0.6} color="#00f5d4" distance={60} />
+        </group>
+    );
+}
+
 /* ─────────────────── City Scene Inner ─────────────────── */
-function CitySceneInner({ data, isNight }) {
+function CitySceneInner({ data, isNight, onSelectUser }) {
     const roster = useMemo(() => buildRoster(data), [data]);
     const globalMax = useMemo(() => {
         let m = 1;
@@ -484,6 +530,7 @@ function CitySceneInner({ data, isNight }) {
                         gridCol={col}
                         globalMax={globalMax}
                         isNight={isNight}
+                        onSelect={onSelectUser}
                     />
                 );
             })}
@@ -502,7 +549,7 @@ function CitySceneInner({ data, isNight }) {
 }
 
 /* ─────────────────── Main Export ─────────────────── */
-export default function CityCanvas({ data, isNight }) {
+export default function CityCanvas({ data, isNight, onSelectUser }) {
     const totalWidth = GRID_COLS * CELL_SIZE;
     return (
         <Canvas
@@ -512,12 +559,7 @@ export default function CityCanvas({ data, isNight }) {
             gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
             dpr={[1, 1.5]}
         >
-            <color attach="background" args={[isNight ? '#020308' : '#05060a']} />
-            <fog attach="fog" args={[isNight ? '#020308' : '#05060a', 30, totalWidth * 0.7]} />
-            <ambientLight intensity={isNight ? 0.08 : 0.15} color={isNight ? '#1111aa' : '#2020ff'} />
-            <directionalLight position={[30, 40, 30]} intensity={isNight ? 0.15 : 0.4} color="#ffffff" castShadow />
-            <directionalLight position={[-20, 30, -20]} intensity={isNight ? 0.08 : 0.2} color="#8080ff" />
-            <pointLight position={[0, 10, 0]} intensity={isNight ? 0.4 : 0.6} color="#00f5d4" distance={60} />
+            <SceneLighting isNight={isNight} totalWidth={totalWidth} />
             <CityCamera />
             <OrbitControls
                 target={[0, 1, 0]}
@@ -531,7 +573,7 @@ export default function CityCanvas({ data, isNight }) {
                 panSpeed={0.8}
                 rotateSpeed={0.5}
             />
-            {data && <CitySceneInner data={data} isNight={isNight} />}
+            {data && <CitySceneInner data={data} isNight={isNight} onSelectUser={onSelectUser} />}
         </Canvas>
     );
 }

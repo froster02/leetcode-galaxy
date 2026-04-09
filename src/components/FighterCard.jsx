@@ -127,7 +127,7 @@ export default function FighterCard({ data, username, onBack }) {
 
     if (!data) return null;
 
-    const { profile, stats, recent, planets } = data;
+    const { profile, stats, recent, districts, contestInfo, badgesInfo } = data;
 
     const easy = stats.find(s => s.difficulty === 'Easy')?.count || 0;
     const med = stats.find(s => s.difficulty === 'Medium')?.count || 0;
@@ -136,13 +136,22 @@ export default function FighterCard({ data, username, onBack }) {
 
     const power = calcPower(easy, med, hard);
     const cls = getFighterClass(hard);
-    const topSkills = [...planets].sort((a, b) => b.problemsSolved - a.problemsSolved).slice(0, 5);
+    const topSkills = districts ? [...districts].sort((a, b) => b.problemsSolved - a.problemsSolved).slice(0, 5) : [];
 
     // Win rate from recent submissions
     const accepted = recent.filter(r => r.statusDisplay === 'Accepted').length;
     const winRate = recent.length > 0 ? Math.round((accepted / recent.length) * 100) : 0;
 
     const myFighterData = { username, easy, med, hard, power };
+
+    const [coords, setCoords] = useState({ x: 50, y: 50 });
+
+    const handleMouseMove = (e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        setCoords({ x, y });
+    };
 
     return (
         <>
@@ -152,13 +161,28 @@ export default function FighterCard({ data, username, onBack }) {
                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                 style={{ paddingTop: 40, paddingBottom: 80, maxWidth: 860, margin: '0 auto' }}
             >
-                {/* Back */}
-                <div style={{ marginBottom: 32, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <button onClick={onBack} style={{ fontFamily: 'Orbitron, sans-serif', fontSize: 10, letterSpacing: '0.15em', color: '#555', background: 'none', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, padding: '8px 16px', cursor: 'pointer' }}>
+                {/* Header Controls */}
+                <div style={{ marginBottom: 32, display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10, position: 'relative' }}>
+                    <button onClick={onBack} style={{ fontFamily: 'Orbitron, sans-serif', fontSize: 10, letterSpacing: '0.15em', color: '#555', background: 'none', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', transition: 'all 0.2s' }}
+                            onMouseEnter={e => e.currentTarget.style.color = '#fff'} onMouseLeave={e => e.currentTarget.style.color = '#555'}>
                         ← BACK
                     </button>
-                    <div style={{ fontFamily: 'Orbitron, sans-serif', fontSize: 10, letterSpacing: '0.2em', color: '#333' }}>FIGHTER PROFILE</div>
+                    <div style={{ fontFamily: 'Orbitron, sans-serif', fontSize: 10, letterSpacing: '0.2em', color: '#888' }}>FIGHTER PROFILE</div>
                 </div>
+
+                {/* Main Card */}
+                <div
+                    onMouseMove={handleMouseMove}
+                    style={{ position: 'relative', borderRadius: 20, overflow: 'hidden' }}
+                >
+                    {/* Holo Foil Overlay */}
+                    <div style={{
+                        position: 'absolute', inset: 0, zIndex: 10, pointerEvents: 'none', mixBlendMode: 'screen',
+                        background: `radial-gradient(circle at ${coords.x}% ${coords.y}%, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.0) 50%)`,
+                        opacity: 0.8
+                    }} />
+
+                    <div style={{ position: 'relative', zIndex: 1 }}>
 
                 {/* Hero: Power Level + Class */}
                 <div style={{ textAlign: 'center', marginBottom: 40, padding: '48px 24px', background: 'radial-gradient(ellipse at center top, rgba(239,68,68,0.08) 0%, transparent 60%)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden' }}>
@@ -185,10 +209,50 @@ export default function FighterCard({ data, username, onBack }) {
                             <PowerCounter targetPower={power} color={cls.color} />
                         </div>
                     </div>
+
+                    {/* Competitive Record */}
+                    <div style={{ background: '#0f0f14', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ fontFamily: 'Orbitron, sans-serif', fontSize: 9, letterSpacing: '0.2em', color: '#444', marginBottom: 20 }}>COMPETITIVE RECORD</div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                            <span style={{ fontSize: 13, color: '#aaa', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>RATING</span>
+                            <span style={{ fontFamily: 'Orbitron, sans-serif', fontSize: 18, fontWeight: 700, color: contestInfo?.rating ? cls.color : '#555' }}>
+                                {contestInfo?.rating ? Math.round(contestInfo.rating).toLocaleString() : 'N/A'}
+                            </span>
+                        </div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                            <span style={{ fontSize: 13, color: '#aaa', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>RANK</span>
+                            <span style={{ fontFamily: 'Orbitron, sans-serif', fontSize: 16, fontWeight: 700, color: '#f0f0f0' }}>
+                                {contestInfo?.ranking ? `#${contestInfo.ranking.toLocaleString()}` : '?'}
+                            </span>
+                        </div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                            <span style={{ fontSize: 13, color: '#aaa', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>TOP</span>
+                            <span style={{ fontFamily: 'Orbitron, sans-serif', fontSize: 16, fontWeight: 700, color: '#22c55e' }}>
+                                {contestInfo?.topPercentage ? `${contestInfo.topPercentage}%` : '?'}
+                            </span>
+                        </div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                            <span style={{ fontSize: 13, color: '#aaa', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>ATTENDED</span>
+                            <span style={{ fontFamily: 'Orbitron, sans-serif', fontSize: 16, fontWeight: 700, color: '#f59e0b' }}>
+                                {contestInfo?.attended || 0}
+                            </span>
+                        </div>
+
+                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 12, marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: 13, color: '#555', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}>TOTAL BADGES</span>
+                            <span style={{ fontFamily: 'Orbitron, sans-serif', fontSize: 16, fontWeight: 700, color: '#8b5cf6' }}>
+                                {badgesInfo?.total || 0}
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Stats grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 14, marginBottom: 14 }}>
 
                     {/* Difficulty */}
                     <div style={{ background: '#0f0f14', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 24 }}>
@@ -261,6 +325,9 @@ export default function FighterCard({ data, username, onBack }) {
                         );
                     })}
                 </div>
+                    </div>
+                </div>
+
             </motion.div>
 
             {/* VS Modal */}

@@ -4,13 +4,12 @@ import { OrbitControls, Stars } from '@react-three/drei';
 import { motion, AnimatePresence } from 'framer-motion';
 import GalaxyScene from './components/GalaxyScene';
 import LandingUI from './components/LandingUI';
-import SolarSystem from './components/SolarSystem';
 import UserPanel from './components/UserPanel';
 import TransitionOverlay from './components/TransitionOverlay';
 import CityCanvas from './components/CityScene';
 import FighterCard from './components/FighterCard';
 import { useLeetCode } from './hooks/useLeetCode';
-import { mapLeetCodeDataToSolarSystem } from './utils/dataMapper';
+import { mapLeetCodeDataToCity } from './utils/dataMapper';
 
 const MAX_RECENT = 12;
 const PARTICLE_COUNT = 12;
@@ -90,7 +89,7 @@ function CursorTrail() {
 
 function App() {
   const [phase, setPhase] = useState(1);
-  const [viewMode, setViewMode] = useState('galaxy');
+  const [viewMode, setViewMode] = useState('city');
   const [isNight, setIsNight] = useState(true);
   const [transitionStage, setTransitionStage] = useState(0);
   const [transitionMsg, setTransitionMsg] = useState('');
@@ -112,7 +111,7 @@ function App() {
 
   const handleSearch = useCallback(async (username, pushUrl = true) => {
     setPhase(2);
-    setViewMode('galaxy');
+    setViewMode('city');
     setTransitionStage(1);
     setTransitionMsg('LOCKING COORDINATES...');
 
@@ -132,7 +131,7 @@ function App() {
         rawData = generateMockData(username);
       }
 
-      const structuredData = mapLeetCodeDataToSolarSystem(rawData);
+      const structuredData = mapLeetCodeDataToCity(rawData);
       setMappedData(structuredData);
       addToRecent(username);
 
@@ -151,10 +150,31 @@ function App() {
     }
   }, [fetchProfile, addToRecent]);
 
+  // Clickable blocks within the City Scene
+  const handleQuickInspect = useCallback(async (username) => {
+    setTransitionStage(1);
+    setTransitionMsg(`FETCHING: ${username.toUpperCase()}`);
+    
+    let rawData;
+    try {
+      rawData = await fetchProfile(username);
+    } catch {
+      rawData = generateMockData(username);
+    }
+
+    const structuredData = mapLeetCodeDataToCity(rawData);
+    setMappedData(structuredData);
+    addToRecent(username);
+    
+    setTransitionStage(0);
+    setViewMode('card');
+    window.history.pushState({}, '', `/u/${encodeURIComponent(username)}`);
+  }, [fetchProfile, addToRecent]);
+
   const handleBack = useCallback((pushUrl = true) => {
     setPhase(1);
     setMappedData(null);
-    setViewMode('galaxy');
+    setViewMode('city');
     if (pushUrl) {
       window.history.pushState({}, '', '/');
     }
@@ -228,7 +248,7 @@ function App() {
 
       {/* 3D Canvas */}
       {phase === 3 && viewMode === 'city' ? (
-        <CityCanvas data={mappedData} isNight={isNight} />
+        <CityCanvas data={mappedData} isNight={isNight} onSelectUser={handleQuickInspect} />
       ) : (
         <Canvas
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
@@ -242,7 +262,6 @@ function App() {
 
           {phase === 1 && <GalaxyScene onSelectUser={handleSearch} />}
           {phase === 2 && <GalaxyScene isTransitioning onSelectUser={handleSearch} />}
-          {phase === 3 && viewMode === 'galaxy' && <SolarSystem data={mappedData} />}
 
           <OrbitControls
             enablePan={phase === 3}
@@ -272,7 +291,7 @@ function App() {
                 pointerEvents: 'auto', transformStyle: 'preserve-3d',
               }}
             >
-              <FighterCard data={mappedData} username={mappedData?.username} onBack={() => setViewMode('galaxy')} />
+              <FighterCard data={mappedData} username={mappedData?.username} onBack={() => setViewMode('city')} />
             </motion.div>
           )}
         </AnimatePresence>
