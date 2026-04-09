@@ -25,3 +25,8 @@ dist-ssr
 
 # Wrangler
 .wrangler
+
+# Agent
+.agent
+.github/agent.md
+.github/copilot-instructions.md
