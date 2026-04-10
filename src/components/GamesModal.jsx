@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { calcPower, getFighterClass, CODERS } from './CityScene';
+import { calcPower, getFighterClass, CODERS } from '../utils/gameData';
 
 /* ─────────────────────────────────────────────── */
 /*  GAME 1 — HIGHER OR LOWER                       */

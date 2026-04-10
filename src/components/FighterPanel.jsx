@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { calcPower, getFighterClass, CODERS } from './CityScene';
+import { calcPower, getFighterClass, CODERS } from '../utils/gameData';
 
 /* ─── Animated power counter ─── */
 function PowerCounter({ target, color }) {
