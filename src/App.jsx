@@ -91,6 +91,7 @@ function App() {
   const [phase, setPhase] = useState(1);
   const [viewMode, setViewMode] = useState('city');
   const [isNight, setIsNight] = useState(true);
+  const [isLightMode, setIsLightMode] = useState(false);
   const [transitionStage, setTransitionStage] = useState(0);
   const [transitionMsg, setTransitionMsg] = useState('');
   const [mappedData, setMappedData] = useState(null);
@@ -99,6 +100,11 @@ function App() {
     catch { return []; }
   });
   const { fetchProfile } = useLeetCode();
+
+  // Sync data-theme attribute on root
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', isLightMode ? 'light' : 'dark');
+  }, [isLightMode]);
 
   const addToRecent = useCallback((username) => {
     setRecentlyExplored(prev => {
@@ -213,7 +219,8 @@ function App() {
   return (
     <div style={{
       width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden',
-      background: '#030508', color: '#fff', fontFamily: '"Share Tech Mono", monospace',
+      background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: '"Share Tech Mono", monospace',
+      transition: 'background 0.3s ease, color 0.3s ease',
     }}>
       {/* Cinematic overlays */}
       <div className="noise-overlay" />
@@ -276,7 +283,7 @@ function App() {
         </Canvas>
       )}
 
-      {/* Fighter Card overlay with animated reveal */}
+      {/* Fighter Card overlay */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 15, pointerEvents: 'none', perspective: 1200 }}>
         <AnimatePresence>
           {phase === 3 && viewMode === 'card' && (
@@ -287,18 +294,25 @@ function App() {
               exit={{ opacity: 0, scale: 0.85, rotateY: 30 }}
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               style={{
-                position: 'absolute', inset: 0, background: '#030508', overflow: 'auto',
+                position: 'absolute', inset: 0, background: 'var(--bg-primary)', overflow: 'auto',
                 pointerEvents: 'auto', transformStyle: 'preserve-3d',
+                transition: 'background 0.3s ease',
               }}
             >
-              <FighterCard data={mappedData} username={mappedData?.username} onBack={() => setViewMode('city')} />
+              <FighterCard
+                data={mappedData}
+                username={mappedData?.username}
+                onBack={() => setViewMode('city')}
+                isLightMode={isLightMode}
+                onToggleTheme={() => setIsLightMode(m => !m)}
+              />
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
       {/* UI Overlays */}
-      {phase === 1 && <LandingUI onSearch={handleSearch} recentlyExplored={recentlyExplored} />}
+      {phase === 1 && <LandingUI onSearch={handleSearch} recentlyExplored={recentlyExplored} isLightMode={isLightMode} onToggleTheme={() => setIsLightMode(m => !m)} />}
       <TransitionOverlay stage={transitionStage} message={transitionMsg} />
       {phase === 3 && viewMode !== 'card' && (
         <UserPanel
@@ -308,6 +322,8 @@ function App() {
           onViewModeChange={setViewMode}
           isNight={isNight}
           onToggleNight={() => setIsNight(n => !n)}
+          isLightMode={isLightMode}
+          onToggleTheme={() => setIsLightMode(m => !m)}
         />
       )}
     </div>

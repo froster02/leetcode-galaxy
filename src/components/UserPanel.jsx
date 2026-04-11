@@ -252,7 +252,7 @@ function AchievementBadge({ icon: Icon, label, color, unlocked, delay }) {
 }
 
 /* ── Main component ──────────────────────────────────── */
-export default function UserPanel({ data, onBack, viewMode, onViewModeChange, isNight, onToggleNight }) {
+export default function UserPanel({ data, onBack, viewMode, onViewModeChange, isNight, onToggleNight, isLightMode, onToggleTheme }) {
     const [quickSearch, setQuickSearch] = useState('');
     const [showSearch, setShowSearch] = useState(false);
     const [activeTab, setActiveTab] = useState('stats');
@@ -335,17 +335,33 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
 
     return (
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', padding: isMobile ? 8 : 16, zIndex: 10, color: '#fff' }}>
-            {/* ── Top buttons ── */}
+            {/* ── Top left buttons ── */}
             <div style={{
                 position: 'absolute', top: isMobile ? 8 : 16, left: isMobile ? 8 : 16,
                 display: 'flex', gap: isMobile ? 6 : 10, pointerEvents: 'auto', flexWrap: 'wrap',
+                alignItems: 'center',
             }}>
                 <button onClick={onBack} className="cyber-btn" style={btnStyle}>
                     <ArrowLeft size={14} /> GALAXY
                 </button>
-                <button onClick={() => setShowSearch(s => !s)} className="cyber-btn" style={{ ...btnStyle, borderColor: 'rgba(139,92,246,0.25)', color: '#a78bfa' }}>
-                    <Search size={14} /> EXPLORE
+
+                {/* Search icon button — compact, no text */}
+                <button
+                    onClick={() => setShowSearch(s => !s)}
+                    className="cyber-btn"
+                    title="Search username"
+                    style={{
+                        ...btnStyle,
+                        padding: isMobile ? '6px' : '8px',
+                        borderColor: showSearch ? 'rgba(139,92,246,0.5)' : 'rgba(139,92,246,0.25)',
+                        color: showSearch ? '#c4b5fd' : '#a78bfa',
+                        minWidth: 36,
+                        justifyContent: 'center',
+                    }}
+                >
+                    {showSearch ? <X size={14} /> : <Search size={14} />}
                 </button>
+
                 {/* View mode toggles */}
                 <div style={{ display: 'flex', gap: 3, background: 'rgba(0,0,0,0.5)', borderRadius: 10, padding: 2, border: '1px solid rgba(255,255,255,0.06)' }}>
                     {[
@@ -368,34 +384,36 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                 </div>
             </div>
 
-            {/* Quick search dropdown */}
+            {/* Quick search dropdown — clears the button row */}
             <AnimatePresence>
                 {showSearch && (
                     <motion.form onSubmit={handleQuickSearch}
-                        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                        style={{ position: 'absolute', top: 52, left: 16, display: 'flex', gap: 6, pointerEvents: 'auto', zIndex: 20 }}>
+                        initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                        style={{ position: 'absolute', top: isMobile ? 56 : 64, left: isMobile ? 8 : 16, display: 'flex', gap: 6, pointerEvents: 'auto', zIndex: 20 }}>
                         <input autoFocus value={quickSearch} onChange={e => setQuickSearch(e.target.value)} placeholder="username..."
                             style={{
                                 padding: '8px 12px', borderRadius: 10, fontFamily: FONT_MONO, fontSize: 11,
-                                background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(139,92,246,0.3)', color: '#fff', width: 180, outline: 'none',
+                                background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(139,92,246,0.4)', color: '#fff', width: 180, outline: 'none',
                                 backdropFilter: 'blur(16px)',
+                                boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
                             }} />
                         <button type="submit" style={{
                             padding: '8px 14px', borderRadius: 10, fontSize: 11, fontWeight: 700,
                             background: 'linear-gradient(135deg,#8b5cf6,#6d28d9)', color: '#fff', border: 'none', cursor: 'pointer',
                             fontFamily: FONT_MONO,
                         }}>GO</button>
-                        <button type="button" onClick={() => setShowSearch(false)}
-                            style={{
-                                padding: '8px', borderRadius: 10, background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.08)',
-                                color: '#6b7280', cursor: 'pointer',
-                            }}><X size={12} /></button>
                     </motion.form>
                 )}
             </AnimatePresence>
 
-            {/* Share + Night toggle */}
-            <div style={{ position: 'absolute', top: isMobile ? 8 : 16, right: isMobile ? 8 : 16, pointerEvents: 'auto', display: 'flex', gap: 6 }}>
+            {/* Top right — theme toggle + night toggle + share */}
+            <div style={{ position: 'absolute', top: isMobile ? 8 : 16, right: isMobile ? 8 : 16, pointerEvents: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+                {/* Light/Dark Mode Toggle */}
+                {onToggleTheme && (
+                    <button onClick={onToggleTheme} className="theme-toggle-btn" title={isLightMode ? 'Switch to Dark Mode' : 'Switch to Light Mode'}>
+                        {isLightMode ? '🌙' : '☀️'}
+                    </button>
+                )}
                 {viewMode === 'city' && (
                     <button onClick={onToggleNight} className="cyber-btn" style={{ ...btnStyle, borderColor: 'rgba(245,166,35,0.25)', color: isNight ? '#f5a623' : '#8b5cf6' }}>
                         {isNight ? <Sun size={14} /> : <Moon size={14} />}
