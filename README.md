@@ -1,25 +1,31 @@
 # 🌌 LeetCode Galaxy
 
-> **Explore your LeetCode journey as an interactive 3D solar system.**
+> **Explore your LeetCode journey as an interactive 3D city.**
 
-LeetCode Galaxy transforms a LeetCode user's coding statistics into a navigable space scene. Your profile becomes a glowing sun, your top problem-solving topics orbit as planets, and each problem you've solved appears as a moon. Search any username and fly through their data.
+LeetCode Galaxy transforms any LeetCode user's competitive stats into a living, breathing neon city. Your profile becomes a glowing tower at the center, surrounded by 100 rival buildings — each representing a real competitive programmer or procedurally generated coder. Click any building to instantly inspect their Fighter Card.
+
+🔗 **Live:** [froster02.github.io/leetcode-galaxy](https://froster02.github.io/leetcode-galaxy/)
 
 ---
 
 ## ✨ Features
 
-- **Interactive 3D Solar System** — powered by Three.js / React Three Fiber; pan, zoom, and rotate freely.
-- **Profile Sun** — the central star whose size and glow reflect the user's overall activity.
-- **Topic Planets** — up to 8 of the user's most-practiced LeetCode tags rendered as orbiting planets, sized by problems solved.
-- **Problem Moons** — individual problems orbit each planet, color-coded by difficulty (🟢 Easy · 🟡 Medium · 🔴 Hard).
-- **Power Level & Tiers** — a calculated score (EXPLORER → COSMIC LEGEND) based on solve counts and topic diversity.
-- **Radar Chart & Progress Rings** — visual breakdowns of topic coverage and difficulty distribution in the side panel.
-- **Achievement Badges** — unlockable milestones displayed on the user panel.
+- **Interactive 3D City** — powered by Three.js / React Three Fiber; pan, zoom, and rotate a procedural 10×10 city grid.
+- **100-Building Grid** — your profile sits at the center block, surrounded by 28 real legend coders (tourist, neal_wu, lee215…) and procedurally generated rivals filling all 100 plots.
+- **Fighter Card** — click any building or search any username to reveal a high-fidelity profile card with:
+  - Contest Rating, Global Ranking, Top %, Attended Contests
+  - Total Badges earned
+  - Difficulty breakdown bars (Easy / Medium / Hard)
+  - Power Level score and Fighter Class tier
+  - Battle simulator vs. random opponents
+- **Fighter Class Tiers** — `NOVICE → RECRUIT → WARRIOR → ELITE → CHAMPION → LEGEND` based on Hard problem count.
+- **Day / Night Mode** — toggle the city lighting between a sun-lit daytime and a neon-glowing nightscape.
+- **Hyperspace Transition** — cinematic warp-speed animation when entering the city.
 - **Recently Explored** — animated marquee of previously searched profiles, persisted in `localStorage`.
-- **Featured Users** — quick-launch cards for well-known competitive programmers.
+- **Featured Users** — quick-launch cards for well-known competitive programmers on the landing page.
 - **Shareable URLs** — profiles are accessible at `/u/{username}` with browser history support.
-- **Screenshot / Share** — capture the solar system view via `html2canvas`.
-- **Edge-Cached API Proxy** — Cloudflare Worker fetches LeetCode data with a 1-hour cache, keeping costs at $0.
+- **Mini-Games** — Higher or Lower, Tournament bracket, and Leaderboard games built into the Fighter Card.
+- **Graceful API Fallback** — if the LeetCode proxy API is slow or partially down, the app still renders with available data.
 
 ---
 
@@ -31,13 +37,13 @@ LeetCode Galaxy transforms a LeetCode user's coding statistics into a navigable 
 | 3D Engine | Three.js · React Three Fiber · `@react-three/drei` |
 | Post-processing | `@react-three/postprocessing` (Bloom) |
 | Animation | Framer Motion · `useFrame` (R3F) |
-| Styling | Tailwind CSS 3 · inline style objects |
+| Styling | Vanilla CSS + inline style objects |
 | Icons | `lucide-react` |
 | Screenshots | `html2canvas` |
 | Bundler | Vite 7 |
-| API Proxy | Cloudflare Workers (Wrangler) |
-| Deployment | Vercel (frontend) · Cloudflare Workers (API) |
-| Fonts | Orbitron · Share Tech Mono (Google Fonts) |
+| API Proxy | [Alfa LeetCode API](https://github.com/alfaarghya/alfa-leetcode-api) (public) |
+| Deployment | GitHub Pages |
+| Fonts | Orbitron · Share Tech Mono · JetBrains Mono (Google Fonts) |
 
 ---
 
@@ -46,33 +52,28 @@ LeetCode Galaxy transforms a LeetCode user's coding statistics into a navigable 
 ```
 leetcode-galaxy/
 ├── src/
-│   ├── App.jsx              # Root component — phase state, canvas + UI overlays
-│   ├── main.jsx             # Entry point
-│   ├── index.css            # Global keyframe animations & base styles
+│   ├── App.jsx                # Root — phase state machine, canvas + UI overlays
+│   ├── main.jsx               # Entry point
+│   ├── index.css              # Global keyframe animations & base styles
 │   ├── components/
-│   │   ├── GalaxyScene.jsx  # Phase 1 & 2: starfield, shooting stars, nebula
-│   │   ├── SolarSystem.jsx  # Phase 3: sun + orbiting planets composition
-│   │   ├── Sun.jsx          # Central star with distorted mesh & corona halos
-│   │   ├── Planet.jsx       # Topic sphere with glow shell and moons
-│   │   ├── Moon.jsx         # Small sphere colored by difficulty
-│   │   ├── LandingUI.jsx    # Search overlay, featured users, recent marquee
-│   │   ├── UserPanel.jsx    # Side panel — stats, power level, radar chart
-│   │   ├── TransitionOverlay.jsx  # Warp-speed zoom between phases
-│   │   ├── FloatingBeacon.jsx     # Clickable featured-user orbs
-│   │   └── Navbar.jsx       # Top navigation bar
+│   │   ├── CityScene.jsx      # 3D city grid — 100 blocks, buildings, labels
+│   │   ├── FighterCard.jsx    # Full profile card with stats, battles, games
+│   │   ├── GalaxyScene.jsx    # Background starfield & nebula effects
+│   │   ├── LandingUI.jsx      # Search overlay, featured users, recent marquee
+│   │   ├── UserPanel.jsx      # Side panel — city controls & stats
+│   │   ├── TransitionOverlay.jsx  # Hyperspace warp transition
+│   │   ├── FighterPanel.jsx   # Fighter comparison panel
+│   │   ├── GamesModal.jsx     # Mini-games (Higher/Lower, Tournament, Leaderboard)
+│   │   ├── Arena.jsx          # Battle arena component
+│   │   └── Navbar.jsx         # Top navigation bar
 │   ├── hooks/
-│   │   └── useLeetCode.js   # Fetches profile data from Cloudflare Worker
+│   │   └── useLeetCode.js     # Fetches profile data via Alfa LeetCode API
 │   └── utils/
-│       ├── dataMapper.js    # Transforms API data → 3D solar system model
-│       └── colors.js        # Color constants and palettes
-├── worker/
-│   ├── index.js             # Cloudflare Worker — GraphQL proxy with caching
-│   └── wrangler.toml        # Wrangler config
+│       ├── gameData.js        # Shared constants — CODERS dataset, calcPower, getFighterClass
+│       ├── dataMapper.js      # Transforms API data → city model
+│       └── colors.js          # Color constants and palettes
 ├── public/
-├── Dockerfile.frontend
-├── Dockerfile.worker
-├── docker-compose.yml
-├── DEPLOY.md                # Full deployment guide
+├── DEPLOY.md                  # Deployment guide
 ├── .env.example
 └── vite.config.js
 ```
@@ -94,23 +95,7 @@ cd leetcode-galaxy
 npm install
 ```
 
-### 2. Configure environment
-
-```bash
-cp .env.example .env.local
-```
-
-Open `.env.local` and set your Cloudflare Worker URL (see [Deployment](#-deployment) for how to get one):
-
-```env
-VITE_WORKER_URL=https://leetcode-galaxy-proxy.YOUR_ACCOUNT.workers.dev
-```
-
-Replace `YOUR_ACCOUNT` with your Cloudflare account subdomain (visible after running `wrangler deploy`).
-
-> **Local development shortcut:** Start the worker locally alongside the frontend (see Docker section below) — Wrangler defaults to `http://127.0.0.1:8787`.
-
-### 3. Start the development server
+### 2. Start the development server
 
 ```bash
 npm run dev
@@ -118,22 +103,7 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173) and search for any LeetCode username.
 
----
-
-## 🐳 Docker (Full-Stack Local Dev)
-
-Run the frontend and Cloudflare Worker together with a single command:
-
-```bash
-docker compose up
-```
-
-| Service | URL |
-|---|---|
-| Frontend (Vite HMR) | http://localhost:5173 |
-| Worker (Wrangler dev) | http://localhost:8787 |
-
-Hot-reloading is enabled for both services via volume mounts.
+> No environment variables are required — the app uses the public [Alfa LeetCode API](https://alfa-leetcode-api.onrender.com) proxy out of the box.
 
 ---
 
@@ -141,23 +111,21 @@ Hot-reloading is enabled for both services via volume mounts.
 
 ```
 Browser
-  └─► Vercel CDN (static React/Vite app)
-        └─► Cloudflare Worker (API proxy, 1-hr edge cache)
+  └─► GitHub Pages (static React/Vite app)
+        └─► Alfa LeetCode API (public proxy, Render)
               └─► LeetCode GraphQL API
 ```
 
-The Worker fires **3 parallel GraphQL queries** per unique username:
+The app fires **4 parallel API requests** per username:
 
 1. **Profile** — submission counts by difficulty, ranking, reputation.
-2. **Tags** — per-tag problem counts (advanced / intermediate / fundamental).
-3. **Recent** — last 10 submissions with title, status, and language.
+2. **Skill Stats** — per-tag problem counts (advanced / intermediate / fundamental).
+3. **Contest** — contest rating, global ranking, attended contests, top percentage.
+4. **Badges** — earned achievement badges.
 
-Responses are cached at the edge for one hour, so repeat searches are free and near-instant.
+Each request is wrapped in a `safeFetch` utility with automatic retry (exponential backoff) — if any secondary endpoint drops, the card still renders with whatever data succeeded.
 
-`dataMapper.js` converts the raw JSON into a solar system object consumed by the Three.js scene:
-
-- Top 8 tags → planets (orbit radius 18–70, size normalized 1.2–2.8).
-- Problems solved per tag → moons (3–13 per planet), difficulty colored.
+Results are cached in `localStorage` for 30 minutes to avoid redundant requests.
 
 ---
 
@@ -169,20 +137,19 @@ Responses are cached at the edge for one hour, so repeat searches are free and n
 | `npm run build` | Production build to `dist/` |
 | `npm run preview` | Preview the production build locally |
 | `npm run lint` | Run ESLint across the project |
-| `cd worker && npx wrangler dev` | Run the API proxy locally |
-| `cd worker && npx wrangler deploy` | Deploy the worker to Cloudflare |
 
 ---
 
 ## 🌐 Deployment
 
-See **[DEPLOY.md](./DEPLOY.md)** for the full step-by-step guide covering:
+The app is deployed on **GitHub Pages**. See **[DEPLOY.md](./DEPLOY.md)** for the full guide.
 
-- Deploying the Cloudflare Worker
-- Deploying the frontend to Vercel
-- Setting environment variables
-- Configuring a custom domain
-- Cost breakdown (spoiler: **$0/month** on the free tier)
+To deploy manually:
+
+```bash
+npm run build
+# Push the dist/ folder to the gh-pages branch
+```
 
 ---
 
