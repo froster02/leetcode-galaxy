@@ -61,25 +61,28 @@ export function useLeetCode() {
         }
 
         try {
-            // Using Alfa public API proxy to bypass LeetCode IP blocking/CORS
-            const [profileRes, statsRes, contestRes, badgesRes] = await Promise.all([
-                fetchWithRetry(`https://alfa-leetcode-api.onrender.com/userProfile/${encodeURIComponent(username)}`),
-                fetchWithRetry(`https://alfa-leetcode-api.onrender.com/skillStats/${encodeURIComponent(username)}`),
-                fetchWithRetry(`https://alfa-leetcode-api.onrender.com/${encodeURIComponent(username)}/contest`),
-                fetchWithRetry(`https://alfa-leetcode-api.onrender.com/${encodeURIComponent(username)}/badges`)
+
+            // Safe JSON parser block that won't blow up Promise.all if a sub-endpoint timeouts
+            const safeFetch = async (url) => {
+                try {
+                    const res = await fetchWithRetry(url);
+                    if (!res.ok) return {};
+                    return await res.json().catch(() => ({}));
+                } catch {
+                    return {};
+                }
+            };
+
+            const encodedUser = encodeURIComponent(username);
+            const [profileData, statsData, contestData, badgesData] = await Promise.all([
+                safeFetch(`https://alfa-leetcode-api.onrender.com/userProfile/${encodedUser}`),
+                safeFetch(`https://alfa-leetcode-api.onrender.com/skillStats/${encodedUser}`),
+                safeFetch(`https://alfa-leetcode-api.onrender.com/${encodedUser}/contest`),
+                safeFetch(`https://alfa-leetcode-api.onrender.com/${encodedUser}/badges`)
             ]);
 
-            if (!profileRes.ok || !statsRes.ok) {
-                throw new Error('Failed to fetch user data');
-            }
-
-            const profileData = await profileRes.json();
-            const statsData = await statsRes.json();
-            const contestData = await contestRes.json().catch(() => ({}));
-            const badgesData = await badgesRes.json().catch(() => ({}));
-
-            if (profileData.errors || !profileData.totalQuestions) {
-                throw new Error('User not found');
+            if (profileData.errors || Object.keys(profileData).length === 0 || !profileData.totalQuestions) {
+                throw new Error('User not found or Proxy API is asleep');
             }
 
             // Reconstruct the response to exactly match the Cloudflare Worker output shape
