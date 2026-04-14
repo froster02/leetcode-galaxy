@@ -4,6 +4,42 @@
 
 LeetCode Galaxy is an interactive 3D visualization platform that transforms LeetCode user statistics into an explorable solar system. Users search for a LeetCode profile and see their problem-solving data rendered as a sun (profile), planets (top coding topics), and moons (individual problems). The app uses a space/sci-fi theme throughout.
 
+---
+
+## AI Agent Constraints
+
+Read this section first. These rules prevent the most common hallucination and breakage patterns.
+
+### Behavioral Rules
+
+- Keep the **space/sci-fi aesthetic** consistent — dark backgrounds, glow effects, neon accent colors.
+- Prefer **inline style objects** for new component styles; use Tailwind for layout utilities.
+- When adding 3D elements, follow the existing `useRef` + `useFrame` animation pattern.
+- Do not introduce TypeScript, class components, or external state management libraries.
+- Do not add unnecessary abstractions — keep components self-contained.
+- When modifying the data pipeline, update both `worker/index.js` (GraphQL queries) and `utils/dataMapper.js` (transformation) as needed.
+- Respect the phase-based rendering system in `App.jsx` — new views must integrate with the existing `phase` state.
+- Test that `OrbitControls` interaction (pan, zoom, rotate) remains functional after 3D scene changes.
+
+### Token Reduction Rules
+
+1. Output **exact code diffs only**. Use `// ...existing code...` to skip unchanged blocks.
+2. **Never rewrite entire files.** Only provide the modified functions/lines.
+3. No conversational filler, pleasantries, or restatements of the question.
+4. When suggesting multiple changes in one file, show each change separately with line context.
+
+### Hallucination Prevention
+
+1. **Do NOT invent CSS classes** — only the ones listed in the "CSS Classes" section below exist.
+2. **Do NOT assume API fields** — refer strictly to the Worker and dataMapper response shapes documented in "Key Implementation Details".
+3. **Do NOT hallucinate component props** — check the actual component signature before passing props.
+4. **Do NOT add new npm dependencies** without being explicitly asked. The installed set is fixed.
+5. **Do NOT introduce**: TypeScript, class components, Context API, Redux, MobX, react-router, MUI, Chakra, styled-components, or CSS modules.
+6. **Do NOT create subdirectories** inside `src/components/` — keep structure flat.
+7. **Do NOT modify** `vercel.json`, `wrangler.toml`, or `eslint.config.js` unless explicitly asked.
+
+---
+
 ## Tech Stack
 
 - **Runtime**: React 19 with functional components and hooks (no class components)
@@ -18,6 +54,8 @@ LeetCode Galaxy is an interactive 3D visualization platform that transforms Leet
 - **Backend**: Cloudflare Workers (Wrangler) — a lightweight GraphQL proxy to LeetCode's API
 - **Deployment**: Vercel (frontend), Cloudflare Workers (API proxy), Docker support available
 - **Fonts**: Orbitron (headings), Share Tech Mono (monospace body text) via Google Fonts
+
+---
 
 ## Project Structure
 
@@ -55,6 +93,8 @@ worker/
 └── wrangler.toml        # Wrangler config: name="leetcode-galaxy-proxy"
 ```
 
+---
+
 ## Architecture & Data Flow
 
 ```
@@ -76,16 +116,22 @@ Response → dataMapper.js → Structured solar system object → React Three Fi
 | `transitionMsg` | string | Status text | Message shown during transition |
 
 ### URL Routing
+
 - Uses `window.history.pushState` (no router library)
 - Pattern: `/u/:username` → loads profile; `/` → landing
 - `popstate` listener handles browser back/forward
 
 ### Environment Variables
+
 - `VITE_WORKER_URL` — Cloudflare Worker URL (default: `https://leetcode-galaxy-proxy.workers.dev`)
+
+### Notes
 
 - No external state management library — state flows via props from `App.jsx` to children.
 - The Cloudflare Worker fires 3 parallel GraphQL queries (profile, tags, recent submissions), caches responses for 1 hour, and returns a single JSON payload.
 - `useLeetCode` hook adds a **client-side localStorage cache** with a 30-minute TTL on top of the Worker's edge cache.
+
+---
 
 ## Code Conventions
 
@@ -139,6 +185,29 @@ Response → dataMapper.js → Structured solar system object → React Three Fi
 - All components live in `src/components/` (flat structure, no subdirectories).
 - Import order: React → third-party libraries → local components → local utils/hooks → CSS.
 
+---
+
+## CSS Classes
+
+Do **NOT** invent CSS classes. Only these classes from `index.css` exist:
+
+| Class | Effect |
+|---|---|
+| `.noise-overlay` | Film grain texture overlay |
+| `.scanline-overlay` | Horizontal scanline effect |
+| `.glass-card` | Glassmorphism card with hover lift |
+| `.glitch-text` | Glitch effect — requires `data-text` attribute |
+| `.cyber-btn` | Ripple-expand hover effect |
+| `.gradient-border` | Animated gradient border on hover/focus |
+| `.cursor-particle` | Used by CursorTrail (programmatic, don't manually add) |
+| `.power-bar` | Shimmer animated progress bar |
+| `.animate-float` | 3s float animation |
+| `.animate-pulse-glow` | 2s glow pulse |
+
+Available keyframe animations: `pulse-glow`, `shoot`, `float`, `warp`, `blink`, `glitch-1`, `glitch-2`, `scanline`, `gradient-shift`, `orbit-pulse`, `fade-in-up`, `shimmer`, `spin-slow`, `holo-flicker`, `energy-pulse`.
+
+---
+
 ## Key Implementation Details
 
 ### Phase System (App.jsx)
@@ -183,9 +252,17 @@ Phase 3 has 3 sub-views controlled by `viewMode`:
 - Moons per planet: `min(ceil(problemsSolved / 5), 10)` solved + 3 unsolved.
 - Moon difficulty distribution follows the user's easy/medium/hard ratio.
 
+**Common traps with this shape:**
+- `mappedData.planets` is an **array** — do not treat it as an object/map.
+- `viewMode` is one of `'galaxy'`, `'city'`, `'card'` — no other values exist.
+- `phase` is `1`, `2`, or `3` — never `0` and never a string.
+- CityScene renders its **own Canvas** — it replaces the main Canvas, it is not inside it.
+- The project uses `window.history.pushState` — there is **NO** react-router.
+
 ### Worker API Response Shape (worker/index.js)
 
-The Worker returns this JSON to the frontend:
+The Worker returns this JSON to the frontend (`GET ?username=<username>`):
+
 ```js
 {
   profile: { matchedUser: { username, submitStats: { acSubmissionNum }, profile: { ranking, reputation, starRating } } },
@@ -193,9 +270,9 @@ The Worker returns this JSON to the frontend:
   recent: { recentSubmissionList: [ { title, titleSlug, timestamp, statusDisplay, lang } ] }
 }
 ```
-- `GET ?username=<username>` — only parameter
-- Returns 404 if `matchedUser` is null
-- CORS is fully open (`Access-Control-Allow-Origin: *`)
+
+- Returns 404 if `matchedUser` is null.
+- CORS is fully open (`Access-Control-Allow-Origin: *`).
 
 ### Error Handling
 
@@ -203,25 +280,9 @@ The Worker returns this JSON to the frontend:
 - `App.jsx` falls back to `generateMockData(username)` if the worker fetch fails.
 - Worker returns HTTP 500 with error message on GraphQL failure.
 
-### CSS Classes Available (index.css)
-
-Do NOT invent CSS classes. Only these exist:
-- `.noise-overlay` — film grain texture overlay
-- `.scanline-overlay` — horizontal scanline effect
-- `.glass-card` — glassmorphism card with hover lift
-- `.glitch-text` — needs `data-text` attribute for glitch ::before/::after
-- `.cyber-btn` — ripple-expand hover effect
-- `.gradient-border` — animated gradient border on hover/focus
-- `.cursor-particle` — used by CursorTrail (programmatic, don't manually add)
-- `.power-bar` — shimmer animated progress bar
-- `.animate-float` — 3s float animation
-- `.animate-pulse-glow` — 2s glow pulse
-
-Keyframe animations: `pulse-glow`, `shoot`, `float`, `warp`, `blink`, `glitch-1`, `glitch-2`, `scanline`, `gradient-shift`, `orbit-pulse`, `fade-in-up`, `shimmer`, `spin-slow`, `holo-flicker`, `energy-pulse`.
-
 ### Animations
 
-- **CSS keyframes** in `index.css`: see list above.
+- **CSS keyframes** in `index.css`: see the CSS Classes section above.
 - **Framer Motion**: `motion.*` wrappers with `initial`/`animate`/`exit` + `AnimatePresence` for enter/exit transitions.
 - **Three.js `useFrame`**: continuous orbital rotation, scale pulsing, glow oscillation.
 
@@ -230,6 +291,8 @@ Keyframe animations: `pulse-glow`, `shoot`, `float`, `warp`, `blink`, `glitch-1`
 - **Frontend**: Vercel — `vercel.json` has SPA rewrite (`/* → /index.html`), security headers, and asset caching.
 - **Worker**: `cd worker && npx wrangler deploy` — deployed as `leetcode-galaxy-proxy`.
 - **Docker**: `docker-compose.yml` with `frontend` (port 5173) and `worker` (port 8787) services.
+
+---
 
 ## Commands
 
@@ -240,38 +303,3 @@ Keyframe animations: `pulse-glow`, `shoot`, `float`, `warp`, `blink`, `glitch-1`
 | Preview build | `npm run preview` |
 | Lint | `npm run lint` |
 | Deploy worker | `cd worker && npx wrangler deploy` |
-
-## Guidelines for AI Assistance
-
-- Keep the **space/sci-fi aesthetic** consistent — dark backgrounds, glow effects, neon accent colors.
-- Prefer **inline style objects** for new component styles; use Tailwind for layout utilities.
-- When adding 3D elements, follow the existing `useRef` + `useFrame` animation pattern.
-- Do not introduce TypeScript, class components, or external state management libraries.
-- Do not add unnecessary abstractions — keep components self-contained.
-- When modifying the data pipeline, update both `worker/index.js` (GraphQL queries) and `utils/dataMapper.js` (transformation) as needed.
-- Respect the phase-based rendering system in `App.jsx` — new views should integrate with the existing phase state.
-- Test that `OrbitControls` interaction (pan, zoom, rotate) remains functional after 3D scene changes.
-
-## AI Agent Constraints (Token Efficiency & Hallucination Prevention)
-
-### Token Reduction Rules
-1. Output **exact code diffs only**. Use `// ...existing code...` to skip unchanged blocks.
-2. **Never rewrite entire files.** Only provide the modified functions/lines.
-3. No conversational filler, pleasantries, or restatements of the question.
-4. When suggesting multiple changes in one file, show each change separately with line context.
-
-### Hallucination Prevention
-1. **Do NOT invent CSS classes** — only the ones listed in the "CSS Classes Available" section above exist.
-2. **Do NOT assume API fields** — refer strictly to the Worker and dataMapper response shapes documented above.
-3. **Do NOT hallucinate component props** — check the actual component signature before passing props.
-4. **Do NOT add new npm dependencies** without being explicitly asked. The installed set is fixed.
-5. **Do NOT introduce**: TypeScript, class components, Context API, Redux, MobX, react-router, MUI, Chakra, styled-components, or CSS modules.
-6. **Do NOT create subdirectories** inside `src/components/` — keep structure flat.
-7. **Do NOT modify** `vercel.json`, `wrangler.toml`, or `eslint.config.js` unless explicitly asked.
-
-### Common Traps to Avoid
-- `mappedData.planets` is an **array** — do not treat it as an object/map.
-- `viewMode` is one of `'galaxy'`, `'city'`, `'card'` — no other values exist.
-- `phase` is `1`, `2`, or `3` — never `0` and never a string.
-- CityScene renders its **own Canvas** — it replaces the main Canvas, it is not inside it.
-- The project uses `window.history.pushState` — there is NO react-router.
