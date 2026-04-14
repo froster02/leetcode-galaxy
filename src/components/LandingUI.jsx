@@ -429,15 +429,15 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                         }} />
                         <div style={{
                             position: 'relative', display: 'flex', alignItems: 'center',
-                            background: '#060b14', borderRadius: 16, overflow: 'hidden',
-                            border: '1px solid rgba(255,255,255,0.06)',
+                            background: 'var(--input-bg)', borderRadius: 16, overflow: 'hidden',
+                            border: '1px solid var(--section-border)',
                         }}>
                             <div style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 width: 48, flexShrink: 0,
                             }}>
                                 <Search size={16} style={{
-                                    color: focused ? '#00f5d4' : '#374151',
+                                    color: focused ? 'var(--accent)' : 'var(--text-muted)',
                                     transition: 'color 0.3s ease',
                                 }} />
                             </div>
@@ -450,7 +450,7 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                                 onBlur={() => setFocused(false)}
                                 placeholder={isMobile ? 'USERNAME' : 'ENTER LEETCODE USERNAME'}
                                 style={{
-                                    flex: 1, background: 'transparent', color: '#fff',
+                                    flex: 1, background: 'transparent', color: 'var(--input-color)',
                                     border: 'none', padding: isMobile ? '14px 0' : '16px 0',
                                     fontFamily: FONT_MONO, fontSize: isMobile ? 12 : 14, outline: 'none',
                                     letterSpacing: '0.05em',
@@ -482,14 +482,14 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                             display: 'flex', justifyContent: 'space-between',
                             marginTop: 10, padding: '0 8px',
                         }}>
-                            <span style={{ color: '#374151', fontSize: 10, fontFamily: FONT_MONO, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ color: 'var(--text-muted)', fontSize: 10, fontFamily: FONT_MONO, display: 'flex', alignItems: 'center', gap: 4 }}>
                                 Press <kbd style={{
-                                    background: 'rgba(255,255,255,0.06)', padding: '2px 7px',
-                                    borderRadius: 4, color: '#6b7280', fontSize: 10,
-                                    border: '1px solid rgba(255,255,255,0.08)',
+                                    background: 'var(--kbd-bg)', padding: '2px 7px',
+                                    borderRadius: 4, color: 'var(--text-secondary)', fontSize: 10,
+                                    border: '1px solid var(--kbd-border)',
                                 }}>/</kbd> to focus
                             </span>
-                            <span style={{ color: '#374131', fontSize: 10, fontFamily: FONT_MONO }}>
+                            <span style={{ color: 'var(--text-muted)', fontSize: 10, fontFamily: FONT_MONO }}>
                                 Enter to launch
                             </span>
                         </div>
@@ -506,13 +506,13 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                             style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                         >
                             <div style={{
-                                color: '#374151', fontSize: 10, fontFamily: FONT_MONO,
+                                color: 'var(--text-muted)', fontSize: 10, fontFamily: FONT_MONO,
                                 marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8,
                                 letterSpacing: '0.12em',
                             }}>
-                                <span style={{ width: 20, height: 1, background: '#1f2937' }} />
+                                <span style={{ width: 20, height: 1, background: 'var(--section-border)' }} />
                                 RECENTLY EXPLORED
-                                <span style={{ width: 20, height: 1, background: '#1f2937' }} />
+                                <span style={{ width: 20, height: 1, background: 'var(--section-border)' }} />
                             </div>
                             <RecentChips recent={recentlyExplored} onSelect={onSearch} />
                         </motion.div>

@@ -252,7 +252,7 @@ function AchievementBadge({ icon: Icon, label, color, unlocked, delay }) {
 }
 
 /* ── Main component ──────────────────────────────────── */
-export default function UserPanel({ data, onBack, viewMode, onViewModeChange, isNight, onToggleNight, isLightMode, onToggleTheme }) {
+export default function UserPanel({ data, onBack, viewMode, onViewModeChange, isNight, onToggleNight }) {
     const [quickSearch, setQuickSearch] = useState('');
     const [showSearch, setShowSearch] = useState(false);
     const [activeTab, setActiveTab] = useState('stats');
@@ -309,26 +309,26 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
         display: 'flex', alignItems: 'center', gap: 6,
         padding: isMobile ? '6px 10px' : '8px 14px', borderRadius: 10, fontFamily: FONT_MONO,
         fontSize: isMobile ? 10 : 11, fontWeight: 700,
-        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(0,245,212,0.2)', color: '#00f5d4', cursor: 'pointer',
+        background: 'var(--btn-bg)', backdropFilter: 'blur(16px)',
+        border: '1px solid var(--accent-border)', color: 'var(--accent)', cursor: 'pointer',
         transition: 'all 0.3s ease',
     };
 
     const tabStyle = (active) => ({
         flex: 1, padding: '10px 0', fontFamily: FONT_MONO,
         fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer',
-        color: active ? '#00f5d4' : '#374151', background: active ? 'rgba(0,245,212,0.04)' : 'transparent',
-        border: 'none', borderBottom: active ? '2px solid #00f5d4' : '2px solid transparent',
+        color: active ? 'var(--accent)' : 'var(--text-muted)', background: active ? 'var(--topic-row-bg)' : 'transparent',
+        border: 'none', borderBottom: active ? '2px solid var(--accent)' : '2px solid transparent',
         transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
     });
 
     const sectionTitle = (text) => (
         <h4 style={{
-            fontFamily: FONT_ORBIT, fontSize: 10, color: '#00f5d4',
+            fontFamily: FONT_ORBIT, fontSize: 10, color: 'var(--accent)',
             marginBottom: 12, letterSpacing: '0.15em', textTransform: 'uppercase',
             display: 'flex', alignItems: 'center', gap: 8,
         }}>
-            <span style={{ width: 12, height: 1, background: '#00f5d4', opacity: 0.3 }} />
+            <span style={{ width: 12, height: 1, background: 'var(--accent)', opacity: 0.3 }} />
             {text}
         </h4>
     );
@@ -363,7 +363,7 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                 </button>
 
                 {/* View mode toggles */}
-                <div style={{ display: 'flex', gap: 3, background: 'rgba(0,0,0,0.5)', borderRadius: 10, padding: 2, border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ display: 'flex', gap: 3, background: 'var(--btn-bg)', borderRadius: 10, padding: 2, border: '1px solid var(--section-border)' }}>
                     {[
                         { mode: 'city', icon: Building2, label: 'CITY' },
                         { mode: 'card', icon: Swords, label: 'CARD' },
@@ -406,14 +406,8 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                 )}
             </AnimatePresence>
 
-            {/* Top right — theme toggle + night toggle + share */}
+            {/* Top right — night toggle + share */}
             <div style={{ position: 'absolute', top: isMobile ? 8 : 16, right: isMobile ? 8 : 16, pointerEvents: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
-                {/* Light/Dark Mode Toggle */}
-                {onToggleTheme && (
-                    <button onClick={onToggleTheme} className="theme-toggle-btn" title={isLightMode ? 'Switch to Dark Mode' : 'Switch to Light Mode'}>
-                        {isLightMode ? '🌙' : '☀️'}
-                    </button>
-                )}
                 {viewMode === 'city' && (
                     <button onClick={onToggleNight} className="cyber-btn" style={{ ...btnStyle, borderColor: 'rgba(245,166,35,0.25)', color: isNight ? '#f5a623' : '#8b5cf6' }}>
                         {isNight ? <Sun size={14} /> : <Moon size={14} />}
@@ -449,10 +443,10 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                     pointerEvents: 'auto',
                     display: 'flex', flexDirection: 'column',
                     overflow: 'hidden',
-                    background: 'rgba(3,5,8,0.92)',
-                    border: '1px solid rgba(0,245,212,0.1)',
+                    background: 'var(--panel-bg)',
+                    border: '1px solid var(--accent-border)',
                     backdropFilter: 'blur(30px)',
-                    boxShadow: '0 8px 60px rgba(0,0,0,0.6), 0 0 40px rgba(0,245,212,0.03), inset 0 1px 0 rgba(255,255,255,0.03)',
+                    boxShadow: '0 8px 60px rgba(0,0,0,0.3), 0 0 40px rgba(0,245,212,0.03), inset 0 1px 0 rgba(255,255,255,0.03)',
                 }}
             >
                 {/* Mobile drag handle */}
@@ -472,7 +466,7 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                 )}
                 {/* ── Profile Header ── */}
                 <div style={{
-                    padding: isMobile ? '14px 16px 12px' : '20px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                    padding: isMobile ? '14px 16px 12px' : '20px 20px 16px', borderBottom: '1px solid var(--section-border)',
                     background: 'linear-gradient(180deg, rgba(0,245,212,0.03) 0%, transparent 100%)',
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 16, marginBottom: 12 }}>
@@ -544,7 +538,7 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                 </div>
 
                 {/* ── Tabs ── */}
-                <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ display: 'flex', borderBottom: '1px solid var(--section-border)' }}>
                     {['stats', 'topics', 'activity'].map(tab => (
                         <button key={tab} onClick={() => setActiveTab(tab)} style={tabStyle(activeTab === tab)}>
                             {tab}
@@ -599,7 +593,7 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                                                     boxShadow: `0 0 8px ${c}60`, flexShrink: 0,
                                                 }} />
                                                 <span style={{
-                                                    flex: 1, fontSize: 11, fontFamily: FONT_MONO, color: '#d1d5db',
+                                                    flex: 1, fontSize: 11, fontFamily: FONT_MONO, color: 'var(--text-secondary)',
                                                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                                                 }}>{p.name}</span>
                                                 <span style={{
@@ -628,8 +622,8 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                                                 transition={{ delay: i * 0.05 }}
                                                 style={{
                                                     display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 10,
-                                                    background: 'rgba(255,255,255,0.02)',
-                                                    border: '1px solid rgba(255,255,255,0.03)',
+                                                    background: 'var(--topic-row-bg)',
+                                                    border: '1px solid var(--topic-row-border)',
                                                     transition: 'all 0.3s ease',
                                                 }}
                                                 onMouseEnter={(e) => {
@@ -638,8 +632,8 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                                                     e.currentTarget.style.transform = 'translateX(4px)';
                                                 }}
                                                 onMouseLeave={(e) => {
-                                                    e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                                                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.03)';
+                                                    e.currentTarget.style.background = 'var(--topic-row-bg)';
+                                                    e.currentTarget.style.borderColor = 'var(--topic-row-border)';
                                                     e.currentTarget.style.transform = 'translateX(0)';
                                                 }}
                                             >
@@ -649,7 +643,7 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                                                 }} />
                                                 <div style={{ flex: 1, minWidth: 0 }}>
                                                     <div style={{
-                                                        fontSize: 11, fontFamily: FONT_MONO, color: '#d1d5db',
+                                                        fontSize: 11, fontFamily: FONT_MONO, color: 'var(--text-secondary)',
                                                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4,
                                                     }}>{p.name}</div>
                                                     <div className="power-bar" style={{ width: '100%', background: 'rgba(255,255,255,0.03)', height: 3, borderRadius: 2, overflow: 'hidden' }}>
@@ -674,7 +668,7 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                         {activeTab === 'activity' && (
                             <motion.div key="activity" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                                 {sectionTitle('Recent Submissions')}
-                                {recent.length === 0 && <p style={{ color: '#374151', fontSize: 11, fontStyle: 'italic' }}>No recent activity.</p>}
+                                {recent.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 11, fontStyle: 'italic' }}>No recent activity.</p>}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                     {recent.map((sub, idx) => {
                                         const ac = sub.statusDisplay === 'Accepted';
@@ -704,7 +698,7 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                                                     boxShadow: `0 0 8px ${ac ? '#23d18b' : '#ff3860'}`,
                                                 }} />
                                                 <span style={{
-                                                    flex: 1, fontSize: 12, fontFamily: FONT_MONO, color: '#d1d5db',
+                                                    flex: 1, fontSize: 12, fontFamily: FONT_MONO, color: 'var(--text-secondary)',
                                                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                                                 }} title={sub.title}>{sub.title}</span>
                                                 <span style={{
@@ -724,10 +718,10 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
 
                 {/* ── Footer ── */}
                 <div style={{
-                    padding: isMobile ? '8px 14px' : '10px 20px', borderTop: '1px solid rgba(255,255,255,0.04)',
+                    padding: isMobile ? '8px 14px' : '10px 20px', borderTop: '1px solid var(--section-border)',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
-                    <span style={{ color: '#1f2937', fontSize: 9, fontFamily: FONT_MONO, letterSpacing: '0.1em' }}>
+                    <span style={{ color: 'var(--text-ultra-muted)', fontSize: 9, fontFamily: FONT_MONO, letterSpacing: '0.1em' }}>
                         {isMobile ? 'PINCH TO ZOOM' : (viewMode === 'city' ? 'DRAG TO EXPLORE CITY' : 'DRAG TO ORBIT // SCROLL TO ZOOM')}
                     </span>
                     <span style={{

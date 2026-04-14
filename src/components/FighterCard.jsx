@@ -122,7 +122,7 @@ const LEGENDS_SHORT = [
     { u: 'neetcode', easy: 460, med: 780, hard: 220 },
 ];
 
-export default function FighterCard({ data, username, onBack, isLightMode, onToggleTheme }) {
+export default function FighterCard({ data, username, onBack }) {
     const [vsOpponent, setVsOpponent] = useState(null);
 
     if (!data) return null;
@@ -169,14 +169,7 @@ export default function FighterCard({ data, username, onBack, isLightMode, onTog
                         onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
                         ← BACK
                     </button>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ fontFamily: 'Orbitron, sans-serif', fontSize: 10, letterSpacing: '0.2em', color: 'var(--text-muted)' }}>FIGHTER PROFILE</div>
-                        {onToggleTheme && (
-                            <button onClick={onToggleTheme} className="theme-toggle-btn" title="Toggle light/dark mode">
-                                {isLightMode ? '🌙' : '☀️'}
-                            </button>
-                        )}
-                    </div>
+                    <div style={{ fontFamily: 'Orbitron, sans-serif', fontSize: 10, letterSpacing: '0.2em', color: 'var(--text-muted)' }}>FIGHTER PROFILE</div>
                 </div>
 
                 {/* Hero: Power Level + Class */}

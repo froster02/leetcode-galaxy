@@ -91,7 +91,6 @@ function App() {
   const [phase, setPhase] = useState(1);
   const [viewMode, setViewMode] = useState('city');
   const [isNight, setIsNight] = useState(true);
-  const [isLightMode, setIsLightMode] = useState(false);
   const [transitionStage, setTransitionStage] = useState(0);
   const [transitionMsg, setTransitionMsg] = useState('');
   const [mappedData, setMappedData] = useState(null);
@@ -100,11 +99,6 @@ function App() {
     catch { return []; }
   });
   const { fetchProfile } = useLeetCode();
-
-  // Sync data-theme attribute on root
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', isLightMode ? 'light' : 'dark');
-  }, [isLightMode]);
 
   const addToRecent = useCallback((username) => {
     setRecentlyExplored(prev => {
@@ -303,8 +297,6 @@ function App() {
                 data={mappedData}
                 username={mappedData?.username}
                 onBack={() => setViewMode('city')}
-                isLightMode={isLightMode}
-                onToggleTheme={() => setIsLightMode(m => !m)}
               />
             </motion.div>
           )}
@@ -312,7 +304,7 @@ function App() {
       </div>
 
       {/* UI Overlays */}
-      {phase === 1 && <LandingUI onSearch={handleSearch} recentlyExplored={recentlyExplored} isLightMode={isLightMode} onToggleTheme={() => setIsLightMode(m => !m)} />}
+      {phase === 1 && <LandingUI onSearch={handleSearch} recentlyExplored={recentlyExplored} />}
       <TransitionOverlay stage={transitionStage} message={transitionMsg} />
       {phase === 3 && viewMode !== 'card' && (
         <UserPanel
@@ -322,8 +314,6 @@ function App() {
           onViewModeChange={setViewMode}
           isNight={isNight}
           onToggleNight={() => setIsNight(n => !n)}
-          isLightMode={isLightMode}
-          onToggleTheme={() => setIsLightMode(m => !m)}
         />
       )}
     </div>

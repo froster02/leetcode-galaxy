@@ -17,23 +17,20 @@
   --card-header-bg: rgba(255, 255, 255, 0.02);
   --scrollbar-thumb: rgba(0, 245, 212, 0.25);
   --scrollbar-thumb-hover: rgba(0, 245, 212, 0.45);
+  /* Component-level tokens */
+  --panel-bg: rgba(3, 5, 8, 0.92);
+  --btn-bg: rgba(0, 0, 0, 0.6);
+  --input-bg: #060b14;
+  --input-color: #ffffff;
+  --input-placeholder: #374151;
+  --accent-border: rgba(0, 245, 212, 0.2);
+  --section-border: rgba(255, 255, 255, 0.04);
+  --topic-row-bg: rgba(255, 255, 255, 0.02);
+  --topic-row-border: rgba(255, 255, 255, 0.03);
+  --kbd-bg: rgba(255, 255, 255, 0.06);
+  --kbd-border: rgba(255, 255, 255, 0.08);
 }
 
-[data-theme="light"] {
-  --bg-primary: #f0f4f8;
-  --bg-surface: #ffffff;
-  --bg-surface-2: #f8fafc;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --text-ultra-muted: #cbd5e1;
-  --border: rgba(0, 0, 0, 0.08);
-  --border-subtle: rgba(0, 0, 0, 0.05);
-  --accent: #0891b2;
-  --card-header-bg: rgba(0, 0, 0, 0.02);
-  --scrollbar-thumb: rgba(8, 145, 178, 0.3);
-  --scrollbar-thumb-hover: rgba(8, 145, 178, 0.5);
-}
 
 *,
 *::before,
@@ -403,32 +400,4 @@ body,
   transition: border-color 0.2s;
 }
 
-/* Light mode theme toggle button */
-.theme-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 16px;
-}
 
-.theme-toggle-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-/* Smooth color transitions on theme switch */
-[data-theme="light"] .noise-overlay {
-  opacity: 0.015;
-}
-
-[data-theme="light"] .scanline-overlay {
-  opacity: 0;
-}
