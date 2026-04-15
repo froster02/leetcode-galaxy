@@ -1,31 +1,31 @@
 # 🌌 LeetCode Galaxy
 
-> **Explore your LeetCode journey as an interactive 3D city.**
-
-LeetCode Galaxy transforms any LeetCode user's competitive stats into a living, breathing neon city. Your profile becomes a glowing tower at the center, surrounded by 100 rival buildings — each representing a real competitive programmer or procedurally generated coder. Click any building to instantly inspect their Fighter Card.
-
-🔗 **Live:** [froster02.github.io/leetcode-galaxy](https://froster02.github.io/leetcode-galaxy/)
+LeetCode Galaxy is an interactive sci-fi visualization app that turns LeetCode profile data into a cinematic experience:
+- galaxy-style landing + search flow
+- hyperspace transition
+- explorable 3D coding city
+- detailed Fighter Card with stats, power tiers, and mini-games
 
 ---
 
-## ✨ Features
+## ✨ Current Features
 
-- **Interactive 3D City** — powered by Three.js / React Three Fiber; pan, zoom, and rotate a procedural 10×10 city grid.
-- **100-Building Grid** — your profile sits at the center block, surrounded by 28 real legend coders (tourist, neal_wu, lee215…) and procedurally generated rivals filling all 100 plots.
-- **Fighter Card** — click any building or search any username to reveal a high-fidelity profile card with:
-  - Contest Rating, Global Ranking, Top %, Attended Contests
-  - Total Badges earned
-  - Difficulty breakdown bars (Easy / Medium / Hard)
-  - Power Level score and Fighter Class tier
-  - Battle simulator vs. random opponents
-- **Fighter Class Tiers** — `NOVICE → RECRUIT → WARRIOR → ELITE → CHAMPION → LEGEND` based on Hard problem count.
-- **Day / Night Mode** — toggle the city lighting between a sun-lit daytime and a neon-glowing nightscape.
-- **Hyperspace Transition** — cinematic warp-speed animation when entering the city.
-- **Recently Explored** — animated marquee of previously searched profiles, persisted in `localStorage`.
-- **Featured Users** — quick-launch cards for well-known competitive programmers on the landing page.
-- **Shareable URLs** — profiles are accessible at `/u/{username}` with browser history support.
-- **Mini-Games** — Higher or Lower, Tournament bracket, and Leaderboard games built into the Fighter Card.
-- **Graceful API Fallback** — if the LeetCode proxy API is slow or partially down, the app still renders with available data.
+- **3-phase experience** in `App.jsx`:
+  - `phase 1`: landing UI + galaxy background
+  - `phase 2`: transition overlay
+  - `phase 3`: city view and fighter-card flow
+- **Interactive City Scene** (pan/zoom/rotate + user selection)
+- **Fighter Card view** with:
+  - solved counts by difficulty
+  - contest metrics (rating, rank, attended, top %)
+  - badges count
+  - power-level/tier presentation
+- **Mini-games** via modal UI
+- **Recently explored users** persisted in `localStorage`
+- **Shareable profile route** support through `/u/:username` via `window.history.pushState`
+- **Graceful fallback behavior**:
+  - network/API failures can fall back to generated mock data
+  - client caching with TTL avoids repeated fetches
 
 ---
 
@@ -33,138 +33,115 @@ LeetCode Galaxy transforms any LeetCode user's competitive stats into a living, 
 
 | Layer | Technology |
 |---|---|
-| UI Framework | React 19 (functional components + hooks) |
-| 3D Engine | Three.js · React Three Fiber · `@react-three/drei` |
-| Post-processing | `@react-three/postprocessing` (Bloom) |
-| Animation | Framer Motion · `useFrame` (R3F) |
-| Styling | Vanilla CSS + inline style objects |
-| Icons | `lucide-react` |
-| Screenshots | `html2canvas` |
-| Bundler | Vite 7 |
-| API Proxy | [Alfa LeetCode API](https://github.com/alfaarghya/alfa-leetcode-api) (public) |
-| Deployment | GitHub Pages |
-| Fonts | Orbitron · Share Tech Mono · JetBrains Mono (Google Fonts) |
+| Frontend | React 19 + hooks |
+| 3D | Three.js via `@react-three/fiber` + `@react-three/drei` |
+| Motion | Framer Motion |
+| Styling | Tailwind utilities + inline style objects + global CSS |
+| Build | Vite 7 |
+| Lint | ESLint 9 (flat config) |
+| Data Source (frontend) | Alfa LeetCode API endpoints |
+| Optional Proxy Service | Cloudflare Worker in `worker/` |
 
 ---
 
 ## 🗂 Project Structure
 
-```
+```bash
 leetcode-galaxy/
 ├── src/
-│   ├── App.jsx                # Root — phase state machine, canvas + UI overlays
-│   ├── main.jsx               # Entry point
-│   ├── index.css              # Global keyframe animations & base styles
+│   ├── App.jsx
 │   ├── components/
-│   │   ├── CityScene.jsx      # 3D city grid — 100 blocks, buildings, labels
-│   │   ├── FighterCard.jsx    # Full profile card with stats, battles, games
-│   │   ├── GalaxyScene.jsx    # Background starfield & nebula effects
-│   │   ├── LandingUI.jsx      # Search overlay, featured users, recent marquee
-│   │   ├── UserPanel.jsx      # Side panel — city controls & stats
-│   │   ├── TransitionOverlay.jsx  # Hyperspace warp transition
-│   │   ├── FighterPanel.jsx   # Fighter comparison panel
-│   │   ├── GamesModal.jsx     # Mini-games (Higher/Lower, Tournament, Leaderboard)
-│   │   ├── Arena.jsx          # Battle arena component
-│   │   └── Navbar.jsx         # Top navigation bar
+│   │   ├── LandingUI.jsx
+│   │   ├── GalaxyScene.jsx
+│   │   ├── TransitionOverlay.jsx
+│   │   ├── CityScene.jsx
+│   │   ├── UserPanel.jsx
+│   │   ├── FighterCard.jsx
+│   │   ├── GamesModal.jsx
+│   │   ├── Arena.jsx
+│   │   └── ...
 │   ├── hooks/
-│   │   └── useLeetCode.js     # Fetches profile data via Alfa LeetCode API
+│   │   └── useLeetCode.js
 │   └── utils/
-│       ├── gameData.js        # Shared constants — CODERS dataset, calcPower, getFighterClass
-│       ├── dataMapper.js      # Transforms API data → city model
-│       └── colors.js          # Color constants and palettes
-├── public/
-├── DEPLOY.md                  # Deployment guide
+│       └── dataMapper.js
+├── worker/
+│   ├── index.js
+│   └── wrangler.toml
+├── DEPLOY.md
 ├── .env.example
-└── vite.config.js
+└── package.json
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Local Development
 
 ### Prerequisites
+- Node.js 18+
+- npm 9+
 
-- Node.js ≥ 18
-- npm ≥ 9
-
-### 1. Clone & install
-
+### Install
 ```bash
-git clone https://github.com/froster02/leetcode-galaxy.git
-cd leetcode-galaxy
 npm install
 ```
 
-### 2. Start the development server
-
+### Run
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) and search for any LeetCode username.
-
-> No environment variables are required — the app uses the public [Alfa LeetCode API](https://alfa-leetcode-api.onrender.com) proxy out of the box.
+Open `http://localhost:5173`.
 
 ---
 
-## 🏗 Architecture
+## 🔧 Environment Variables
 
-```
-Browser
-  └─► GitHub Pages (static React/Vite app)
-        └─► Alfa LeetCode API (public proxy, Render)
-              └─► LeetCode GraphQL API
-```
+Frontend supports:
 
-The app fires **4 parallel API requests** per username:
+- `VITE_WORKER_URL` (see `.env.example`)
 
-1. **Profile** — submission counts by difficulty, ranking, reputation.
-2. **Skill Stats** — per-tag problem counts (advanced / intermediate / fundamental).
-3. **Contest** — contest rating, global ranking, attended contests, top percentage.
-4. **Badges** — earned achievement badges.
-
-Each request is wrapped in a `safeFetch` utility with automatic retry (exponential backoff) — if any secondary endpoint drops, the card still renders with whatever data succeeded.
-
-Results are cached in `localStorage` for 30 minutes to avoid redundant requests.
+If not set, the app uses its default URL setting from `useLeetCode.js`.
 
 ---
 
-## 📦 Available Commands
+## 🏗 Data Flow (Current Frontend Path)
+
+For each username search, the frontend gathers data from multiple endpoints in parallel, maps the result into the app model (`mapLeetCodeDataToCity`), and renders city/fighter views.
+
+High-level response model used by the app:
+- profile + solved stats
+- tag/topic counts
+- recent submissions
+- contest info
+- badges info
+
+Caching:
+- localStorage cache in `useLeetCode.js`
+- TTL-based invalidation
+
+---
+
+## 📦 Commands
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Start Vite dev server with HMR |
-| `npm run build` | Production build to `dist/` |
-| `npm run preview` | Preview the production build locally |
-| `npm run lint` | Run ESLint across the project |
+| `npm run dev` | Start local dev server |
+| `npm run build` | Production build |
+| `npm run preview` | Preview built app |
+| `npm run lint` | Run ESLint |
 
 ---
 
 ## 🌐 Deployment
 
-The app is deployed on **GitHub Pages**. See **[DEPLOY.md](./DEPLOY.md)** for the full guide.
-
-To deploy manually:
-
-```bash
-npm run build
-# Push the dist/ folder to the gh-pages branch
-```
+- Frontend + worker deployment steps are documented in **[DEPLOY.md](./DEPLOY.md)**.
+- Worker deployment lives under `worker/` and uses Wrangler.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to open an issue or submit a pull request.
-
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Commit your changes: `git commit -m 'Add my feature'`
-4. Push to the branch: `git push origin feature/my-feature`
-5. Open a Pull Request
-
----
-
-## 📄 License
-
-This project is open source. See the repository for license details.
+2. Create a branch
+3. Commit your changes
+4. Open a pull request
