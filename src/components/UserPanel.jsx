@@ -25,12 +25,12 @@ function calculatePowerLevel(stats, districts) {
 }
 
 function getPowerTier(level) {
-    if (level >= 5000) return { name: 'COSMIC LEGEND', color: '#fbbf24', icon: Crown };
-    if (level >= 3000) return { name: 'GALAXY MASTER', color: '#a78bfa', icon: Sparkles };
-    if (level >= 1500) return { name: 'STAR WARRIOR', color: '#00f5d4', icon: Swords };
-    if (level >= 800) return { name: 'ORBIT RIDER', color: '#3b82f6', icon: Shield };
+    if (level >= 5000) return { name: 'HAIL MARY HERO', color: '#fbbf24', icon: Crown };
+    if (level >= 3000) return { name: 'ENDURANCE CAPTAIN', color: '#a78bfa', icon: Sparkles };
+    if (level >= 1500) return { name: 'RANGER PILOT', color: '#00f5d4', icon: Swords };
+    if (level >= 800) return { name: 'LAZARUS CREW', color: '#3b82f6', icon: Shield };
     if (level >= 300) return { name: 'SPACE CADET', color: '#f5a623', icon: Star };
-    return { name: 'EXPLORER', color: '#6b7280', icon: Target };
+    return { name: 'EXPLORER', color: '#8a94a3', icon: Target };
 }
 
 /* ── Animated Power Level Display ────────────────────── */
@@ -78,12 +78,12 @@ function PowerLevelDisplay({ level }) {
                     {displayed.toLocaleString()}
                 </div>
                 <div style={{
-                    fontFamily: FONT_MONO, fontSize: 8, color: '#6b7280',
+                    fontFamily: FONT_MONO, fontSize: 8, color: 'var(--text-muted)',
                     letterSpacing: '0.15em',
                 }}>{tier.name}</div>
             </div>
             <div style={{
-                fontFamily: FONT_MONO, fontSize: 9, color: '#374151',
+                fontFamily: FONT_MONO, fontSize: 9, color: 'var(--text-ultra-muted)',
                 letterSpacing: '0.1em', textAlign: 'right',
             }}>
                 POWER<br />LEVEL
@@ -120,7 +120,7 @@ function ProgressRing({ value, max, size = 100, color = '#00f5d4', label }) {
                 alignItems: 'center', justifyContent: 'center',
             }}>
                 <span style={{ fontFamily: FONT_ORBIT, fontSize: 22, fontWeight: 900, color }}>{value}</span>
-                {label && <span style={{ fontFamily: FONT_MONO, fontSize: 8, color: '#6b7280', letterSpacing: '0.15em', marginTop: 2 }}>{label}</span>}
+                {label && <span style={{ fontFamily: FONT_MONO, fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.15em', marginTop: 2 }}>{label}</span>}
             </div>
         </div>
     );
@@ -202,7 +202,7 @@ function DiffBar({ label, count, total, color, index }) {
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4, fontFamily: FONT_ORBIT, fontWeight: 700 }}>
                 <span style={{ color, letterSpacing: '0.08em' }}>{label}</span>
-                <span style={{ color: '#9ca3af', fontFamily: FONT_MONO }}>{count}</span>
+                <span style={{ color: 'var(--text-secondary)', fontFamily: FONT_MONO }}>{count}</span>
             </div>
             <div className="power-bar" style={{ width: '100%', background: 'rgba(255,255,255,0.03)', height: 6, borderRadius: 3, overflow: 'hidden' }}>
                 <motion.div
@@ -241,10 +241,10 @@ function AchievementBadge({ icon: Icon, label, color, unlocked, delay }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: unlocked ? `${color}15` : 'rgba(255,255,255,0.02)',
             }}>
-                <Icon size={14} style={{ color: unlocked ? color : '#374151' }} />
+                <Icon size={14} style={{ color: unlocked ? color : 'var(--text-ultra-muted)' }} />
             </div>
             <span style={{
-                fontFamily: FONT_MONO, fontSize: 7, color: unlocked ? color : '#374151',
+                fontFamily: FONT_MONO, fontSize: 7, color: unlocked ? color : 'var(--text-ultra-muted)',
                 letterSpacing: '0.08em', textAlign: 'center',
             }}>{label}</span>
         </motion.div>
@@ -490,7 +490,7 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                                 {username.toUpperCase()}
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: '#6b7280' }}>
+                                <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: 'var(--text-muted)' }}>
                                     {ranking > 0 ? `RANK #${ranking.toLocaleString()}` : 'EXPLORER'}
                                 </span>
                                 <span style={{
@@ -529,7 +529,7 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                                     <Icon size={13} color={color} />
                                     <div>
                                         <div style={{ fontFamily: FONT_ORBIT, fontSize: 13, fontWeight: 700, color }}>{count}</div>
-                                        <div style={{ fontFamily: FONT_MONO, fontSize: 7, color: '#6b7280', letterSpacing: '0.08em' }}>{label}</div>
+                                        <div style={{ fontFamily: FONT_MONO, fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.08em' }}>{label}</div>
                                     </div>
                                 </motion.div>
                             ))}

@@ -8,9 +8,14 @@
   --bg-surface: #0f0f14;
   --bg-surface-2: #0d0d12;
   --text-primary: #f0f0f0;
-  --text-secondary: #aaa;
-  --text-muted: #555;
-  --text-ultra-muted: #444;
+  --text-secondary: #c4cbd4;
+  --text-muted: #8a94a3;
+  --text-ultra-muted: #6a7380;
+  /* Interstellar / PHM themed accents */
+  --amber: #f5a623;
+  --astrophage: #ff6b35;
+  --rocky: #d4c168;
+  --tars: #d1d5db;
   --border: rgba(255, 255, 255, 0.07);
   --border-subtle: rgba(255, 255, 255, 0.05);
   --accent: #00f5d4;
@@ -172,6 +177,32 @@ body,
   0% { transform: scale(0.95); opacity: 0.5; }
   50% { transform: scale(1.05); opacity: 1; }
   100% { transform: scale(0.95); opacity: 0.5; }
+}
+
+/* TARS monolith slab — subtle slow tilt */
+@keyframes tars-idle {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-2px) rotate(0.3deg); }
+}
+
+/* Astrophage shimmer (PHM easter egg) */
+@keyframes astrophage-pulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(255, 107, 53, 0.4), inset 0 0 8px rgba(255, 107, 53, 0.15); }
+  50% { box-shadow: 0 0 28px rgba(255, 107, 53, 0.8), inset 0 0 14px rgba(255, 107, 53, 0.3); }
+}
+
+/* Ticker fade for rotating status messages */
+@keyframes ticker-fade {
+  0% { opacity: 0; transform: translateY(4px); }
+  12% { opacity: 1; transform: translateY(0); }
+  88% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-4px); }
+}
+
+/* Rocky frequency wave */
+@keyframes rocky-wave {
+  0%, 100% { transform: scaleX(0.3); }
+  50% { transform: scaleX(1); }
 }
 
 .animate-float {

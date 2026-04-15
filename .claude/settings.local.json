@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(rtk find:*)",
-      "Bash(rtk npm:*)"
+      "Bash(rtk npm:*)",
+      "Bash(rtk curl *)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('apiEndpointsLink',''\\)\\)\")"
     ]
   }
 }

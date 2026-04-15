@@ -15,6 +15,38 @@ const MAX_RECENT = 12;
 const PARTICLE_COUNT = 12;
 const PARTICLE_COLORS = ['#00f5d4', '#8b5cf6', '#3b82f6', '#f5a623'];
 
+/* ── Rotating status ticker messages (PHM + Interstellar easter eggs) ── */
+const STATUS_TICKS = [
+  'SYS.ONLINE // HAIL_MARY // READY',
+  'TARS: HUMOR 75% // HONESTY 90% // TRUST ∞',
+  'QUESTION? ... ANSWER: YES. AMAZE.',
+  'DO NOT GO GENTLE INTO THAT GOOD NIGHT',
+  'PETROVA LINE BREACHED // TAUMOEBA ACTIVE',
+  'GARGANTUA HORIZON // 1hr = 7yrs',
+  'COOPER... WE\'VE GOT A WAVE',
+  'FIST MY BUMP // ROCKY ONLINE',
+  'EUREKA — MURPH, IT\'S YOU',
+  'ASTROPHAGE CONTAINMENT: NOMINAL',
+];
+const TRANSITION_LINES = {
+  lock: [
+    'LOCKING COORDINATES... // ENDURANCE SPIN-UP',
+    'LOCKING COORDINATES... // HAIL MARY AWAKEN',
+    'LOCKING COORDINATES... // TARS, ARE YOU WITH ME?',
+  ],
+  map: [
+    'MAPPING STAR SYSTEM... // TAU CETI BEARING LOCKED',
+    'MAPPING STAR SYSTEM... // CROSS-REFERENCING ASTROPHAGE GRID',
+    'MAPPING STAR SYSTEM... // PLOTTING WORMHOLE VECTOR',
+  ],
+  jump: [
+    'INITIATING HYPERSPACE JUMP... // GARGANTUA SLINGSHOT',
+    'INITIATING HYPERSPACE JUMP... // ERIDANI 40 INTERCEPT',
+    'INITIATING HYPERSPACE JUMP... // PLAN A, MURPH',
+  ],
+};
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
 /* ── Cursor trail particle system ──────────────────────── */
 function CursorTrail() {
   const particles = useRef([]);
@@ -87,6 +119,99 @@ function CursorTrail() {
   return <div ref={containerRef} style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9997 }} />;
 }
 
+/* ── TARS monolith HUD (Interstellar easter egg) ──────── */
+function TarsHud() {
+  const [settings, setSettings] = useState({ humor: 75, honesty: 90, trust: 100 });
+  const [openQuote, setOpenQuote] = useState(false);
+  const quips = [
+    '"Cooper, this is no time for caution."',
+    '"Everybody good? Plenty of slaves for my robot colony?"',
+    '"I have a cue light I can use when I\'m joking if you like."',
+    '"That\'s impossible." — "No. It\'s necessary."',
+  ];
+  const [quip, setQuip] = useState(quips[0]);
+
+  const cycle = (key) => {
+    setSettings(s => ({ ...s, [key]: s[key] >= 100 ? 0 : s[key] + 25 }));
+    setQuip(quips[Math.floor(Math.random() * quips.length)]);
+    setOpenQuote(true);
+    setTimeout(() => setOpenQuote(false), 2800);
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', top: 16, right: 16, zIndex: 60,
+      display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8,
+      fontFamily: '"Share Tech Mono", monospace', pointerEvents: 'auto',
+    }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 14px', borderRadius: 6,
+        background: 'linear-gradient(180deg, #0a0e14 0%, #06090d 100%)',
+        border: '1px solid rgba(209,213,219,0.15)',
+        boxShadow: '0 0 24px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)',
+        animation: 'tars-idle 6s ease-in-out infinite',
+      }}>
+        {/* Monolith slab */}
+        <div style={{
+          width: 18, height: 42, borderRadius: 2,
+          background: 'linear-gradient(180deg, #1a1d24 0%, #0b0d12 100%)',
+          border: '1px solid rgba(209,213,219,0.25)',
+          boxShadow: 'inset 0 0 4px rgba(255,255,255,0.08)',
+          position: 'relative',
+        }}>
+          <span style={{
+            position: 'absolute', top: '50%', left: '50%',
+            width: 2, height: 18, background: 'var(--amber)', borderRadius: 1,
+            transform: 'translate(-50%, -50%)',
+            boxShadow: '0 0 8px var(--amber)',
+            animation: 'energy-pulse 2.5s ease infinite',
+          }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 9, letterSpacing: '0.12em' }}>
+          <div style={{ color: 'var(--tars)', fontWeight: 700, marginBottom: 2 }}>TARS</div>
+          {[
+            ['HUMOR', 'humor', '#f5a623'],
+            ['HONESTY', 'honesty', '#00f5d4'],
+            ['TRUST', 'trust', '#8b5cf6'],
+          ].map(([label, key, color]) => (
+            <button
+              key={key}
+              onClick={() => cycle(key)}
+              title={`Adjust ${label.toLowerCase()}`}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 9, letterSpacing: '0.12em',
+              }}
+            >
+              <span style={{ minWidth: 54, textAlign: 'left' }}>{label}</span>
+              <span style={{ color, fontWeight: 700, minWidth: 34, textAlign: 'right' }}>{settings[key]}%</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <AnimatePresence>
+        {openQuote && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            style={{
+              maxWidth: 260, padding: '8px 12px', borderRadius: 6,
+              background: 'rgba(245,166,35,0.08)', border: '1px solid rgba(245,166,35,0.25)',
+              color: 'var(--amber)', fontSize: 10, letterSpacing: '0.06em',
+              textShadow: '0 0 8px rgba(245,166,35,0.3)',
+            }}
+          >
+            {quip}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function App() {
   const [phase, setPhase] = useState(1);
   const [viewMode, setViewMode] = useState('city');
@@ -98,7 +223,26 @@ function App() {
     try { return JSON.parse(localStorage.getItem('recentExplorers') || '[]'); }
     catch { return []; }
   });
+  const [tickIndex, setTickIndex] = useState(0);
   const { fetchProfile } = useLeetCode();
+
+  // Rotating status bar ticker
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTickIndex(i => (i + 1) % STATUS_TICKS.length);
+    }, 4200);
+    return () => clearInterval(id);
+  }, []);
+
+  // Console easter egg — Rocky + TARS greeting
+  useEffect(() => {
+    console.log(
+      '%c QUESTION? \n%c TARS :: HUMOR 75% // HONESTY 90% // LEETCODE_GALAXY v2.0 \n%c Try typing "rocky" or "tars" into the search. ',
+      'background:#d4c168;color:#030508;font-weight:700;padding:4px 10px;border-radius:4px;font-family:monospace;',
+      'color:#00f5d4;font-family:monospace;padding:4px 0;',
+      'color:#f5a623;font-style:italic;font-family:monospace;'
+    );
+  }, []);
 
   const addToRecent = useCallback((username) => {
     setRecentlyExplored(prev => {
@@ -113,7 +257,7 @@ function App() {
     setPhase(2);
     setViewMode('city');
     setTransitionStage(1);
-    setTransitionMsg('LOCKING COORDINATES...');
+    setTransitionMsg(pick(TRANSITION_LINES.lock));
 
     if (pushUrl) {
       window.history.pushState({}, '', `/u/${encodeURIComponent(username)}`);
@@ -121,7 +265,7 @@ function App() {
 
     try {
       await new Promise(r => setTimeout(r, 800));
-      setTransitionMsg('MAPPING STAR SYSTEM...');
+      setTransitionMsg(pick(TRANSITION_LINES.map));
 
       let rawData;
       try {
@@ -136,7 +280,7 @@ function App() {
       addToRecent(username);
 
       setTransitionStage(2);
-      setTransitionMsg('INITIATING HYPERSPACE JUMP...');
+      setTransitionMsg(pick(TRANSITION_LINES.jump));
 
       setTimeout(() => {
         setPhase(3);
@@ -165,7 +309,7 @@ function App() {
     const structuredData = mapLeetCodeDataToCity(rawData);
     setMappedData(structuredData);
     addToRecent(username);
-    
+
     setTransitionStage(0);
     setViewMode('card');
     window.history.pushState({}, '', `/u/${encodeURIComponent(username)}`);
@@ -233,23 +377,37 @@ function App() {
         pointerEvents: 'none', zIndex: 50,
       }} />
 
-      {/* Status bar */}
+      {/* Status bar — rotating PHM/Interstellar ticker */}
       <div className="status-bar-bottom" style={{
         position: 'fixed', bottom: 12, left: 16, zIndex: 50, pointerEvents: 'none',
         display: 'flex', alignItems: 'center', gap: 8,
-        fontFamily: '"Share Tech Mono", monospace', fontSize: 9, color: 'rgba(0,245,212,0.3)',
+        fontFamily: '"Share Tech Mono", monospace', fontSize: 9.5, color: 'rgba(0,245,212,0.55)',
         letterSpacing: '0.15em',
       }}>
         <span style={{
           width: 6, height: 6, borderRadius: '50%', background: '#00f5d4',
           boxShadow: '0 0 8px #00f5d4', animation: 'energy-pulse 2s ease infinite',
         }} />
-        SYS.ONLINE // PHASE_{phase} // LEETCODE_GALAXY_v2.0
+        <span style={{ opacity: 0.85 }}>PHASE_{phase}</span>
+        <span style={{ color: 'rgba(255,255,255,0.15)' }}>//</span>
+        <span
+          key={tickIndex}
+          style={{
+            color: 'var(--amber)',
+            animation: 'ticker-fade 4.2s ease-in-out both',
+            textShadow: '0 0 8px rgba(245,166,35,0.35)',
+          }}
+        >
+          {STATUS_TICKS[tickIndex]}
+        </span>
       </div>
+
+      {/* TARS monolith HUD — top right on landing */}
+      {phase === 1 && <TarsHud />}
 
       {/* 3D Canvas */}
       {phase === 3 && viewMode === 'city' ? (
-        <CityCanvas data={mappedData} isNight={isNight} onSelectUser={handleQuickInspect} />
+        <CityCanvas data={mappedData} isNight={isNight} onSelectUser={handleQuickInspect} recentlyExplored={recentlyExplored} />
       ) : (
         <Canvas
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}

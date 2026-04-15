@@ -152,7 +152,7 @@ function StatCard({ icon: Icon, value, label, color, delay }) {
                 <Counter target={value} duration={2500} />
             </div>
             <div style={{
-                color: '#4b5563', fontSize: 9, fontFamily: FONT_MONO,
+                color: 'var(--text-muted)', fontSize: 9, fontFamily: FONT_MONO,
                 letterSpacing: '0.15em',
             }}>{label}</div>
         </motion.div>
@@ -244,9 +244,9 @@ function CommandHint() {
                 marginTop: 24,
             }}
         >
-            <Terminal size={12} style={{ color: '#374151' }} />
-            <span style={{ color: '#374151', fontSize: 10, fontFamily: FONT_MONO, letterSpacing: '0.1em' }}>
-                TIP: CLICK GLOWING BEACONS IN THE GALAXY TO EXPLORE
+            <Terminal size={12} style={{ color: 'var(--text-muted)' }} />
+            <span style={{ color: 'var(--text-muted)', fontSize: 10, fontFamily: FONT_MONO, letterSpacing: '0.1em' }}>
+                TIP: TRY "rocky", "tars", "murph", "cooper", OR "hail mary"
             </span>
         </motion.div>
     );
@@ -267,9 +267,20 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
         return () => window.removeEventListener('resize', check);
     }, []);
 
+    const [eggType, setEggType] = useState(null);
+
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (username.trim()) onSearch(username.trim());
+        const val = username.trim();
+        if (!val) return;
+        const lower = val.toLowerCase();
+        if (lower === 'rocky' || lower === 'tars' || lower === 'murph' || lower === 'cooper' || lower === 'hail mary') {
+            setEggType(lower);
+            setUsername('');
+            setTimeout(() => setEggType(null), 4800);
+            return;
+        }
+        onSearch(val);
     };
 
     useEffect(() => {
@@ -325,8 +336,8 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                     }}
                 >
                     <Sparkles size={12} style={{ color: '#a78bfa' }} />
-                    <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: '#a78bfa', letterSpacing: '0.1em' }}>
-                        v2.0 — NOW WITH HYPERSPACE
+                    <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: '#c4b5fd', letterSpacing: '0.1em' }}>
+                        v2.0 — HAIL MARY // ENDURANCE
                     </span>
                     <span style={{
                         width: 6, height: 6, borderRadius: '50%', background: '#23d18b',
@@ -388,7 +399,7 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                         fontSize: 13, textAlign: 'center', letterSpacing: '0.18em', height: 24,
                     }}
                 >
-                    <TypeWriter text="YOUR CODING UNIVERSE — VISUALIZED IN 3D" delay={35} />
+                    <TypeWriter text="YOUR CODING UNIVERSE — 29 LIGHTYEARS FROM EARTH" delay={35} />
                 </motion.p>
 
                 {/* ── Stats row ── */}
@@ -527,15 +538,15 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                     style={{ marginTop: 28, width: '100%' }}
                 >
                     <div style={{
-                        textAlign: 'center', color: '#374151', fontSize: 10,
+                        textAlign: 'center', color: 'var(--text-muted)', fontSize: 10,
                         fontFamily: FONT_MONO, letterSpacing: '0.15em',
                         marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
                     }}>
-                        <span style={{ height: 1, width: 60, background: 'linear-gradient(90deg, transparent, #1f2937)' }} />
-                        <Star size={10} style={{ color: '#374151' }} />
-                        LEGENDARY GALAXIES
-                        <Star size={10} style={{ color: '#374151' }} />
-                        <span style={{ height: 1, width: 60, background: 'linear-gradient(90deg, #1f2937, transparent)' }} />
+                        <span style={{ height: 1, width: 60, background: 'linear-gradient(90deg, transparent, rgba(148,163,184,0.3))' }} />
+                        <Star size={10} style={{ color: 'var(--amber)' }} />
+                        LEGENDARY EXPLORERS
+                        <Star size={10} style={{ color: 'var(--amber)' }} />
+                        <span style={{ height: 1, width: 60, background: 'linear-gradient(90deg, rgba(148,163,184,0.3), transparent)' }} />
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: isMobile ? 6 : 8 }}>
                         {FEATURED.slice(0, isMobile ? 4 : FEATURED.length).map((user, i) => (
@@ -547,6 +558,99 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                 {/* ── Hint ── */}
                 {!isMobile && <CommandHint />}
             </motion.div>
+
+            {/* ── Easter egg overlays ── */}
+            <AnimatePresence>
+                {eggType && <EasterEggOverlay type={eggType} />}
+            </AnimatePresence>
         </div>
+    );
+}
+
+/* ── Easter egg overlay — PHM + Interstellar references ── */
+function EasterEggOverlay({ type }) {
+    const content = {
+        rocky: {
+            color: '#d4c168',
+            title: 'AMAZE.',
+            body: 'QUESTION? ... ANSWER: YES.\nFIST MY BUMP, HUMAN ENGINEER.',
+            sub: '— Rocky, Eridani 40',
+        },
+        tars: {
+            color: '#d1d5db',
+            title: 'HUMOR SETTING: 100%',
+            body: 'EVERYBODY GOOD? PLENTY OF SLAVES\nFOR MY ROBOT COLONY?',
+            sub: '— TARS, Endurance mission',
+        },
+        murph: {
+            color: '#00f5d4',
+            title: 'EUREKA.',
+            body: 'DO NOT GO GENTLE INTO THAT GOOD NIGHT.\nRAGE, RAGE AGAINST THE DYING OF THE LIGHT.',
+            sub: '— Murph Cooper',
+        },
+        cooper: {
+            color: '#f5a623',
+            title: "WE'VE GOT A WAVE.",
+            body: "LOVE IS THE ONE THING\nTHAT TRANSCENDS TIME AND SPACE.",
+            sub: '— Cooper, Endurance',
+        },
+        'hail mary': {
+            color: '#ff6b35',
+            title: 'HAIL MARY ONLINE',
+            body: 'ASTROPHAGE CONTAINMENT: NOMINAL\nTAUMOEBA INCUBATION: ACTIVE',
+            sub: '— Dr. Ryland Grace',
+        },
+    }[type];
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+                position: 'fixed', inset: 0, zIndex: 100,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                pointerEvents: 'none',
+                background: `radial-gradient(ellipse at center, ${content.color}18 0%, transparent 60%)`,
+            }}
+        >
+            <div style={{
+                padding: '28px 44px', borderRadius: 4,
+                background: 'linear-gradient(180deg, rgba(6,9,13,0.95), rgba(3,5,8,0.95))',
+                border: `1px solid ${content.color}60`,
+                boxShadow: `0 0 60px ${content.color}40, inset 0 0 40px ${content.color}08`,
+                textAlign: 'center', fontFamily: FONT_MONO,
+                animation: type === 'hail mary' ? 'astrophage-pulse 1.6s ease-in-out infinite' : 'none',
+            }}>
+                <div style={{
+                    fontFamily: FONT_ORBIT, fontSize: 32, fontWeight: 900,
+                    color: content.color, letterSpacing: '0.2em', marginBottom: 14,
+                    textShadow: `0 0 20px ${content.color}80`,
+                }}>{content.title}</div>
+                <div style={{
+                    color: 'var(--text-secondary)', fontSize: 13, letterSpacing: '0.08em',
+                    lineHeight: 1.8, marginBottom: 16, whiteSpace: 'pre-line',
+                }}>{content.body}</div>
+                <div style={{
+                    color: content.color, fontSize: 10, letterSpacing: '0.15em',
+                    fontStyle: 'italic', opacity: 0.75,
+                }}>{content.sub}</div>
+                {type === 'rocky' && (
+                    <div style={{
+                        marginTop: 18, display: 'flex', justifyContent: 'center', gap: 4, height: 18,
+                    }}>
+                        {[0, 1, 2, 3, 4, 5, 6].map(i => (
+                            <span key={i} style={{
+                                width: 3, height: '100%', background: content.color, borderRadius: 1,
+                                animation: `rocky-wave 0.6s ease-in-out infinite ${i * 0.08}s`,
+                                transformOrigin: 'center',
+                                boxShadow: `0 0 6px ${content.color}`,
+                            }} />
+                        ))}
+                    </div>
+                )}
+            </div>
+        </motion.div>
     );
 }
