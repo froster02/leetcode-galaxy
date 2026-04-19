@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo, useEffect } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
@@ -421,41 +421,34 @@ function CityCamera() {
 /* ─────────────────── Smooth Scene Lighting & Fog ─────────────────── */
 function SceneLighting({ isNight, totalWidth }) {
     const { scene } = useThree();
+    const ambRef = useRef();
+    const dirRef1 = useRef();
+    const dirRef2 = useRef();
+    const ptRef = useRef();
     const bgTarget = useMemo(() => new THREE.Color(isNight ? '#020308' : '#05060a'), [isNight]);
     const ambTargetColor = useMemo(() => new THREE.Color(isNight ? '#1111aa' : '#2020ff'), [isNight]);
 
-    useFrame((state, delta) => {
+    useFrame((_, delta) => {
         const d = Math.min(delta * 2, 1);
-        // Background & Fog Lerp
-        scene.background = scene.background || new THREE.Color('#020308');
-        scene.background.lerp(bgTarget, d);
+        if (scene.background) scene.background.lerp(bgTarget, d);
         if (scene.fog) scene.fog.color.lerp(bgTarget, d);
 
-        // Light intensities
-        scene.traverse((obj) => {
-            if (obj.isAmbientLight) {
-                obj.intensity += ((isNight ? 0.08 : 0.15) - obj.intensity) * d;
-                obj.color.lerp(ambTargetColor, d);
-            }
-            if (obj.isDirectionalLight && obj.position.x > 0) { // Main dir
-                obj.intensity += ((isNight ? 0.15 : 0.4) - obj.intensity) * d;
-            }
-            if (obj.isDirectionalLight && obj.position.x < 0) { // Side dir
-                obj.intensity += ((isNight ? 0.08 : 0.2) - obj.intensity) * d;
-            }
-            if (obj.isPointLight) {
-                obj.intensity += ((isNight ? 0.4 : 0.6) - obj.intensity) * d;
-            }
-        });
+        if (ambRef.current) {
+            ambRef.current.intensity += ((isNight ? 0.08 : 0.15) - ambRef.current.intensity) * d;
+            ambRef.current.color.lerp(ambTargetColor, d);
+        }
+        if (dirRef1.current) dirRef1.current.intensity += ((isNight ? 0.15 : 0.4) - dirRef1.current.intensity) * d;
+        if (dirRef2.current) dirRef2.current.intensity += ((isNight ? 0.08 : 0.2) - dirRef2.current.intensity) * d;
+        if (ptRef.current) ptRef.current.intensity += ((isNight ? 0.4 : 0.6) - ptRef.current.intensity) * d;
     });
 
     return (
         <group>
             <fog attach="fog" args={['#020308', 30, totalWidth * 0.7]} />
-            <ambientLight intensity={0.15} color="#2020ff" />
-            <directionalLight position={[30, 40, 30]} intensity={0.4} color="#ffffff" castShadow />
-            <directionalLight position={[-20, 30, -20]} intensity={0.2} color="#8080ff" />
-            <pointLight position={[0, 10, 0]} intensity={0.6} color="#00f5d4" distance={60} />
+            <ambientLight ref={ambRef} intensity={0.15} color="#2020ff" />
+            <directionalLight ref={dirRef1} position={[30, 40, 30]} intensity={0.4} color="#ffffff" castShadow />
+            <directionalLight ref={dirRef2} position={[-20, 30, -20]} intensity={0.2} color="#8080ff" />
+            <pointLight ref={ptRef} position={[0, 10, 0]} intensity={0.6} color="#00f5d4" distance={60} />
         </group>
     );
 }

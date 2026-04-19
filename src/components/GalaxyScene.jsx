@@ -148,6 +148,7 @@ export default function GalaxyScene({ isTransitioning, onSelectUser }) {
     const groupRef = useRef();
     const { camera } = useThree();
     const mouseRef = useRef({ x: 0, y: 0 });
+    const transitionTarget = useRef(new THREE.Vector3(0, 5, 20));
     const [shootingStars, setShootingStars] = React.useState([]);
     const shootingStarKey = useRef(0);
 
@@ -229,7 +230,7 @@ export default function GalaxyScene({ isTransitioning, onSelectUser }) {
         }
 
         if (isTransitioning) {
-            state.camera.position.lerp(new THREE.Vector3(0, 5, 20), 0.025);
+            state.camera.position.lerp(transitionTarget.current, 0.025);
             state.camera.lookAt(0, 0, 0);
         }
     });

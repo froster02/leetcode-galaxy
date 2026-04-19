@@ -130,12 +130,16 @@ function TarsHud() {
     '"That\'s impossible." — "No. It\'s necessary."',
   ];
   const [quip, setQuip] = useState(quips[0]);
+  const quoteTimerRef = useRef(null);
+
+  useEffect(() => () => clearTimeout(quoteTimerRef.current), []);
 
   const cycle = (key) => {
     setSettings(s => ({ ...s, [key]: s[key] >= 100 ? 0 : s[key] + 25 }));
     setQuip(quips[Math.floor(Math.random() * quips.length)]);
     setOpenQuote(true);
-    setTimeout(() => setOpenQuote(false), 2800);
+    clearTimeout(quoteTimerRef.current);
+    quoteTimerRef.current = setTimeout(() => setOpenQuote(false), 2800);
   };
 
   return (
@@ -219,6 +223,7 @@ function App() {
   const [transitionStage, setTransitionStage] = useState(0);
   const [transitionMsg, setTransitionMsg] = useState('');
   const [mappedData, setMappedData] = useState(null);
+  const transitionTimerRef = useRef(null);
   const [recentlyExplored, setRecentlyExplored] = useState(() => {
     try { return JSON.parse(localStorage.getItem('recentExplorers') || '[]'); }
     catch { return []; }
@@ -282,7 +287,7 @@ function App() {
       setTransitionStage(2);
       setTransitionMsg(pick(TRANSITION_LINES.jump));
 
-      setTimeout(() => {
+      transitionTimerRef.current = setTimeout(() => {
         setPhase(3);
         setTransitionStage(0);
       }, 1800);
@@ -316,7 +321,9 @@ function App() {
   }, [fetchProfile, addToRecent]);
 
   const handleBack = useCallback((pushUrl = true) => {
+    clearTimeout(transitionTimerRef.current);
     setPhase(1);
+    setTransitionStage(0);
     setMappedData(null);
     setViewMode('city');
     if (pushUrl) {

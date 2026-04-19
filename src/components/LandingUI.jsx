@@ -10,15 +10,17 @@ const FONT_MONO = '"Share Tech Mono", monospace';
 function Counter({ target, duration = 2000 }) {
     const [count, setCount] = useState(0);
     useEffect(() => {
+        let rafId;
         const start = performance.now();
         const tick = (now) => {
             const elapsed = now - start;
             const progress = Math.min(elapsed / duration, 1);
             const eased = 1 - Math.pow(1 - progress, 3);
             setCount(Math.floor(eased * target));
-            if (progress < 1) requestAnimationFrame(tick);
+            if (progress < 1) rafId = requestAnimationFrame(tick);
         };
-        requestAnimationFrame(tick);
+        rafId = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(rafId);
     }, [target, duration]);
     return <span>{count.toLocaleString()}</span>;
 }

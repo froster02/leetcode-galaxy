@@ -75,10 +75,10 @@ export function useLeetCode() {
 
             const encodedUser = encodeURIComponent(username);
             const [profileData, statsData, contestData, badgesData] = await Promise.all([
-                safeFetch(`https://alfa-leetcode-api.onrender.com/userProfile/${encodedUser}`),
-                safeFetch(`https://alfa-leetcode-api.onrender.com/skillStats/${encodedUser}`),
-                safeFetch(`https://alfa-leetcode-api.onrender.com/${encodedUser}/contest`),
-                safeFetch(`https://alfa-leetcode-api.onrender.com/${encodedUser}/badges`)
+                safeFetch(`${WORKER_URL}/userProfile/${encodedUser}`),
+                safeFetch(`${WORKER_URL}/skillStats/${encodedUser}`),
+                safeFetch(`${WORKER_URL}/${encodedUser}/contest`),
+                safeFetch(`${WORKER_URL}/${encodedUser}/badges`)
             ]);
 
             if (profileData.errors || Object.keys(profileData).length === 0 || !profileData.totalQuestions) {
