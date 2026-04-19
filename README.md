@@ -1,147 +1,129 @@
-# 🌌 LeetCode Galaxy
+# LeetCode Galaxy
 
-LeetCode Galaxy is an interactive sci-fi visualization app that turns LeetCode profile data into a cinematic experience:
-- galaxy-style landing + search flow
-- hyperspace transition
-- explorable 3D coding city
-- detailed Fighter Card with stats, power tiers, and mini-games
+An interactive sci-fi visualization that transforms any LeetCode profile into a living, breathing cyberpunk city — complete with tiered neon buildings, car traffic, an aurora, and an Interstellar-inspired ambient soundtrack.
 
 ---
 
-## ✨ Current Features
+## Features
 
-- **3-phase experience** in `App.jsx`:
-  - `phase 1`: landing UI + galaxy background
-  - `phase 2`: transition overlay
-  - `phase 3`: city view and fighter-card flow
-- **Interactive City Scene** (pan/zoom/rotate + user selection)
-- **Fighter Card view** with:
-  - solved counts by difficulty
-  - contest metrics (rating, rank, attended, top %)
-  - badges count
-  - power-level/tier presentation
-- **Mini-games** via modal UI
-- **Recently explored users** persisted in `localStorage`
-- **Shareable profile route** support through `/u/:username` via `window.history.pushState`
-- **Graceful fallback behavior**:
-  - network/API failures can fall back to generated mock data
-  - client caching with TTL avoids repeated fetches
+### 3-Phase Experience
+- **Phase 1 — Galaxy Landing**: animated star field, search bar, recently explored users
+- **Phase 2 — Hyperspace Transition**: cinematic overlay with synthesized warp sounds
+- **Phase 3 — City + Card**: full interactive 3D city or Fighter Card view
+
+### 3D City
+- 10×10 procedural grid — each block represents a LeetCode user
+- Building height/color driven by Easy/Medium/Hard solve ratios
+- Tiered pyramid buildings — 1–3 stacked tiers based on height
+- Facade neon stripes — horizontal emissive bands
+- Rooftop spires with blinking beacon on tall buildings
+- 24 deterministic car lights moving through the street grid
+- Aurora — 3 additive overlay planes breathing above the city
+- User beacon — teal beam + crystal + pulsing ring marks the searched user
+- Night/Day toggle with smooth lighting lerp
+
+### Side Panel
+- Power Level with animated counter + tier badge (Explorer → Hail Mary Hero)
+- Circular progress ring, difficulty breakdown bars, SVG radar chart
+- Tabbed view: Stats / Topics / Activity
+- Achievement badges (First Solve, 100 Club, Hard 10, Polyglot, Top 10K, Legend)
+- Quick search, view mode toggle, night toggle, share screenshot
+
+### Activity Overlay
+- **Submission Heatmap** — 12-week GitHub-style calendar from real `/calendar` API; intensity-colored cells
+- **Streak Tracker** — current + longest streak from API; 7-day bar chart
+
+### Fighter Card
+- Full-screen card with contest rating, rank, badges, power tier
+- Mini-games modal
+
+### Sound Design
+- **Stage 1**: deep D-organ drone (6-pipe Web Audio synthesis)
+- **Stage 2**: rising sawtooth sweep + crystalline arpeggio
+- **City reveal**: Dmaj7 swell with shimmer overtone
+- **City ambient**: continuous Interstellar pipe organ — bellows LFO on filter cutoff, comb-delay cathedral echo, fades in/out with city enter/exit. No external audio files.
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
 | Frontend | React 19 + hooks |
-| 3D | Three.js via `@react-three/fiber` + `@react-three/drei` |
+| 3D | Three.js · `@react-three/fiber` · `@react-three/drei` |
+| Post-processing | `@react-three/postprocessing` (Bloom) |
 | Motion | Framer Motion |
-| Styling | Tailwind utilities + inline style objects + global CSS |
+| Sound | Web Audio API (fully synthesized) |
 | Build | Vite 7 |
 | Lint | ESLint 9 (flat config) |
-| Data Source (frontend) | Alfa LeetCode API endpoints |
-| Optional Proxy Service | Cloudflare Worker in `worker/` |
+| Data | Alfa LeetCode API |
 
 ---
 
-## 🗂 Project Structure
+## Project Structure
 
-```bash
+```
 leetcode-galaxy/
 ├── src/
-│   ├── App.jsx
+│   ├── App.jsx                  # Phase manager, search, transitions, sound wiring
 │   ├── components/
-│   │   ├── LandingUI.jsx
-│   │   ├── GalaxyScene.jsx
+│   │   ├── LandingUI.jsx        # Galaxy landing + search
+│   │   ├── GalaxyScene.jsx      # Animated star background
 │   │   ├── TransitionOverlay.jsx
-│   │   ├── CityScene.jsx
-│   │   ├── UserPanel.jsx
-│   │   ├── FighterCard.jsx
-│   │   ├── GamesModal.jsx
-│   │   ├── Arena.jsx
-│   │   └── ...
+│   │   ├── CityScene.jsx        # 3D city, buildings, cars, aurora, heatmap, streak
+│   │   ├── UserPanel.jsx        # Side stats panel
+│   │   ├── FighterCard.jsx      # Full-screen profile card
+│   │   └── GamesModal.jsx       # Mini-games
 │   ├── hooks/
-│   │   └── useLeetCode.js
+│   │   ├── useLeetCode.js       # API fetch + localStorage cache
+│   │   └── useSpaceSound.js     # Web Audio synthesized sounds
 │   └── utils/
-│       └── dataMapper.js
-├── worker/
-│   ├── index.js
-│   └── wrangler.toml
-├── DEPLOY.md
-├── .env.example
+│       ├── dataMapper.js        # Raw API → app model
+│       └── gameData.js          # Power tiers, fighter classes
 └── package.json
 ```
 
 ---
 
-## 🚀 Local Development
+## Local Development
 
-### Prerequisites
-- Node.js 18+
-- npm 9+
-
-### Install
 ```bash
 npm install
-```
-
-### Run
-```bash
 npm run dev
+# → http://localhost:5173
 ```
 
-Open `http://localhost:5173`.
+---
+
+## Data Flow
+
+```
+Search username
+  → useLeetCode.fetchProfile()
+      → parallel: /userProfile  /skillStats  /contest  /badges  /calendar
+  → mapLeetCodeDataToCity()       # normalise into app model
+  → CityCanvas(data)              # build 10×10 roster, render city
+  → UserPanel(data)               # stats, heatmap, streak
+```
+
+Cache: `localStorage` per username, 30-minute TTL. Entries missing `calendar` are auto-invalidated.
 
 ---
 
-## 🔧 Environment Variables
-
-Frontend supports:
-
-- `VITE_WORKER_URL` (see `.env.example`)
-
-If not set, the app uses its default URL setting from `useLeetCode.js`.
-
----
-
-## 🏗 Data Flow (Current Frontend Path)
-
-For each username search, the frontend gathers data from multiple endpoints in parallel, maps the result into the app model (`mapLeetCodeDataToCity`), and renders city/fighter views.
-
-High-level response model used by the app:
-- profile + solved stats
-- tag/topic counts
-- recent submissions
-- contest info
-- badges info
-
-Caching:
-- localStorage cache in `useLeetCode.js`
-- TTL-based invalidation
-
----
-
-## 📦 Commands
+## Commands
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Start local dev server |
+| `npm run dev` | Start dev server |
 | `npm run build` | Production build |
-| `npm run preview` | Preview built app |
-| `npm run lint` | Run ESLint |
+| `npm run preview` | Preview build |
+| `npm run lint` | ESLint |
 
 ---
 
-## 🌐 Deployment
+## Contributing
 
-- Frontend + worker deployment steps are documented in **[DEPLOY.md](./DEPLOY.md)**.
-- Worker deployment lives under `worker/` and uses Wrangler.
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
+1. Fork the repo
 2. Create a branch
-3. Commit your changes
+3. Commit changes
 4. Open a pull request
