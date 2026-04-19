@@ -22,7 +22,7 @@ function seededRand(seed) {
     return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
 }
 
-/* ─────────────────── Generate procedural users ─────────────────── */
+/* ─────────────────── Procedural fill (grid density only, no fake usernames shown) ─── */
 const PROC_NAMES = [
     'stack_overflow', 'bit_flipper', 'heap_master', 'queue_runner', 'linked_list',
     'merge_sort', 'quick_sort', 'bfs_walker', 'dfs_diver', 'trie_builder',
@@ -47,31 +47,23 @@ function generateProceduralUser(index) {
     const tier = rng();
     let easy, med, hard, rank;
     if (tier < 0.05) {
-        easy = 400 + Math.floor(rng() * 400);
-        med = 600 + Math.floor(rng() * 800);
-        hard = 200 + Math.floor(rng() * 400);
-        rank = 10 + Math.floor(rng() * 200);
+        easy = 400 + Math.floor(rng() * 400); med = 600 + Math.floor(rng() * 800);
+        hard = 200 + Math.floor(rng() * 400); rank = 10 + Math.floor(rng() * 200);
     } else if (tier < 0.25) {
-        easy = 200 + Math.floor(rng() * 300);
-        med = 300 + Math.floor(rng() * 500);
-        hard = 50 + Math.floor(rng() * 200);
-        rank = 200 + Math.floor(rng() * 1000);
+        easy = 200 + Math.floor(rng() * 300); med = 300 + Math.floor(rng() * 500);
+        hard = 50 + Math.floor(rng() * 200);  rank = 200 + Math.floor(rng() * 1000);
     } else if (tier < 0.6) {
-        easy = 80 + Math.floor(rng() * 200);
-        med = 100 + Math.floor(rng() * 300);
-        hard = 10 + Math.floor(rng() * 80);
-        rank = 1000 + Math.floor(rng() * 5000);
+        easy = 80 + Math.floor(rng() * 200);  med = 100 + Math.floor(rng() * 300);
+        hard = 10 + Math.floor(rng() * 80);   rank = 1000 + Math.floor(rng() * 5000);
     } else {
-        easy = 10 + Math.floor(rng() * 100);
-        med = 5 + Math.floor(rng() * 80);
-        hard = Math.floor(rng() * 15);
-        rank = 5000 + Math.floor(rng() * 20000);
+        easy = 10 + Math.floor(rng() * 100);  med = 5 + Math.floor(rng() * 80);
+        hard = Math.floor(rng() * 15);         rank = 5000 + Math.floor(rng() * 20000);
     }
     const name = PROC_NAMES[index % PROC_NAMES.length] + (index >= PROC_NAMES.length ? `_${index}` : '');
     return { u: name, easy, med, hard, rank };
 }
 
-/* ─────────────────── Build 100-user roster ─────────────────── */
+/* ─────────────────── Build roster ─────────────────── */
 function buildRoster(currentUserData) {
     const stats = currentUserData?.stats || [];
     const currentUser = {
@@ -83,41 +75,37 @@ function buildRoster(currentUserData) {
         isCurrent: true,
     };
 
-    const roster = [currentUser];
     const usedNames = new Set([currentUser.u.toLowerCase()]);
+    const realUsers = [currentUser];
 
     for (const c of CODERS) {
-        if (roster.length >= 100) break;
         if (usedNames.has(c.u.toLowerCase())) continue;
         usedNames.add(c.u.toLowerCase());
-        roster.push({ ...c, isCurrent: false });
+        realUsers.push({ ...c, isCurrent: false });
     }
 
     let procIdx = 0;
-    while (roster.length < 100) {
+    while (realUsers.length < 100) {
         const user = generateProceduralUser(procIdx++);
         if (!usedNames.has(user.u.toLowerCase())) {
             usedNames.add(user.u.toLowerCase());
-            roster.push({ ...user, isCurrent: false });
+            realUsers.push({ ...user, isCurrent: false });
         }
     }
 
-    roster.sort((a, b) => {
+    realUsers.sort((a, b) => {
         if (a.isCurrent) return -1;
         if (b.isCurrent) return 1;
         return a.rank - b.rank;
     });
 
-    // Place current user at center, fill rest sequentially
     const grid = new Array(GRID_ROWS * GRID_COLS).fill(null);
     const centerIdx = USER_ROW * GRID_COLS + USER_COL;
-    grid[centerIdx] = roster[0]; // current user
+    grid[centerIdx] = realUsers[0];
 
     let rosterIdx = 1;
-    for (let i = 0; i < grid.length && rosterIdx < roster.length; i++) {
-        if (i !== centerIdx) {
-            grid[i] = roster[rosterIdx++];
-        }
+    for (let i = 0; i < grid.length && rosterIdx < realUsers.length; i++) {
+        if (i !== centerIdx) grid[i] = realUsers[rosterIdx++];
     }
 
     return grid;
@@ -158,45 +146,126 @@ function generateBlockBuildings(easy, med, hard, globalMax, seed) {
 
 /* ─────────────────── City Building ─────────────────── */
 function CityBuilding({ height, width, color, position }) {
-    const meshRef = useRef();
+    const phase = position[0] * 1.7 + position[2] * 2.3;
+
+    const tiers = height > 6 ? 3 : height > 3.5 ? 2 : 1;
+    const tierHeights = tiers === 3
+        ? [height * 0.55, height * 0.28, height * 0.17]
+        : tiers === 2
+        ? [height * 0.65, height * 0.35]
+        : [height];
+    const tierWidths = tierHeights.map((_, i) => width * (1 - i * 0.22));
+
+    const stripeCount = Math.floor(height / 1.4);
+    const stripePositions = Array.from({ length: stripeCount }, (_, i) =>
+        ((i + 1) / (stripeCount + 1)) * height
+    );
+
+    const hasSpire = height > 5;
+
+    const baseRef    = useRef();
+    const winRefs    = useRef([]);
+    const stripeRefs = useRef([]);
+    const spireRef   = useRef();
+    const spireLight = useRef();
 
     useFrame((state) => {
-        if (!meshRef.current) return;
         const t = state.clock.elapsedTime;
-        meshRef.current.material.emissiveIntensity =
-            0.3 + Math.sin(t * 2 + position[0] + position[2]) * 0.15;
+        if (baseRef.current)
+            baseRef.current.emissiveIntensity = 0.25 + Math.sin(t * 1.8 + phase) * 0.12;
+
+        winRefs.current.forEach((mat, i) => {
+            if (!mat) return;
+            mat.emissiveIntensity = Math.max(0.05,
+                0.65 + Math.sin(t * 0.7 + phase + i * 1.3) * 0.4
+                     + Math.sin(t * 2.3 + phase * 0.5 + i) * 0.15
+            );
+        });
+
+        stripeRefs.current.forEach((mat) => {
+            if (!mat) return;
+            mat.emissiveIntensity = 0.6 + Math.sin(t * 0.4 + phase) * 0.3;
+        });
+
+        if (spireRef.current)
+            spireRef.current.emissiveIntensity = 0.5 + Math.abs(Math.sin(t * 1.2 + phase)) * 2.5;
+        if (spireLight.current)
+            spireLight.current.intensity = 0.3 + Math.abs(Math.sin(t * 1.2 + phase)) * 1.8;
+    });
+
+    let yOffset = 0;
+    const tierMeshes = tierHeights.map((th, ti) => {
+        const tw = tierWidths[ti];
+        const y = yOffset + th / 2;
+        yOffset += th;
+        return (
+            <mesh key={`tier-${ti}`} position={[0, y, 0]} castShadow>
+                <boxGeometry args={[tw, th, tw]} />
+                <meshStandardMaterial
+                    ref={ti === 0 ? baseRef : undefined}
+                    color={color}
+                    emissive={color}
+                    emissiveIntensity={0.25}
+                    metalness={0.55}
+                    roughness={0.35}
+                    transparent
+                    opacity={0.92}
+                />
+            </mesh>
+        );
     });
 
     return (
         <group position={position}>
-            <mesh ref={meshRef} position={[0, height / 2, 0]} castShadow>
-                <boxGeometry args={[width, height, width]} />
-                <meshStandardMaterial
-                    color={color}
-                    emissive={color}
-                    emissiveIntensity={0.3}
-                    metalness={0.3}
-                    roughness={0.5}
-                    transparent
-                    opacity={0.9}
-                />
-            </mesh>
-            <mesh position={[0, height + 0.05, 0]}>
-                <boxGeometry args={[width + 0.05, 0.1, width + 0.05]} />
-                <meshStandardMaterial
-                    color={color}
-                    emissive={color}
-                    emissiveIntensity={2}
-                    transparent
-                    opacity={0.9}
-                />
-            </mesh>
-            {height > 4 && [0.3, 0.5, 0.7].map((frac, i) => (
-                <mesh key={i} position={[width / 2 + 0.01, height * frac, 0]}>
-                    <boxGeometry args={[0.02, 0.12, 0.2]} />
-                    <meshStandardMaterial color="#ffffff" emissive="#88aaff" emissiveIntensity={0.8} />
+            {tierMeshes}
+
+            {stripePositions.map((sy, i) => (
+                <mesh key={`stripe-${i}`} position={[0, sy, width / 2 + 0.01]}>
+                    <boxGeometry args={[width * 0.92, 0.045, 0.02]} />
+                    <meshStandardMaterial
+                        ref={el => stripeRefs.current[i] = el}
+                        color={color}
+                        emissive={color}
+                        emissiveIntensity={0.7}
+                        transparent
+                        opacity={0.85}
+                        toneMapped={false}
+                    />
                 </mesh>
             ))}
+
+            {height > 2.5 && [0.28, 0.52, 0.76].map((frac, i) => (
+                <mesh key={`win-${i}`} position={[tierWidths[0] / 2 + 0.01, height * frac, 0]}>
+                    <boxGeometry args={[0.02, 0.13, 0.26]} />
+                    <meshStandardMaterial
+                        ref={el => winRefs.current[i] = el}
+                        color="#c8ddff"
+                        emissive="#88aaff"
+                        emissiveIntensity={0.7}
+                        transparent
+                        opacity={0.95}
+                    />
+                </mesh>
+            ))}
+
+            {hasSpire && (
+                <group position={[0, height, 0]}>
+                    <mesh position={[0, 0.55, 0]}>
+                        <cylinderGeometry args={[0.03, 0.06, 1.1, 6]} />
+                        <meshStandardMaterial color="#aaaacc" metalness={0.9} roughness={0.2} />
+                    </mesh>
+                    <mesh ref={spireRef} position={[0, 1.15, 0]}>
+                        <sphereGeometry args={[0.09, 8, 8]} />
+                        <meshStandardMaterial
+                            color="#ff4466"
+                            emissive="#ff2244"
+                            emissiveIntensity={1.5}
+                            toneMapped={false}
+                        />
+                    </mesh>
+                    <pointLight ref={spireLight} color="#ff2244" intensity={1} distance={6} decay={2} />
+                </group>
+            )}
         </group>
     );
 }
@@ -314,38 +383,100 @@ function CityBlock({ user, gridRow, gridCol, globalMax, isNight, onSelect }) {
 }
 
 /* ─────────────────── Current user beacon ─────────────────── */
+const BEAM_HEIGHT = 40;
+
 function UserBeacon() {
-    const meshRef = useRef();
+    const crystalRef = useRef();
+    const beamRef = useRef();
+    const ringRef = useRef();
+
     useFrame((state) => {
-        if (!meshRef.current) return;
-        meshRef.current.rotation.y += 0.008;
-        meshRef.current.material.emissiveIntensity =
-            0.5 + Math.sin(state.clock.elapsedTime * 1.5) * 0.3;
+        const t = state.clock.elapsedTime;
+
+        if (crystalRef.current) {
+            crystalRef.current.rotation.y += 0.012;
+            crystalRef.current.material.emissiveIntensity = 1.2 + Math.sin(t * 2) * 0.4;
+        }
+        if (beamRef.current) {
+            beamRef.current.material.opacity = 0.10 + Math.sin(t * 1.4) * 0.04;
+        }
+        if (ringRef.current) {
+            ringRef.current.rotation.z += 0.008;
+            const pulse = 1 + Math.sin(t * 3) * 0.08;
+            ringRef.current.scale.setScalar(pulse);
+        }
     });
+
     return (
         <group>
-            <mesh ref={meshRef} position={[0, 2.5, 0]}>
-                <octahedronGeometry args={[0.6, 0]} />
+            {/* Vertical beam column */}
+            <mesh ref={beamRef} position={[0, BEAM_HEIGHT / 2, 0]}>
+                <cylinderGeometry args={[0.18, 0.6, BEAM_HEIGHT, 16, 1, true]} />
+                <meshBasicMaterial
+                    color="#00f5d4"
+                    transparent
+                    opacity={0.12}
+                    side={THREE.DoubleSide}
+                    blending={THREE.AdditiveBlending}
+                    depthWrite={false}
+                />
+            </mesh>
+
+            {/* Bright inner core of beam */}
+            <mesh position={[0, BEAM_HEIGHT / 2, 0]}>
+                <cylinderGeometry args={[0.04, 0.18, BEAM_HEIGHT, 8, 1, true]} />
+                <meshBasicMaterial
+                    color="#ffffff"
+                    transparent
+                    opacity={0.18}
+                    blending={THREE.AdditiveBlending}
+                    depthWrite={false}
+                />
+            </mesh>
+
+            {/* Spinning crystal at top of beam */}
+            <mesh ref={crystalRef} position={[0, 3.2, 0]}>
+                <octahedronGeometry args={[0.7, 0]} />
                 <meshStandardMaterial
                     color="#00f5d4"
                     emissive="#00f5d4"
-                    emissiveIntensity={0.5}
-                    metalness={0.6}
-                    roughness={0.2}
+                    emissiveIntensity={1.2}
+                    metalness={0.8}
+                    roughness={0.1}
                     transparent
-                    opacity={0.85}
+                    opacity={0.92}
                 />
             </mesh>
+
+            {/* Pulsing ring at base */}
+            <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
+                <ringGeometry args={[2.5, 3.2, 48]} />
+                <meshBasicMaterial
+                    color="#00f5d4"
+                    transparent
+                    opacity={0.25}
+                    side={THREE.DoubleSide}
+                    blending={THREE.AdditiveBlending}
+                    depthWrite={false}
+                />
+            </mesh>
+
+            {/* Base platform */}
             <mesh position={[0, 0.3, 0]}>
-                <cylinderGeometry args={[0.8, 1, 0.6, 6]} />
+                <cylinderGeometry args={[0.9, 1.1, 0.5, 6]} />
                 <meshStandardMaterial
-                    color="#111"
+                    color="#021a1a"
                     emissive="#00f5d4"
-                    emissiveIntensity={0.1}
-                    metalness={0.4}
-                    roughness={0.6}
+                    emissiveIntensity={0.4}
+                    metalness={0.6}
+                    roughness={0.4}
                 />
             </mesh>
+
+            {/* Point light casting cyan glow on nearby blocks */}
+            <pointLight position={[0, 4, 0]} color="#00f5d4" intensity={3} distance={28} decay={2} />
+            {/* Secondary warm fill light to avoid flat look */}
+            <pointLight position={[0, 12, 0]} color="#00f5d4" intensity={1.2} distance={50} decay={2} />
         </group>
     );
 }
@@ -411,7 +542,7 @@ function StreetGrid({ isNight }) {
 function CityCamera() {
     const { camera } = useThree();
     React.useEffect(() => {
-        camera.position.set(12, 18, 18);
+        camera.position.set(8, 12, 14);
         camera.lookAt(0, 0, 0);
         camera.updateProjectionMatrix();
     }, [camera]);
@@ -453,9 +584,230 @@ function SceneLighting({ isNight, totalWidth }) {
     );
 }
 
+/* ─────────────────── Car Lights ─────────────────── */
+const STREET_Y = 0.2;
+const TOTAL_SPAN = GRID_COLS * CELL_SIZE;
+const EDGE_START = -USER_COL * CELL_SIZE;
+
+// Pre-generate deterministic car data at module level (no re-computation)
+const CAR_DATA = Array.from({ length: 24 }, (_, i) => {
+    const rng = seededRand(i * 3571 + 999);
+    const isHorizontal = i % 2 === 0;
+    const laneIdx = Math.floor(rng() * (GRID_ROWS + 1));
+    const laneOffset = (laneIdx - (isHorizontal ? USER_ROW : USER_COL)) * CELL_SIZE - CELL_SIZE / 2;
+    const speed = (6 + rng() * 10) * (rng() > 0.5 ? 1 : -1);
+    const startOffset = rng() * TOTAL_SPAN;
+    const color = rng() > 0.25 ? '#ffffff' : '#ffd580';
+    const size = 0.1 + rng() * 0.08;
+    return { isHorizontal, laneOffset, speed, startOffset, color, size };
+});
+
+function CarLights() {
+    const refs = useRef([]);
+
+    useFrame((state) => {
+        const t = state.clock.elapsedTime;
+        CAR_DATA.forEach((car, i) => {
+            const mesh = refs.current[i];
+            if (!mesh) return;
+            const raw = EDGE_START + ((car.startOffset + t * car.speed) % TOTAL_SPAN + TOTAL_SPAN) % TOTAL_SPAN;
+            if (car.isHorizontal) {
+                mesh.position.set(raw, STREET_Y, car.laneOffset);
+            } else {
+                mesh.position.set(car.laneOffset, STREET_Y, raw);
+            }
+        });
+    });
+
+    return (
+        <>
+            {CAR_DATA.map((car, i) => (
+                <mesh key={i} ref={el => refs.current[i] = el}>
+                    <sphereGeometry args={[car.size, 5, 5]} />
+                    <meshBasicMaterial
+                        color={car.color}
+                        blending={THREE.AdditiveBlending}
+                        depthWrite={false}
+                    />
+                </mesh>
+            ))}
+        </>
+    );
+}
+
+/* ─────────────────── Activity Overlay (Heatmap + Streak) ─────────────────── */
+const FONT_MONO_CS = '"Share Tech Mono", monospace';
+const WEEKS = 12;
+
+function useActivityData(data) {
+    return useMemo(() => {
+        const toKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+        const calRaw = data?.calendar?.submissionCalendar;
+        const calMap = {}; // 'YYYY-MM-DD' → count
+        if (calRaw) {
+            try {
+                const parsed = JSON.parse(calRaw);
+                Object.entries(parsed).forEach(([ts, count]) => {
+                    const d = new Date(parseInt(ts, 10) * 1000);
+                    calMap[toKey(d)] = (calMap[toKey(d)] || 0) + count;
+                });
+            } catch { /* malformed */ }
+        }
+
+        const today = new Date(); today.setHours(0,0,0,0);
+        const startDay = new Date(today);
+        startDay.setDate(today.getDate() - (WEEKS * 7 - 1));
+
+        const cells = [];
+        for (let i = 0; i < WEEKS * 7; i++) {
+            const d = new Date(startDay);
+            d.setDate(startDay.getDate() + i);
+            const key = toKey(d);
+            cells.push({ key, count: calMap[key] || 0 });
+        }
+
+        // Use API-provided streak values when available
+        const currentStreak = data?.calendar?.streak ?? 0;
+        const longestStreak = data?.calendar?.totalActiveDays ?? 0;
+
+        const last7 = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(today); d.setDate(today.getDate() - (6 - i));
+            return calMap[toKey(d)] || 0;
+        });
+
+        return { cells, currentStreak, longestStreak, last7 };
+    }, [data]);
+}
+
+function ActivityOverlay({ data }) {
+    const { cells, currentStreak, longestStreak, last7 } = useActivityData(data);
+    const maxLast7 = Math.max(...last7, 1);
+
+    const cellColor = (count) => {
+        if (count === 0) return 'rgba(255,255,255,0.04)';
+        if (count >= 5) return '#00f5d4';
+        if (count >= 3) return '#23d18b';
+        return '#23d18b80';
+    };
+
+    return (
+        <div style={{
+            position: 'absolute', bottom: 16, right: 16, zIndex: 20,
+            display: 'flex', flexDirection: 'column', gap: 6,
+            pointerEvents: 'none',
+        }}>
+            {/* ── Heatmap ── */}
+            <div style={{
+                background: 'rgba(3,5,8,0.88)',
+                border: '1px solid rgba(0,245,212,0.15)',
+                borderRadius: 10, padding: '8px 10px',
+                backdropFilter: 'blur(14px)',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+            }}>
+                <div style={{ fontFamily: FONT_MONO_CS, fontSize: 7, color: 'rgba(0,245,212,0.45)', letterSpacing: '0.18em', marginBottom: 6 }}>
+                    SUBMISSIONS · 12W
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${WEEKS}, 9px)`, gridTemplateRows: 'repeat(7, 9px)', gap: 2 }}>
+                    {Array.from({ length: WEEKS }, (_, w) =>
+                        Array.from({ length: 7 }, (_, d) => {
+                            const cell = cells[w * 7 + d];
+                            const bg = cellColor(cell.count);
+                            return (
+                                <div key={`${w}-${d}`} style={{
+                                    width: 9, height: 9, borderRadius: 2,
+                                    background: bg,
+                                    boxShadow: cell.count > 0 ? `0 0 4px ${bg}` : 'none',
+                                }} />
+                            );
+                        })
+                    )}
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 6, fontFamily: FONT_MONO_CS, fontSize: 6, letterSpacing: '0.1em' }}>
+                    {[['#23d18b80','1–2'],['#23d18b','3–4'],['#00f5d4','5+']].map(([c, l]) => (
+                        <span key={l} style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'rgba(255,255,255,0.35)' }}>
+                            <span style={{ width: 6, height: 6, borderRadius: 1, background: c, display: 'inline-block' }} />
+                            {l}
+                        </span>
+                    ))}
+                </div>
+            </div>
+
+            {/* ── Streak Tracker ── */}
+            <div style={{
+                background: 'rgba(3,5,8,0.88)',
+                border: '1px solid rgba(0,245,212,0.15)',
+                borderRadius: 10, padding: '8px 10px',
+                backdropFilter: 'blur(14px)',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+            }}>
+                <div style={{ fontFamily: FONT_MONO_CS, fontSize: 7, color: 'rgba(0,245,212,0.45)', letterSpacing: '0.18em', marginBottom: 6 }}>
+                    STREAK TRACKER
+                </div>
+                <div style={{ display: 'flex', gap: 16, marginBottom: 8 }}>
+                    {[{ label: 'CURRENT', val: currentStreak, color: '#00f5d4' }, { label: 'LONGEST', val: longestStreak, color: '#f5a623' }].map(({ label, val, color }) => (
+                        <div key={label}>
+                            <div style={{ fontFamily: '"Orbitron", sans-serif', fontSize: 18, fontWeight: 900, color, lineHeight: 1, textShadow: `0 0 12px ${color}60` }}>
+                                {val}<span style={{ fontSize: 9, marginLeft: 2, opacity: 0.6 }}>d</span>
+                            </div>
+                            <div style={{ fontFamily: FONT_MONO_CS, fontSize: 6, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', marginTop: 2 }}>{label}</div>
+                        </div>
+                    ))}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 24 }}>
+                    {last7.map((count, i) => (
+                        <div key={i} style={{
+                            flex: 1, borderRadius: '2px 2px 0 0',
+                            height: count > 0 ? `${Math.max(20, (count / maxLast7) * 100)}%` : '8%',
+                            background: count > 0 ? '#23d18b' : 'rgba(255,255,255,0.06)',
+                            boxShadow: count > 0 ? '0 0 6px #23d18b80' : 'none',
+                        }} />
+                    ))}
+                </div>
+                <div style={{ fontFamily: FONT_MONO_CS, fontSize: 6, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.1em', marginTop: 3, textAlign: 'right' }}>
+                    LAST 7 DAYS
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/* ─────────────────── Aurora ─────────────────── */
+function Aurora() {
+    const refs = useRef([null, null, null]);
+    useFrame((state) => {
+        const t = state.clock.elapsedTime * 0.15;
+        refs.current.forEach((mesh, i) => {
+            if (!mesh) return;
+            mesh.material.opacity = 0.025 + Math.sin(t + i * 1.8) * 0.012;
+            mesh.rotation.z += 0.0003 * (i % 2 === 0 ? 1 : -1);
+        });
+    });
+    return (
+        <group>
+            {[
+                { color: '#00f5d4', position: [-15, 28, -70], rotX: 1.45, rotY:  0.25 },
+                { color: '#7c3aed', position: [ 25, 32, -90], rotX: 1.50, rotY: -0.15 },
+                { color: '#3b82f6', position: [-35, 24, -55], rotX: 1.40, rotY:  0.40 },
+            ].map((a, i) => (
+                <mesh key={i} ref={el => refs.current[i] = el}
+                    position={a.position} rotation={[a.rotX, a.rotY, 0]}
+                >
+                    <planeGeometry args={[140, 28]} />
+                    <meshBasicMaterial
+                        color={a.color} transparent opacity={0.028}
+                        side={THREE.DoubleSide}
+                        blending={THREE.AdditiveBlending}
+                        depthWrite={false}
+                    />
+                </mesh>
+            ))}
+        </group>
+    );
+}
+
 /* ─────────────────── City Scene Inner ─────────────────── */
-function CitySceneInner({ data, isNight, onSelectUser }) {
-    const roster = useMemo(() => buildRoster(data), [data]);
+function CitySceneInner({ roster, isNight, onSelectUser }) {
     const globalMax = useMemo(() => {
         let m = 1;
         for (const user of roster) {
@@ -467,7 +819,9 @@ function CitySceneInner({ data, isNight, onSelectUser }) {
 
     return (
         <>
+            <Aurora />
             <StreetGrid isNight={isNight} />
+            <CarLights />
 
             {roster.map((user, i) => {
                 if (!user) return null;
@@ -502,29 +856,34 @@ function CitySceneInner({ data, isNight, onSelectUser }) {
 /* ─────────────────── Main Export ─────────────────── */
 export default function CityCanvas({ data, isNight, onSelectUser }) {
     const totalWidth = GRID_COLS * CELL_SIZE;
+    const roster = useMemo(() => buildRoster(data), [data]);
+
     return (
-        <Canvas
-            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-            shadows
-            camera={{ fov: 45, near: 0.1, far: 500 }}
-            gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
-            dpr={[1, 1.5]}
-        >
-            <SceneLighting isNight={isNight} totalWidth={totalWidth} />
-            <CityCamera />
-            <OrbitControls
-                target={[0, 1, 0]}
-                enablePan
-                enableZoom
-                enableRotate
-                minDistance={6}
-                maxDistance={totalWidth * 0.6}
-                maxPolarAngle={Math.PI / 2.1}
-                zoomSpeed={1.2}
-                panSpeed={0.8}
-                rotateSpeed={0.5}
-            />
-            {data && <CitySceneInner data={data} isNight={isNight} onSelectUser={onSelectUser} />}
-        </Canvas>
+        <div style={{ position: 'absolute', inset: 0 }}>
+            <Canvas
+                style={{ width: '100%', height: '100%' }}
+                shadows
+                camera={{ fov: 55, near: 0.1, far: 500 }}
+                gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
+                dpr={[1, 1.5]}
+            >
+                <SceneLighting isNight={isNight} totalWidth={totalWidth} />
+                <CityCamera />
+                <OrbitControls
+                    target={[0, 1, 0]}
+                    enablePan
+                    enableZoom
+                    enableRotate
+                    minDistance={6}
+                    maxDistance={totalWidth * 0.6}
+                    maxPolarAngle={Math.PI / 2.1}
+                    zoomSpeed={1.2}
+                    panSpeed={0.8}
+                    rotateSpeed={0.5}
+                />
+                {data && <CitySceneInner roster={roster} isNight={isNight} onSelectUser={onSelectUser} />}
+            </Canvas>
+            {data && <ActivityOverlay data={data} />}
+        </div>
     );
 }

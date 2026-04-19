@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Share2, Search, X, Target, Zap, Star, Trophy, TrendingUp, Code2, Flame, ChevronRight, Shield, Swords, Crown, Sparkles, Building2, Moon, Sun } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import { ArrowLeft, Share2, Search, X, Target, Zap, Star, Trophy, TrendingUp, Code2, Flame, Shield, Swords, Crown, Sparkles, Building2, Moon, Sun } from 'lucide-react';
 
 const PLANET_COLORS = ['#00f5d4', '#8b5cf6', '#f5a623', '#3b82f6', '#ef4444', '#ec4899', '#10b981', '#f59e0b'];
 const FONT_ORBIT = 'Orbitron, sans-serif';
@@ -258,7 +257,6 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
     const [activeTab, setActiveTab] = useState('stats');
     const [isMobile, setIsMobile] = useState(false);
     const [panelExpanded, setPanelExpanded] = useState(false);
-
     React.useEffect(() => {
         const check = () => setIsMobile(window.innerWidth <= 768);
         check();
@@ -287,11 +285,12 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
         { icon: Crown, label: 'LEGEND', color: '#00f5d4', unlocked: ranking > 0 && ranking <= 1000 },
     ], [totalSolved, hardSolved, districts, ranking]);
 
-    const handleShare = async () => {
+    const handleShare = () => {
         try {
-            const canvas = await html2canvas(document.body);
+            const glCanvas = document.querySelector('canvas');
+            if (!glCanvas) return;
             const link = document.createElement('a');
-            link.href = canvas.toDataURL('image/png');
+            link.href = glCanvas.toDataURL('image/png');
             link.download = `${username}-${viewMode === 'city' ? 'city' : 'card'}.png`;
             link.click();
         } catch (err) { console.error('Share failed', err); }
@@ -449,6 +448,7 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                     boxShadow: '0 8px 60px rgba(0,0,0,0.3), 0 0 40px rgba(0,245,212,0.03), inset 0 1px 0 rgba(255,255,255,0.03)',
                 }}
             >
+
                 {/* Mobile drag handle */}
                 {isMobile && (
                     <div
@@ -724,10 +724,7 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
                     <span style={{ color: 'var(--text-ultra-muted)', fontSize: 9, fontFamily: FONT_MONO, letterSpacing: '0.1em' }}>
                         {isMobile ? 'PINCH TO ZOOM' : (viewMode === 'city' ? 'DRAG TO EXPLORE CITY' : 'DRAG TO ORBIT // SCROLL TO ZOOM')}
                     </span>
-                    <span style={{
-                        color: powerTier.color, fontSize: 9, fontFamily: FONT_ORBIT, fontWeight: 700,
-                        opacity: 0.5,
-                    }}>
+                    <span style={{ color: powerTier.color, fontSize: 9, fontFamily: FONT_ORBIT, fontWeight: 700, opacity: 0.5 }}>
                         v2.0
                     </span>
                 </div>

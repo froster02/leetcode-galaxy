@@ -272,14 +272,7 @@ function App() {
       await new Promise(r => setTimeout(r, 800));
       setTransitionMsg(pick(TRANSITION_LINES.map));
 
-      let rawData;
-      try {
-        rawData = await fetchProfile(username);
-      } catch {
-        console.warn('Proxy fetch failed, using mock data.');
-        rawData = generateMockData(username);
-      }
-
+      const rawData = await fetchProfile(username);
       const structuredData = mapLeetCodeDataToCity(rawData);
       setMappedData(structuredData);
       addToRecent(username);
@@ -294,8 +287,10 @@ function App() {
 
     } catch (err) {
       console.error(err);
+      clearTimeout(transitionTimerRef.current);
       setPhase(1);
       setTransitionStage(0);
+      if (pushUrl) window.history.pushState({}, '', '/');
     }
   }, [fetchProfile, addToRecent]);
 
@@ -303,21 +298,19 @@ function App() {
   const handleQuickInspect = useCallback(async (username) => {
     setTransitionStage(1);
     setTransitionMsg(`FETCHING: ${username.toUpperCase()}`);
-    
-    let rawData;
+
     try {
-      rawData = await fetchProfile(username);
-    } catch {
-      rawData = generateMockData(username);
+      const rawData = await fetchProfile(username);
+      const structuredData = mapLeetCodeDataToCity(rawData);
+      setMappedData(structuredData);
+      addToRecent(username);
+      setTransitionStage(0);
+      setViewMode('card');
+      window.history.pushState({}, '', `/u/${encodeURIComponent(username)}`);
+    } catch (err) {
+      console.error(err);
+      setTransitionStage(0);
     }
-
-    const structuredData = mapLeetCodeDataToCity(rawData);
-    setMappedData(structuredData);
-    addToRecent(username);
-
-    setTransitionStage(0);
-    setViewMode('card');
-    window.history.pushState({}, '', `/u/${encodeURIComponent(username)}`);
   }, [fetchProfile, addToRecent]);
 
   const handleBack = useCallback((pushUrl = true) => {
@@ -485,52 +478,5 @@ function App() {
   );
 }
 
-function generateMockData(username) {
-  return {
-    profile: {
-      matchedUser: {
-        username,
-        profile: { ranking: Math.floor(Math.random() * 50000) + 1000, reputation: 1337, starRating: 5 },
-        submitStats: {
-          acSubmissionNum: [
-            { difficulty: 'All', count: 850 },
-            { difficulty: 'Easy', count: 300 },
-            { difficulty: 'Medium', count: 450 },
-            { difficulty: 'Hard', count: 100 }
-          ]
-        }
-      }
-    },
-    tags: {
-      matchedUser: {
-        tagProblemCounts: {
-          advanced: [
-            { tagName: 'Dynamic Programming', problemsSolved: 95 },
-            { tagName: 'Graphs', problemsSolved: 60 },
-            { tagName: 'Backtracking', problemsSolved: 45 }
-          ],
-          intermediate: [
-            { tagName: 'Trees', problemsSolved: 120 },
-            { tagName: 'Hash Table', problemsSolved: 140 },
-            { tagName: 'Two Pointers', problemsSolved: 80 }
-          ],
-          fundamental: [
-            { tagName: 'Arrays', problemsSolved: 200 },
-            { tagName: 'Strings', problemsSolved: 110 }
-          ]
-        }
-      }
-    },
-    recent: {
-      recentSubmissionList: [
-        { title: 'Two Sum', statusDisplay: 'Accepted' },
-        { title: 'LRU Cache', statusDisplay: 'Accepted' },
-        { title: 'Trapping Rain Water', statusDisplay: 'Wrong Answer' },
-        { title: 'Merge k Sorted Lists', statusDisplay: 'Accepted' },
-        { title: 'Valid Parentheses', statusDisplay: 'Accepted' }
-      ]
-    }
-  };
-}
 
 export default App;

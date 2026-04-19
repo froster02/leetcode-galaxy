@@ -34,6 +34,7 @@ export function mapLeetCodeDataToCity(data) {
 
     const contest = data.contest || {};
     const badges = data.badges || {};
+    const calendar = data.calendar || {};
 
     return {
         username: user.username,
@@ -49,6 +50,7 @@ export function mapLeetCodeDataToCity(data) {
         },
         badgesInfo: {
             total: badges.badgesCount || 0
-        }
+        },
+        calendar,
     };
 }

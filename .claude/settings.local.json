@@ -8,7 +8,9 @@
       "Bash(rtk ls *)",
       "Bash(grep -E \"\\\\.\\(config|json|js\\)$\")",
       "Bash(rtk wc *)",
-      "Bash(rtk tree *)"
+      "Bash(rtk tree *)",
+      "Bash(lsof -iTCP -sTCP:LISTEN -n -P)",
+      "mcp__agent-tinyfish-ai__run_web_automation"
     ]
   }
 }

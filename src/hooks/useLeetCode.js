@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 
 // For local dev, you might run wrangler dev in the worker directory (http://127.0.0.1:8787)
-const WORKER_URL = import.meta.env.VITE_WORKER_URL || 'https://leetcode-galaxy-proxy.workers.dev';
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
 function getCached(username) {
@@ -11,7 +10,7 @@ function getCached(username) {
         const { data, ts } = JSON.parse(raw);
         
         // Invalidate if TTL expired OR if it's an old cache from before we added competitive records
-        if (Date.now() - ts > CACHE_TTL || !data.contest || !data.badges) {
+        if (Date.now() - ts > CACHE_TTL || !data.contest || !data.badges || !data.calendar) {
             localStorage.removeItem(`lc_${username.toLowerCase()}`);
             return null;
         }
@@ -74,11 +73,12 @@ export function useLeetCode() {
             };
 
             const encodedUser = encodeURIComponent(username);
-            const [profileData, statsData, contestData, badgesData] = await Promise.all([
-                safeFetch(`${WORKER_URL}/userProfile/${encodedUser}`),
-                safeFetch(`${WORKER_URL}/skillStats/${encodedUser}`),
-                safeFetch(`${WORKER_URL}/${encodedUser}/contest`),
-                safeFetch(`${WORKER_URL}/${encodedUser}/badges`)
+            const [profileData, statsData, contestData, badgesData, calendarData] = await Promise.all([
+                safeFetch(`https://alfa-leetcode-api.onrender.com/userProfile/${encodedUser}`),
+                safeFetch(`https://alfa-leetcode-api.onrender.com/skillStats/${encodedUser}`),
+                safeFetch(`https://alfa-leetcode-api.onrender.com/${encodedUser}/contest`),
+                safeFetch(`https://alfa-leetcode-api.onrender.com/${encodedUser}/badges`),
+                safeFetch(`https://alfa-leetcode-api.onrender.com/${encodedUser}/calendar`),
             ]);
 
             if (profileData.errors || Object.keys(profileData).length === 0 || !profileData.totalQuestions) {
@@ -105,7 +105,8 @@ export function useLeetCode() {
                     recentSubmissionList: profileData.recentSubmissions || []
                 },
                 contest: contestData,
-                badges: badgesData
+                badges: badgesData,
+                calendar: calendarData
             };
 
             setData(json);
