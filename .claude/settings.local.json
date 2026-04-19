@@ -10,7 +10,8 @@
       "Bash(rtk wc *)",
       "Bash(rtk tree *)",
       "Bash(lsof -iTCP -sTCP:LISTEN -n -P)",
-      "mcp__agent-tinyfish-ai__run_web_automation"
+      "mcp__agent-tinyfish-ai__run_web_automation",
+      "Bash(rtk grep *)"
     ]
   }
 }

@@ -9,6 +9,7 @@ import TransitionOverlay from './components/TransitionOverlay';
 import CityCanvas from './components/CityScene';
 import FighterCard from './components/FighterCard';
 import { useLeetCode } from './hooks/useLeetCode';
+import { playDrone, playWarpSweep, playArrivalChord, startCityAmbient, stopCityAmbient } from './hooks/useSpaceSound';
 import { mapLeetCodeDataToCity } from './utils/dataMapper';
 
 const MAX_RECENT = 12;
@@ -263,6 +264,7 @@ function App() {
     setViewMode('city');
     setTransitionStage(1);
     setTransitionMsg(pick(TRANSITION_LINES.lock));
+    playDrone();
 
     if (pushUrl) {
       window.history.pushState({}, '', `/u/${encodeURIComponent(username)}`);
@@ -279,10 +281,13 @@ function App() {
 
       setTransitionStage(2);
       setTransitionMsg(pick(TRANSITION_LINES.jump));
+      playWarpSweep();
 
       transitionTimerRef.current = setTimeout(() => {
         setPhase(3);
         setTransitionStage(0);
+        playArrivalChord();
+        startCityAmbient();
       }, 1800);
 
     } catch (err) {
@@ -315,6 +320,7 @@ function App() {
 
   const handleBack = useCallback((pushUrl = true) => {
     clearTimeout(transitionTimerRef.current);
+    stopCityAmbient();
     setPhase(1);
     setTransitionStage(0);
     setMappedData(null);
@@ -329,6 +335,12 @@ function App() {
     window.addEventListener('quickSearch', handler);
     return () => window.removeEventListener('quickSearch', handler);
   }, [handleSearch]);
+
+  useEffect(() => {
+    const onHide = () => { if (document.hidden) stopCityAmbient(); };
+    document.addEventListener('visibilitychange', onHide);
+    return () => document.removeEventListener('visibilitychange', onHide);
+  }, []);
 
   // URL-based profile loading
   useEffect(() => {

@@ -145,9 +145,9 @@ function generateBlockBuildings(easy, med, hard, globalMax, seed) {
 }
 
 /* ─────────────────── City Building ─────────────────── */
+// No per-building useFrame — static emissive + bloom handles glow.
+// Saves ~500 frame callbacks (100 blocks × ~5 buildings each).
 function CityBuilding({ height, width, color, position }) {
-    const phase = position[0] * 1.7 + position[2] * 2.3;
-
     const tiers = height > 6 ? 3 : height > 3.5 ? 2 : 1;
     const tierHeights = tiers === 3
         ? [height * 0.55, height * 0.28, height * 0.17]
@@ -156,42 +156,11 @@ function CityBuilding({ height, width, color, position }) {
         : [height];
     const tierWidths = tierHeights.map((_, i) => width * (1 - i * 0.22));
 
-    const stripeCount = Math.floor(height / 1.4);
+    // Cap at 3 stripes — no refs, static emissive
+    const stripeCount = Math.min(Math.floor(height / 1.4), 3);
     const stripePositions = Array.from({ length: stripeCount }, (_, i) =>
         ((i + 1) / (stripeCount + 1)) * height
     );
-
-    const hasSpire = height > 5;
-
-    const baseRef    = useRef();
-    const winRefs    = useRef([]);
-    const stripeRefs = useRef([]);
-    const spireRef   = useRef();
-    const spireLight = useRef();
-
-    useFrame((state) => {
-        const t = state.clock.elapsedTime;
-        if (baseRef.current)
-            baseRef.current.emissiveIntensity = 0.25 + Math.sin(t * 1.8 + phase) * 0.12;
-
-        winRefs.current.forEach((mat, i) => {
-            if (!mat) return;
-            mat.emissiveIntensity = Math.max(0.05,
-                0.65 + Math.sin(t * 0.7 + phase + i * 1.3) * 0.4
-                     + Math.sin(t * 2.3 + phase * 0.5 + i) * 0.15
-            );
-        });
-
-        stripeRefs.current.forEach((mat) => {
-            if (!mat) return;
-            mat.emissiveIntensity = 0.6 + Math.sin(t * 0.4 + phase) * 0.3;
-        });
-
-        if (spireRef.current)
-            spireRef.current.emissiveIntensity = 0.5 + Math.abs(Math.sin(t * 1.2 + phase)) * 2.5;
-        if (spireLight.current)
-            spireLight.current.intensity = 0.3 + Math.abs(Math.sin(t * 1.2 + phase)) * 1.8;
-    });
 
     let yOffset = 0;
     const tierMeshes = tierHeights.map((th, ti) => {
@@ -199,13 +168,12 @@ function CityBuilding({ height, width, color, position }) {
         const y = yOffset + th / 2;
         yOffset += th;
         return (
-            <mesh key={`tier-${ti}`} position={[0, y, 0]} castShadow>
+            <mesh key={`tier-${ti}`} position={[0, y, 0]}>
                 <boxGeometry args={[tw, th, tw]} />
                 <meshStandardMaterial
-                    ref={ti === 0 ? baseRef : undefined}
                     color={color}
                     emissive={color}
-                    emissiveIntensity={0.25}
+                    emissiveIntensity={0.3}
                     metalness={0.55}
                     roughness={0.35}
                     transparent
@@ -222,48 +190,31 @@ function CityBuilding({ height, width, color, position }) {
             {stripePositions.map((sy, i) => (
                 <mesh key={`stripe-${i}`} position={[0, sy, width / 2 + 0.01]}>
                     <boxGeometry args={[width * 0.92, 0.045, 0.02]} />
-                    <meshStandardMaterial
-                        ref={el => stripeRefs.current[i] = el}
+                    <meshBasicMaterial
                         color={color}
-                        emissive={color}
-                        emissiveIntensity={0.7}
-                        transparent
-                        opacity={0.85}
                         toneMapped={false}
                     />
                 </mesh>
             ))}
 
-            {height > 2.5 && [0.28, 0.52, 0.76].map((frac, i) => (
+            {height > 2.5 && [0.35, 0.65].map((frac, i) => (
                 <mesh key={`win-${i}`} position={[tierWidths[0] / 2 + 0.01, height * frac, 0]}>
-                    <boxGeometry args={[0.02, 0.13, 0.26]} />
-                    <meshStandardMaterial
-                        ref={el => winRefs.current[i] = el}
-                        color="#c8ddff"
-                        emissive="#88aaff"
-                        emissiveIntensity={0.7}
-                        transparent
-                        opacity={0.95}
-                    />
+                    <boxGeometry args={[0.02, 0.12, 0.24]} />
+                    <meshBasicMaterial color="#88aaff" toneMapped={false} />
                 </mesh>
             ))}
 
-            {hasSpire && (
+            {height > 5 && (
                 <group position={[0, height, 0]}>
-                    <mesh position={[0, 0.55, 0]}>
-                        <cylinderGeometry args={[0.03, 0.06, 1.1, 6]} />
+                    <mesh position={[0, 0.5, 0]}>
+                        <cylinderGeometry args={[0.03, 0.06, 1.0, 5]} />
                         <meshStandardMaterial color="#aaaacc" metalness={0.9} roughness={0.2} />
                     </mesh>
-                    <mesh ref={spireRef} position={[0, 1.15, 0]}>
-                        <sphereGeometry args={[0.09, 8, 8]} />
-                        <meshStandardMaterial
-                            color="#ff4466"
-                            emissive="#ff2244"
-                            emissiveIntensity={1.5}
-                            toneMapped={false}
-                        />
+                    {/* Bloom on emissive beacon — no pointLight needed */}
+                    <mesh position={[0, 1.1, 0]}>
+                        <sphereGeometry args={[0.09, 6, 6]} />
+                        <meshBasicMaterial color="#ff2244" toneMapped={false} />
                     </mesh>
-                    <pointLight ref={spireLight} color="#ff2244" intensity={1} distance={6} decay={2} />
                 </group>
             )}
         </group>
@@ -577,7 +528,7 @@ function SceneLighting({ isNight, totalWidth }) {
         <group>
             <fog attach="fog" args={['#020308', 30, totalWidth * 0.7]} />
             <ambientLight ref={ambRef} intensity={0.15} color="#2020ff" />
-            <directionalLight ref={dirRef1} position={[30, 40, 30]} intensity={0.4} color="#ffffff" castShadow />
+            <directionalLight ref={dirRef1} position={[30, 40, 30]} intensity={0.4} color="#ffffff" />
             <directionalLight ref={dirRef2} position={[-20, 30, -20]} intensity={0.2} color="#8080ff" />
             <pointLight ref={ptRef} position={[0, 10, 0]} intensity={0.6} color="#00f5d4" distance={60} />
         </group>
@@ -840,13 +791,13 @@ function CitySceneInner({ roster, isNight, onSelectUser }) {
                 );
             })}
 
-            <EffectComposer>
+            <EffectComposer multisampling={0}>
                 <Bloom
                     mipmapBlur
-                    luminanceThreshold={0.4}
-                    luminanceSmoothing={0.9}
-                    intensity={isNight ? 2.0 : 1.5}
-                    radius={0.8}
+                    luminanceThreshold={0.5}
+                    luminanceSmoothing={0.7}
+                    intensity={isNight ? 1.4 : 1.0}
+                    radius={0.6}
                 />
             </EffectComposer>
         </>
@@ -862,10 +813,9 @@ export default function CityCanvas({ data, isNight, onSelectUser }) {
         <div style={{ position: 'absolute', inset: 0 }}>
             <Canvas
                 style={{ width: '100%', height: '100%' }}
-                shadows
                 camera={{ fov: 55, near: 0.1, far: 500 }}
-                gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
-                dpr={[1, 1.5]}
+                gl={{ antialias: false, alpha: false, preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
+                dpr={Math.min(window.devicePixelRatio, 1.5)}
             >
                 <SceneLighting isNight={isNight} totalWidth={totalWidth} />
                 <CityCamera />
