@@ -48,7 +48,8 @@ function RecentChips({ recent, onSelect }) {
                         style={{
                             flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
                             padding: '6px 14px', borderRadius: 999, fontSize: 11, fontFamily: FONT_MONO,
-                            border: '1px solid rgba(0,245,212,0.2)', background: 'rgba(0,245,212,0.04)',
+                            border: '1px solid rgba(0,245,212,0.25)', background: 'rgba(10,14,22,0.8)',
+                            backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
                             color: '#00f5d4', cursor: 'pointer', whiteSpace: 'nowrap',
                             transition: 'all 0.3s ease',
                         }}
@@ -198,9 +199,10 @@ function FeaturedCard({ user, index, onSelect }) {
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '10px 16px', borderRadius: 12, cursor: 'pointer',
                 fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.05em',
-                background: hovered ? `${color}12` : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${hovered ? color + '40' : 'rgba(255,255,255,0.06)'}`,
-                color: hovered ? color : '#6b7280',
+                background: hovered ? `${color}12` : 'rgba(10,14,22,0.75)',
+                border: `1px solid ${hovered ? color + '40' : 'rgba(255,255,255,0.08)'}`,
+                color: hovered ? color : '#b7bfcc',
+                backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
                 transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
                 transform: `perspective(600px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) ${hovered ? 'translateZ(8px)' : ''}`,
                 boxShadow: hovered ? `0 4px 20px ${color}20, inset 0 1px 0 rgba(255,255,255,0.05)` : 'none',
@@ -241,13 +243,14 @@ function CommandHint() {
             style={{
                 display: 'flex', alignItems: 'center', gap: 8,
                 padding: '8px 16px', borderRadius: 10,
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.04)',
+                background: 'rgba(10,14,22,0.75)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
                 marginTop: 24,
             }}
         >
-            <Terminal size={12} style={{ color: 'var(--text-muted)' }} />
-            <span style={{ color: 'var(--text-muted)', fontSize: 10, fontFamily: FONT_MONO, letterSpacing: '0.1em' }}>
+            <Terminal size={12} style={{ color: '#9aa3b2' }} />
+            <span style={{ color: '#b7bfcc', fontSize: 10, fontFamily: FONT_MONO, letterSpacing: '0.1em' }}>
                 TIP: TRY "rocky", "tars", "murph", "cooper", OR "hail mary"
             </span>
         </motion.div>
@@ -305,6 +308,10 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
             overflowY: isMobile ? 'auto' : 'hidden',
             WebkitOverflowScrolling: 'touch',
         }}>
+            <div aria-hidden style={{
+                position: 'absolute', inset: 0, pointerEvents: 'none',
+                background: 'radial-gradient(ellipse 620px 560px at 50% 50%, rgba(3,5,8,0.82) 0%, rgba(3,5,8,0.62) 40%, rgba(3,5,8,0.28) 70%, transparent 100%)',
+            }} />
             <GridBackground />
 
             <motion.div
@@ -397,8 +404,9 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.6 }}
                     style={{
-                        color: '#6b7280', marginBottom: 28, fontFamily: FONT_MONO,
+                        color: '#9aa3b2', marginBottom: 28, fontFamily: FONT_MONO,
                         fontSize: 13, textAlign: 'center', letterSpacing: '0.18em', height: 24,
+                        textShadow: '0 0 6px rgba(3,5,8,0.9), 0 0 12px rgba(3,5,8,0.7)',
                     }}
                 >
                     <TypeWriter text="YOUR CODING UNIVERSE — 29 LIGHTYEARS FROM EARTH" delay={35} />
@@ -519,13 +527,17 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                             style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                         >
                             <div style={{
-                                color: 'var(--text-muted)', fontSize: 10, fontFamily: FONT_MONO,
+                                color: '#b7bfcc', fontSize: 10, fontFamily: FONT_MONO,
                                 marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8,
                                 letterSpacing: '0.12em',
+                                padding: '4px 12px', borderRadius: 999,
+                                background: 'rgba(3,5,8,0.7)',
+                                border: '1px solid rgba(255,255,255,0.05)',
+                                backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
                             }}>
-                                <span style={{ width: 20, height: 1, background: 'var(--section-border)' }} />
+                                <span style={{ width: 20, height: 1, background: 'rgba(255,255,255,0.12)' }} />
                                 RECENTLY EXPLORED
-                                <span style={{ width: 20, height: 1, background: 'var(--section-border)' }} />
+                                <span style={{ width: 20, height: 1, background: 'rgba(255,255,255,0.12)' }} />
                             </div>
                             <RecentChips recent={recentlyExplored} onSelect={onSearch} />
                         </motion.div>
@@ -537,18 +549,23 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1.2 }}
-                    style={{ marginTop: 28, width: '100%' }}
+                    style={{ marginTop: 28, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                 >
                     <div style={{
-                        textAlign: 'center', color: 'var(--text-muted)', fontSize: 10,
+                        textAlign: 'center', color: '#b7bfcc', fontSize: 10,
                         fontFamily: FONT_MONO, letterSpacing: '0.15em',
-                        marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+                        marginBottom: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+                        padding: '5px 14px', borderRadius: 999,
+                        background: 'rgba(3,5,8,0.7)',
+                        border: '1px solid rgba(255,255,255,0.05)',
+                        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+                        marginLeft: 'auto', marginRight: 'auto',
                     }}>
-                        <span style={{ height: 1, width: 60, background: 'linear-gradient(90deg, transparent, rgba(148,163,184,0.3))' }} />
+                        <span style={{ height: 1, width: 40, background: 'linear-gradient(90deg, transparent, rgba(148,163,184,0.35))' }} />
                         <Star size={10} style={{ color: 'var(--amber)' }} />
                         LEGENDARY EXPLORERS
                         <Star size={10} style={{ color: 'var(--amber)' }} />
-                        <span style={{ height: 1, width: 60, background: 'linear-gradient(90deg, rgba(148,163,184,0.3), transparent)' }} />
+                        <span style={{ height: 1, width: 40, background: 'linear-gradient(90deg, rgba(148,163,184,0.35), transparent)' }} />
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: isMobile ? 6 : 8 }}>
                         {FEATURED.slice(0, isMobile ? 4 : FEATURED.length).map((user, i) => (

@@ -12,7 +12,11 @@
       "Bash(lsof -iTCP -sTCP:LISTEN -n -P)",
       "mcp__agent-tinyfish-ai__run_web_automation",
       "Bash(rtk grep *)",
-      "Bash(rtk read *)"
+      "Bash(rtk read *)",
+      "Bash(node --input-type=module)",
+      "Bash(rtk npx *)",
+      "Bash(node_modules/.bin/vite build *)",
+      "Bash(rtk git *)"
     ]
   }
 }

@@ -393,8 +393,12 @@ function App() {
       <div className="status-bar-bottom" style={{
         position: 'fixed', bottom: 12, left: 16, zIndex: 50, pointerEvents: 'none',
         display: 'flex', alignItems: 'center', gap: 8,
-        fontFamily: '"Share Tech Mono", monospace', fontSize: 9.5, color: 'rgba(0,245,212,0.55)',
+        fontFamily: '"Share Tech Mono", monospace', fontSize: 9.5, color: 'rgba(0,245,212,0.9)',
         letterSpacing: '0.15em',
+        padding: '6px 12px', borderRadius: 6,
+        background: 'rgba(3,5,8,0.78)',
+        border: '1px solid rgba(0,245,212,0.12)',
+        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
       }}>
         <span style={{
           width: 6, height: 6, borderRadius: '50%', background: '#00f5d4',
