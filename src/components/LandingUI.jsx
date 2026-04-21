@@ -26,41 +26,6 @@ function Counter({ target, duration = 2000 }) {
 }
 
 /* ── Recently-explored chip marquee ──────────────────── */
-function RecentChips({ recent, onSelect }) {
-    if (!recent || recent.length === 0) return null;
-    const doubled = [...recent, ...recent];
-    return (
-        <div style={{
-            marginTop: 16, overflow: 'hidden', width: '100%', maxWidth: 480,
-            maskImage: 'linear-gradient(to right, transparent, black 15%, black 85%, transparent)',
-            WebkitMaskImage: 'linear-gradient(to right, transparent, black 15%, black 85%, transparent)',
-        }}>
-            <motion.div
-                style={{ display: 'flex', flexDirection: 'row', gap: 8, whiteSpace: 'nowrap' }}
-                animate={{ x: ['0%', '-50%'] }}
-                transition={{ repeat: Infinity, duration: recent.length * 3, ease: 'linear' }}
-            >
-                {doubled.map((u, i) => (
-                    <button
-                        key={`${u}-${i}`}
-                        onClick={() => onSelect(u)}
-                        className="cyber-btn"
-                        style={{
-                            flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
-                            padding: '6px 14px', borderRadius: 999, fontSize: 11, fontFamily: FONT_MONO,
-                            border: '1px solid rgba(0,245,212,0.25)', background: 'rgba(10,14,22,0.8)',
-                            backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-                            color: '#00f5d4', cursor: 'pointer', whiteSpace: 'nowrap',
-                            transition: 'all 0.3s ease',
-                        }}
-                    >
-                        <Star size={10} />{u}
-                    </button>
-                ))}
-            </motion.div>
-        </div>
-    );
-}
 
 /* ── Typewriter with cursor ──────────────────────────── */
 function TypeWriter({ text, delay = 40 }) {
@@ -258,7 +223,7 @@ function CommandHint() {
 }
 
 /* ── Main component ──────────────────────────────────── */
-export default function LandingUI({ onSearch, recentlyExplored = [] }) {
+export default function LandingUI({ onSearch }) {
     const [username, setUsername] = useState('');
     const [focused, setFocused] = useState(false);
     const [searchHovered, setSearchHovered] = useState(false);
@@ -368,33 +333,20 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                     }} />
                     <h1
                         className="glitch-text"
-                        data-text="LEETCODE"
+                        data-text="LC GALAXY"
                         style={{
                             position: 'relative',
                             fontSize: 'clamp(44px, 9vw, 80px)',
                             fontFamily: FONT_ORBIT, fontWeight: 900,
-                            letterSpacing: '0.1em', lineHeight: 1.05,
-                            background: 'linear-gradient(135deg, #00f5d4 0%, #7c3aed 50%, #00f5d4 100%)',
+                            letterSpacing: '0.08em', lineHeight: 1.05,
+                            background: 'linear-gradient(135deg, #00f5d4 0%, #a78bfa 50%, #00f5d4 100%)',
                             backgroundSize: '200% 200%',
-                            animation: 'gradient-shift 6s ease infinite',
+                            animation: 'gradient-shift 14s ease infinite',
                             WebkitBackgroundClip: 'text', backgroundClip: 'text',
                             WebkitTextFillColor: 'transparent', color: 'transparent',
                         }}
                     >
-                        LEETCODE
-                    </h1>
-                    <h1 style={{
-                        position: 'relative',
-                        fontSize: 'clamp(44px, 9vw, 80px)',
-                        fontFamily: FONT_ORBIT, fontWeight: 900,
-                        letterSpacing: '0.1em', lineHeight: 1.05,
-                        background: 'linear-gradient(135deg, #7c3aed 0%, #00f5d4 50%, #7c3aed 100%)',
-                        backgroundSize: '200% 200%',
-                        animation: 'gradient-shift 6s ease infinite',
-                        WebkitBackgroundClip: 'text', backgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent', color: 'transparent',
-                    }}>
-                        GALAXY
+                        LC GALAXY
                     </h1>
                 </motion.div>
 
@@ -516,33 +468,6 @@ export default function LandingUI({ onSearch, recentlyExplored = [] }) {
                         </div>
                     )}
                 </motion.form>
-
-                {/* ── Recently explored ── */}
-                <AnimatePresence>
-                    {recentlyExplored.length > 0 && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0 }}
-                            style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-                        >
-                            <div style={{
-                                color: '#b7bfcc', fontSize: 10, fontFamily: FONT_MONO,
-                                marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8,
-                                letterSpacing: '0.12em',
-                                padding: '4px 12px', borderRadius: 999,
-                                background: 'rgba(3,5,8,0.7)',
-                                border: '1px solid rgba(255,255,255,0.05)',
-                                backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-                            }}>
-                                <span style={{ width: 20, height: 1, background: 'rgba(255,255,255,0.12)' }} />
-                                RECENTLY EXPLORED
-                                <span style={{ width: 20, height: 1, background: 'rgba(255,255,255,0.12)' }} />
-                            </div>
-                            <RecentChips recent={recentlyExplored} onSelect={onSearch} />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
 
                 {/* ── Featured explorers ── */}
                 <motion.div

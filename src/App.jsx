@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -478,7 +478,7 @@ function App() {
       </div>
 
       {/* UI Overlays */}
-      {phase === 1 && <LandingUI onSearch={handleSearch} recentlyExplored={recentlyExplored} />}
+      {phase === 1 && <LandingUI onSearch={handleSearch} />}
       <TransitionOverlay stage={transitionStage} message={transitionMsg} />
       {phase === 3 && viewMode !== 'card' && (
         <UserPanel
