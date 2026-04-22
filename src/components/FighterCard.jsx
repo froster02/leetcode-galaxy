@@ -531,6 +531,19 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
     const blockPad = compactLaptop ? '16px 18px' : '22px 24px';
     const blockPadWide = compactLaptop ? '18px 20px' : '24px 28px';
     const sectionGap = compactLaptop ? 6 : 10;
+    const panelSurface = {
+        background: 'linear-gradient(165deg, rgba(12,18,34,0.86) 0%, rgba(8,12,24,0.76) 100%)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(0,245,212,0.22)',
+        borderRadius: 12,
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05), 0 16px 40px rgba(0,0,0,0.34), 0 0 0 1px rgba(0,245,212,0.07)',
+    };
+    const tileSurface = {
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.025) 100%)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 11,
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+    };
 
     const shooters = useMemo(() => Array.from({length:3},(_,i) => ({ x:8+i*28, y:3+i*18, dur:8+i*5, del:i*5+2 })), []);
 
@@ -616,7 +629,6 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
     /* Districts / specialties */
     const topDistricts  = districts ? [...districts].sort((a, b) => b.problemsSolved - a.problemsSolved).slice(0, 5) : [];
-    const strongestTopic = topDistricts[0] || null;
     const maxDistrictSolved = topDistricts[0]?.problemsSolved || 1;
 
     const winColor = winRate >= 70 ? C_EASY : winRate >= 50 ? C_MED : C_HARD;
@@ -721,8 +733,9 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                             background: 'rgba(8,12,24,0.78)',
                             backdropFilter: 'blur(10px)',
                             borderBottom: '1px solid rgba(0,245,212,0.18)',
+                            boxShadow: '0 10px 24px rgba(0,0,0,0.35)',
                         }}>
-                        <button onClick={onBack} style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.8)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,245,212,0.2)', borderRadius: 20, padding: '4px 12px', cursor: 'pointer', transition: 'all 0.2s' }}
+                        <button onClick={onBack} style={{ fontFamily: Fm, fontSize: 10, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.88)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,245,212,0.2)', borderRadius: 20, padding: '6px 14px', cursor: 'pointer', transition: 'all 0.2s' }}
                             onMouseEnter={e => { e.currentTarget.style.color = C_TEAL; e.currentTarget.style.borderColor = `${C_TEAL}50`; }}
                             onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; e.currentTarget.style.borderColor = 'rgba(0,245,212,0.2)'; }}>
                             ← ARENA
@@ -740,8 +753,8 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                     background: 'rgba(255,255,255,0.04)',
                                     color: 'rgba(255,255,255,0.88)',
                                     fontFamily: Fm,
-                                    fontSize: 10,
-                                    letterSpacing: '0.08em',
+                                    fontSize: 11,
+                                    letterSpacing: '0.04em',
                                     outline: 'none',
                                 }}
                             />
@@ -749,8 +762,8 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                 type="submit"
                                 style={{
                                     fontFamily: Fm,
-                                    fontSize: 9,
-                                    letterSpacing: '0.14em',
+                                    fontSize: 10,
+                                    letterSpacing: '0.1em',
                                     color: C_TEAL,
                                     background: 'rgba(0,245,212,0.08)',
                                     border: '1px solid rgba(0,245,212,0.28)',
@@ -766,7 +779,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
                     {/* ════ 1. HERO HEADER ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.08 }}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: heroPad, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(0,245,212,0.28)', borderRadius: 12, marginBottom: sectionGap, boxShadow: 'inset 0 1px 0 rgba(0,245,212,0.08)' }}>
+                        style={{ ...panelSurface, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: heroPad, marginBottom: sectionGap }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: compactLaptop ? 14 : 20 }}>
                             <div style={{ position: 'relative', flexShrink: 0 }}>
                                 <motion.div animate={{ boxShadow: [`0 0 0 2px ${tier.color}30`, `0 0 0 5px ${tier.color}50`, `0 0 0 2px ${tier.color}30`] }} transition={{ duration: 3, repeat: Infinity }}
@@ -777,11 +790,11 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                             <div>
                                 <div style={{ fontFamily: Fd, fontSize: compactLaptop ? 20 : 24, fontWeight: 900, color: 'rgba(255,255,255,0.92)', letterSpacing: '0.02em', lineHeight: 1.05, marginBottom: compactLaptop ? 4 : 6 }}>{username}</div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
-                                    <span style={{ fontFamily: Fm, fontSize: compactLaptop ? 8 : 9, letterSpacing: '0.16em', color: tier.color, textTransform: 'uppercase', padding: compactLaptop ? '2px 7px' : '2px 8px', borderRadius: 4, background: `${tier.color}12`, border: `1px solid ${tier.color}28` }}>{tier.name}</span>
-                                    <span style={{ fontFamily: Fm, fontSize: compactLaptop ? 8 : 9, color: 'rgba(255,255,255,0.75)' }}>·</span>
-                                    {topPct && <span style={{ fontFamily: Fm, fontSize: compactLaptop ? 8 : 9, letterSpacing: '0.1em', color: C_EASY }}>TOP {topPct}% GLOBAL</span>}
+                                    <span style={{ fontFamily: Fm, fontSize: compactLaptop ? 9 : 10, letterSpacing: '0.1em', color: tier.color, textTransform: 'uppercase', padding: compactLaptop ? '2px 7px' : '2px 8px', borderRadius: 4, background: `${tier.color}12`, border: `1px solid ${tier.color}28` }}>{tier.name}</span>
+                                    <span style={{ fontFamily: Fm, fontSize: compactLaptop ? 9 : 10, color: 'rgba(255,255,255,0.78)' }}>·</span>
+                                    {topPct && <span style={{ fontFamily: Fm, fontSize: compactLaptop ? 9 : 10, letterSpacing: '0.06em', color: C_EASY }}>TOP {topPct}% GLOBAL</span>}
                                 </div>
-                                <div style={{ fontFamily: Fm, fontSize: compactLaptop ? 9 : 10, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.06em' }}>
+                                <div style={{ fontFamily: Fm, fontSize: compactLaptop ? 10 : 11, color: 'rgba(255,255,255,0.86)', letterSpacing: '0.03em' }}>
                                     Rank #{profile.ranking?.toLocaleString() || '—'}
                                     <span style={{ margin: compactLaptop ? '0 6px' : '0 8px', color: 'rgba(255,255,255,0.3)' }}>·</span>
                                     <span style={{ color: cls.color }}>{cls.label}</span>
@@ -789,11 +802,11 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                             </div>
                         </div>
                         <div style={{ textAlign: 'center', paddingLeft: compactLaptop ? 14 : 24 }}>
-                            <div style={{ fontFamily: Fm, fontSize: compactLaptop ? 7 : 7.5, letterSpacing: '0.24em', color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', marginBottom: 8 }}>Acceptance Rate</div>
+                            <div style={{ fontFamily: Fm, fontSize: compactLaptop ? 8 : 8.5, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase', marginBottom: 8 }}>Acceptance Rate</div>
                             <MiniRing pct={winRate} size={compactLaptop ? 68 : 76} color={winColor} stroke={5}>
                                 <div style={{ textAlign: 'center' }}>
                                     <div style={{ fontFamily: Fd, fontSize: compactLaptop ? 14 : 16, fontWeight: 900, color: winColor, lineHeight: 1 }}>{winRate}%</div>
-                                    <div style={{ fontFamily: Fm, fontSize: 7, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.1em', marginTop: 1 }}>AC RATE</div>
+                                    <div style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.06em', marginTop: 1 }}>AC RATE</div>
                                 </div>
                             </MiniRing>
                         </div>
@@ -801,26 +814,26 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
                     {/* ════ 2. POWER LEVEL ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.14 }}
-                        style={{ padding: blockPadWide, background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,245,212,0.2)', borderRadius: 10, marginBottom: sectionGap, display: 'flex', alignItems: 'center', gap: compactLaptop ? 20 : 28 }}>
+                        style={{ ...panelSurface, padding: blockPadWide, marginBottom: sectionGap, display: 'flex', alignItems: 'center', gap: compactLaptop ? 20 : 28 }}>
                         <div style={{ flex: 1 }}>
-                            <div style={{ fontFamily: Fm, fontSize: 7.5, letterSpacing: '0.32em', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginBottom: 6 }}>Power Level</div>
+                            <div style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.18em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase', marginBottom: 6 }}>Power Level</div>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: compactLaptop?8:12 }}>
                                 <PowerCounter target={power} color={tier.color} />
                                 <span style={{ fontFamily: Fm, fontSize: compactLaptop?11:13, color: 'rgba(255,255,255,0.7)' }}>/ {tier.max.toLocaleString()}</span>
                             </div>
                             {/* Tier progress bar */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                <span style={{ fontFamily: Fd, fontSize: 7.5, letterSpacing: '0.14em', color: tier.color, whiteSpace: 'nowrap' }}>{tier.name}</span>
+                                <span style={{ fontFamily: Fd, fontSize: 8.5, letterSpacing: '0.1em', color: tier.color, whiteSpace: 'nowrap' }}>{tier.name}</span>
                                 <div style={{ flex: 1, height: compactLaptop?3:5, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden', position: 'relative' }}>
                                     <motion.div initial={{ width: 0 }} animate={{ width: `${tierPct}%` }} transition={{ duration: 1.4, ease: [0.16,1,0.3,1], delay: 0.3 }}
                                         style={{ height: '100%', borderRadius: 3, background: `linear-gradient(90deg, ${tier.color}70, ${tier.color})`, boxShadow: `0 0 10px ${tier.color}70` }} />
                                 </div>
-                                {nextTier && <span style={{ fontFamily: Fd, fontSize: 8, letterSpacing: '0.12em', color: nextTier.color, whiteSpace: 'nowrap' }}>{nextTier.name}</span>}
+                                {nextTier && <span style={{ fontFamily: Fd, fontSize: 9, letterSpacing: '0.09em', color: nextTier.color, whiteSpace: 'nowrap' }}>{nextTier.name}</span>}
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.1em' }}>{tier.min.toLocaleString()}</span>
-                                {toNextTier > 0 && <span style={{ fontFamily: Fm, fontSize: 8, color: tier.color, letterSpacing: '0.1em' }}>{toNextTier.toLocaleString()} TO NEXT TIER</span>}
-                                <span style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.1em' }}>{tier.max.toLocaleString()}</span>
+                                <span style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.78)', letterSpacing: '0.06em' }}>{tier.min.toLocaleString()}</span>
+                                {toNextTier > 0 && <span style={{ fontFamily: Fm, fontSize: 9, color: tier.color, letterSpacing: '0.06em' }}>{toNextTier.toLocaleString()} TO NEXT TIER</span>}
+                                <span style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.78)', letterSpacing: '0.06em' }}>{tier.max.toLocaleString()}</span>
                             </div>
                         </div>
                         <MiniRing pct={winRate} size={compactLaptop?66:78} color={winColor} stroke={5}>
@@ -842,9 +855,9 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
                     {/* ════ 4. PROBLEM BREAKDOWN ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.27 }}
-                        style={{ padding: blockPadWide, background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,245,212,0.22)', borderRadius: 10, marginBottom: sectionGap }}>
+                        style={{ ...panelSurface, padding: blockPadWide, marginBottom: sectionGap }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: compactLaptop?10:16 }}>
-                            <span style={{ fontFamily: Fm, fontSize: 8, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' }}>Problem Breakdown</span>
+                            <span style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Problem Breakdown</span>
                             <span style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.08em' }}>
                                 {total} / {lcTotal > 0 ? lcTotal.toLocaleString() : '--'}
                                 <span style={{ marginLeft: 8, color: tier.color }}>· {totalPctCleared != null ? `${totalPctCleared}% CLEARED` : '--'}</span>
@@ -881,9 +894,9 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
                     {/* ════ 5. CONTEST & RATING ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.33 }}
-                        style={{ padding: blockPad, background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,245,212,0.2)', borderRadius: 10, marginBottom: sectionGap }}>
+                        style={{ ...panelSurface, padding: blockPad, marginBottom: sectionGap }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: compactLaptop?8:12 }}>
-                            <span style={{ fontFamily: Fm, fontSize: 8, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' }}>Contest & Rating</span>
+                            <span style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Contest & Rating</span>
                             {attended && <span style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em' }}>{attended} ATTENDED</span>}
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
@@ -894,10 +907,10 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                 { head: 'Top %',          val: topPct ? `${topPct}%` : null, color: C_EASY, sub: 'Global',  big: false },
                             ].map(({ head, val, color, sub, big }) => (
                                 <motion.div key={head} whileHover={{ y: -2 }}
-                                    style={{ padding: compactLaptop ? '9px 12px' : '13px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: `1px solid rgba(255,255,255,0.06)`, transition: 'border-color 0.2s' }}
+                                    style={{ ...tileSurface, padding: compactLaptop ? '9px 12px' : '13px 16px', transition: 'border-color 0.2s' }}
                                     onMouseEnter={e => { e.currentTarget.style.borderColor = `${color}30`; }}
                                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
-                                    <div style={{ fontFamily: Fm, fontSize: 7.5, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', marginBottom: 8 }}>{head}</div>
+                                    <div style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.13em', color: 'rgba(255,255,255,0.84)', textTransform: 'uppercase', marginBottom: 8 }}>{head}</div>
                                     <div style={{ fontFamily: Fd, fontSize: big ? (compactLaptop?18:22) : (compactLaptop?15:18), fontWeight: 900, color: val ? color : 'rgba(255,255,255,0.15)', lineHeight: 1, marginBottom: 4 }}>{val ?? '—'}</div>
                                     {sub && <div style={{ fontFamily: Fm, fontSize: 8.5, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.08em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</div>}
                                 </motion.div>
@@ -907,9 +920,9 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
                     {/* ════ 6. STANDING ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.38 }}
-                        style={{ padding: blockPad, background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,245,212,0.2)', borderRadius: 10, marginBottom: sectionGap }}>
+                        style={{ ...panelSurface, padding: blockPad, marginBottom: sectionGap }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: compactLaptop?8:12 }}>
-                            <span style={{ fontFamily: Fm, fontSize: 8, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' }}>Standing</span>
+                            <span style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Standing</span>
                             <span style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em' }}>
                                 RANK #{profile.ranking?.toLocaleString() || '—'}
                                 {topPct && <span style={{ marginLeft: 8, color: C_EASY }}>· TOP {topPct}%</span>}
@@ -935,12 +948,12 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                 },
                             ].map(({ head, val, color, sub }) => (
                                 <motion.div key={head} whileHover={{ y: -2 }}
-                                    style={{ padding: compactLaptop ? '8px 11px' : '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,245,212,0.2)', transition: 'border-color 0.2s' }}
+                                    style={{ ...tileSurface, padding: compactLaptop ? '8px 11px' : '12px 14px', border: '1px solid rgba(0,245,212,0.2)', transition: 'border-color 0.2s' }}
                                     onMouseEnter={e => { e.currentTarget.style.borderColor = `${color}35`; }}
                                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
-                                    <div style={{ fontFamily: Fm, fontSize: 7.5, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', marginBottom: 6 }}>{head}</div>
+                                    <div style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.13em', color: 'rgba(255,255,255,0.84)', textTransform: 'uppercase', marginBottom: 6 }}>{head}</div>
                                     <div style={{ fontFamily: Fd, fontSize: compactLaptop?11:13, fontWeight: 900, color, letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 3 }}>{val}</div>
-                                    {sub && <div style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.06em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</div>}
+                                    {sub && <div style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.62)', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</div>}
                                 </motion.div>
                             ))}
                         </div>
@@ -960,10 +973,10 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
                     {/* ════ 6.5. POWER DNA ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.40 }}
-                        style={{ padding: blockPad, background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,245,212,0.2)', borderRadius: 10, marginBottom: sectionGap }}>
+                        style={{ ...panelSurface, padding: blockPad, marginBottom: sectionGap }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: compactLaptop?8:12 }}>
                             <div>
-                                <span style={{ fontFamily: Fm, fontSize: 8, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' }}>Power DNA</span>
+                                <span style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Power DNA</span>
                                 <div style={{ fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.8)', marginTop: 6, letterSpacing: '0.04em', fontStyle: 'italic' }}>"{motiv}"</div>
                             </div>
                             <span style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em' }}>~{estHours.toLocaleString()}h INVESTED</span>
@@ -980,7 +993,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                         <span style={{ fontFamily: Fm, fontSize: 8, color: `${color}80`, letterSpacing: '0.08em' }}>{mult}</span>
                                     </div>
                                     <div style={{ fontFamily: Fd, fontSize: compactLaptop?18:22, fontWeight: 900, color, lineHeight: 1, marginBottom: 3 }}>{pwr.toLocaleString()}</div>
-                                    <div style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.06em', marginBottom: 10 }}>{count} solved · {pct}% of power</div>
+                                    <div style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.62)', letterSpacing: '0.04em', marginBottom: 10 }}>{count} solved · {pct}% of power</div>
                                     <div style={{ height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
                                         <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
                                             transition={{ duration: 1.2, ease: [0.16,1,0.3,1], delay: 0.5 }}
@@ -998,9 +1011,9 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
                     {/* ════ 6.8. BATTLE MOMENTUM ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.42 }}
-                        style={{ padding: blockPad, background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,245,212,0.2)', borderRadius: 10, marginBottom: sectionGap }}>
+                        style={{ ...panelSurface, padding: blockPad, marginBottom: sectionGap }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: compactLaptop?8:12 }}>
-                            <span style={{ fontFamily: Fm, fontSize: 8, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' }}>Battle Momentum</span>
+                            <span style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Battle Momentum</span>
                             {lastSubmit && <span style={{ fontFamily: Fm, fontSize: 8.5, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.06em' }}>LAST ACTIVE · {lastSubmit}</span>}
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
@@ -1023,12 +1036,12 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                 },
                             ].map(({ head, val, color, big, sub }) => (
                                 <motion.div key={head} whileHover={{ y: -2 }}
-                                    style={{ padding: compactLaptop ? '8px 11px' : '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,245,212,0.2)', transition: 'border-color 0.2s' }}
+                                    style={{ ...tileSurface, padding: compactLaptop ? '8px 11px' : '12px 14px', border: '1px solid rgba(0,245,212,0.2)', transition: 'border-color 0.2s' }}
                                     onMouseEnter={e => { e.currentTarget.style.borderColor = `${color}30`; }}
                                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
-                                    <div style={{ fontFamily: Fm, fontSize: 7.5, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', marginBottom: 8 }}>{head}</div>
+                                    <div style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.13em', color: 'rgba(255,255,255,0.84)', textTransform: 'uppercase', marginBottom: 8 }}>{head}</div>
                                     <div style={{ fontFamily: Fd, fontSize: big ? (compactLaptop?19:23) : (compactLaptop?16:19), fontWeight: 900, color, lineHeight: 1, marginBottom: 4 }}>{val ?? '—'}</div>
-                                    {sub && <div style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.06em' }}>{sub}</div>}
+                                    {sub && <div style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.62)', letterSpacing: '0.04em' }}>{sub}</div>}
                                 </motion.div>
                             ))}
                         </div>
@@ -1061,26 +1074,12 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                     {/* ════ 7. WHERE YOU'RE POWERFUL ════ */}
                     {topDistricts.length > 0 && (
                         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.43 }}
-                            style={{ padding: blockPad, background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,245,212,0.2)', borderRadius: 10, marginBottom: sectionGap }}>
+                            style={{ ...panelSurface, padding: blockPad, marginBottom: sectionGap }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-                            <span style={{ fontFamily: Fm, fontSize: 8, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' }}>Where You're Powerful</span>
-                            <span style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em' }}>TOP SPECIALTIES · BY SOLVE VOLUME</span>
+                            <span style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Where You're Powerful</span>
+                            <span style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.62)', letterSpacing: '0.06em' }}>TOP SPECIALTIES · BY SOLVE VOLUME</span>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                            {/* Strongest topic */}
-                            {strongestTopic && (
-                                <div style={{ padding: compactLaptop ? '9px 12px' : '13px 16px', borderRadius: 10, background: `${tier.color}08`, border: `1px solid ${tier.color}20` }}>
-                                    <div style={{ fontFamily: Fm, fontSize: 7.5, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', marginBottom: 10 }}>Strongest Topic</div>
-                                    <div style={{ fontFamily: Fd, fontSize: 18, fontWeight: 900, color: tier.color, letterSpacing: '0.04em', marginBottom: 6 }}>
-                                        {strongestTopic.name} · {strongestTopic.problemsSolved} SOLVED
-                                    </div>
-                                    {strongestTopic.percentage != null && (
-                                        <div style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em' }}>
-                                            TOP {strongestTopic.percentage}% IN {strongestTopic.name.toUpperCase()}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 20 }}>
                             {/* Specialty bar list */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                 {topDistricts.map((d, i) => (
@@ -1103,10 +1102,10 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
                     {/* ════ 8. RECENT BATTLES ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.48 }}
-                        style={{ padding: blockPad, background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,245,212,0.2)', borderRadius: 10, marginBottom: sectionGap }}>
+                        style={{ ...panelSurface, padding: blockPad, marginBottom: sectionGap }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: compactLaptop?8:12 }}>
-                            <span style={{ fontFamily: Fm, fontSize: 8, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' }}>Recent Battles</span>
-                            <span style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.4)' }}>{Math.min(recent.length, 10)} submissions</span>
+                            <span style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Recent Battles</span>
+                            <span style={{ fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.62)' }}>{Math.min(recent.length, 10)} submissions</span>
                         </div>
                         {recent.length === 0 ? (
                             <div style={{ fontFamily: Fm, fontSize: 11, color: 'rgba(255,255,255,0.4)', padding: '12px 0', letterSpacing: '0.08em' }}>$ no_submissions_yet...</div>
@@ -1121,9 +1120,9 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: compactLaptop?'4px 0':'6px 0', borderBottom: i < Math.min(recent.length, 10) - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none', cursor: 'default' }}>
                                             <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: ok ? C_EASY : C_HARD, boxShadow: `0 0 6px ${ok ? C_EASY : C_HARD}80` }} />
                                             <span style={{ flex: 1, fontFamily: Fm, fontSize: compactLaptop?10:11, color: 'rgba(255,255,255,0.75)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</span>
-                                            {diffColor && <span style={{ fontFamily: Fm, fontSize: 8, letterSpacing: '0.14em', color: diffColor, padding: '2px 6px', background: `${diffColor}14`, borderRadius: 4, border: `1px solid ${diffColor}28`, flexShrink: 0, textTransform: 'uppercase' }}>{r.difficulty}</span>}
-                                            {ts && <span style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.18)', flexShrink: 0 }}>{ts}</span>}
-                                            <span style={{ fontFamily: Fm, fontSize: 9.5, letterSpacing: '0.16em', color: ok ? C_EASY : C_HARD, flexShrink: 0, fontWeight: 700 }}>{ok ? 'AC' : 'WA'}</span>
+                                            {diffColor && <span style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.08em', color: diffColor, padding: '3px 7px', background: `${diffColor}14`, borderRadius: 4, border: `1px solid ${diffColor}28`, flexShrink: 0, textTransform: 'uppercase' }}>{r.difficulty}</span>}
+                                            {ts && <span style={{ fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.58)', flexShrink: 0 }}>{ts}</span>}
+                                            <span style={{ fontFamily: Fm, fontSize: 10, letterSpacing: '0.1em', color: ok ? C_EASY : C_HARD, flexShrink: 0, fontWeight: 700 }}>{ok ? 'AC' : 'WA'}</span>
                                         </motion.div>
                                     );
                                 })}
@@ -1133,13 +1132,13 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
                     {/* ════ CHALLENGE A LEGEND ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.53 }}
-                        style={{ padding: blockPad, background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,245,212,0.2)', borderRadius: 10, marginBottom: sectionGap }}>
+                        style={{ ...panelSurface, padding: blockPad, marginBottom: sectionGap }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
                             <div>
-                                <div style={{ fontFamily: Fm, fontSize: 8, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginBottom: 6 }}>Challenge a Legend</div>
-                                <div style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.06em' }}>Type legend name, then compare power in popup.</div>
+                                <div style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase', marginBottom: 6 }}>Challenge a Legend</div>
+                                <div style={{ fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.66)', letterSpacing: '0.04em' }}>Type legend name, then compare power in popup.</div>
                             </div>
-                            <div style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>search any username</div>
+                            <div style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>search any username</div>
                         </div>
                         <form onSubmit={handleChallengeSubmit} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                             <input
