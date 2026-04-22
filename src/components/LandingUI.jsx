@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Zap, Star, Users, ChevronRight, Rocket, Sparkles, Globe, Terminal } from 'lucide-react';
 
-const FEATURED = ['neal_wu', 'tourist', 'jiangly', 'Um_nik', 'Petr', 'ecnerwala', 'ksun48', 'yxc'];
+const FEATURED = ['cpcs', 'votrubac', '1337c0d3r', 'Ma_Lin', 'leetgoat_dot_io'];
 const FONT_ORBIT = 'Orbitron, sans-serif';
 const FONT_MONO = '"Share Tech Mono", monospace';
 
@@ -23,6 +23,40 @@ function Counter({ target, duration = 2000 }) {
         return () => cancelAnimationFrame(rafId);
     }, [target, duration]);
     return <span>{count.toLocaleString()}</span>;
+}
+
+function useTotalQuestionsCount() {
+    const [totalQuestions, setTotalQuestions] = useState(3907);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const load = async () => {
+            try {
+                const res = await fetch('https://leetcode.com/graphql', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: `query questionStats { allQuestionsCount { difficulty count } }`,
+                    }),
+                });
+
+                if (!res.ok) throw new Error('Failed to fetch total questions');
+
+                const json = await res.json();
+                const counts = Array.isArray(json?.data?.allQuestionsCount) ? json.data.allQuestionsCount : [];
+                const total = counts.reduce((sum, item) => sum + (Number(item?.count) || 0), 0);
+                if (!cancelled && total > 0) setTotalQuestions(total);
+            } catch {
+                if (!cancelled) setTotalQuestions(3907);
+            }
+        };
+
+        load();
+        return () => { cancelled = true; };
+    }, []);
+
+    return totalQuestions;
 }
 
 /* ── Recently-explored chip marquee ──────────────────── */
@@ -229,6 +263,7 @@ function LandingUI({ onSearch, errorMessage = '' }) {
     const [searchHovered, setSearchHovered] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const inputRef = useRef();
+    const totalQuestions = useTotalQuestionsCount();
 
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth <= 768);
@@ -361,7 +396,7 @@ function LandingUI({ onSearch, errorMessage = '' }) {
                         textShadow: '0 0 6px rgba(3,5,8,0.9), 0 0 12px rgba(3,5,8,0.7)',
                     }}
                 >
-                    <TypeWriter text="YOUR CODING UNIVERSE — 29 LIGHTYEARS FROM EARTH" delay={35} />
+                    <TypeWriter text="LC // CODE FROM EVERYWHERE" delay={35} />
                 </motion.p>
 
                 {/* ── Stats row ── */}
@@ -373,7 +408,7 @@ function LandingUI({ onSearch, errorMessage = '' }) {
                 >
                     <StatCard icon={Users} value={4829142} label="EXPLORERS" color="#00f5d4" delay={0.9} />
                     <StatCard icon={Zap} value={3100000} label="SOLVED TODAY" color="#f5a623" delay={1.0} />
-                    <StatCard icon={Globe} value={196} label="COUNTRIES" color="#8b5cf6" delay={1.1} />
+                    <StatCard icon={Globe} value={totalQuestions ?? 3907} label="TOTAL QUESTIONS" color="#8b5cf6" delay={1.1} />
                 </motion.div>
 
                 {/* ── Search bar ── */}
@@ -421,7 +456,7 @@ function LandingUI({ onSearch, errorMessage = '' }) {
                                 onChange={(e) => setUsername(e.target.value)}
                                 onFocus={() => setFocused(true)}
                                 onBlur={() => setFocused(false)}
-                                placeholder={isMobile ? 'USERNAME' : 'ENTER LEETCODE USERNAME'}
+                                placeholder={isMobile ? 'USERNAME' : 'ENTER LC HANDLE'}
                                 style={{
                                     flex: 1, background: 'transparent', color: 'var(--input-color)',
                                     border: 'none', padding: isMobile ? '14px 0' : '16px 0',

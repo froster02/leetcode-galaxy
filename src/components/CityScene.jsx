@@ -222,7 +222,7 @@ function CityBuilding({ height, width, color, position }) {
 }
 
 /* ─────────────────── Single City Block (township) ─────────────── */
-function CityBlock({ user, gridRow, gridCol, globalMax, isNight, onSelect }) {
+function CityBlock({ user, gridRow, gridCol, globalMax, isNight, onSelect, showBlockLabels }) {
     const [hovered, setHovered] = useState(false);
     const isCurrent = user?.isCurrent;
 
@@ -287,7 +287,7 @@ function CityBlock({ user, gridRow, gridCol, globalMax, isNight, onSelect }) {
             {isCurrent && <UserBeacon />}
 
             {/* Block label */}
-            {(hovered || isCurrent) && user && (
+            {showBlockLabels && (hovered || isCurrent) && user && (
                 <Html
                     position={[0, isCurrent ? -0.2 : 0.2, BLOCK_SIZE / 2 + 0.5]}
                     center
@@ -758,7 +758,7 @@ function Aurora() {
 }
 
 /* ─────────────────── City Scene Inner ─────────────────── */
-function CitySceneInner({ roster, onSelectUser }) {
+function CitySceneInner({ roster, onSelectUser, showBlockLabels }) {
     const globalMax = useMemo(() => {
         let m = 1;
         for (const user of roster) {
@@ -787,6 +787,7 @@ function CitySceneInner({ roster, onSelectUser }) {
                         globalMax={globalMax}
                         isNight={true}
                         onSelect={onSelectUser}
+                        showBlockLabels={showBlockLabels}
                     />
                 );
             })}
@@ -805,7 +806,7 @@ function CitySceneInner({ roster, onSelectUser }) {
 }
 
 /* ─────────────────── Main Export ─────────────────── */
-function CityCanvas({ data, onSelectUser }) {
+function CityCanvas({ data, onSelectUser, showActivityOverlay = true, showBlockLabels = true }) {
     const totalWidth = GRID_COLS * CELL_SIZE;
     const roster = useMemo(() => buildRoster(data), [data]);
 
@@ -831,9 +832,9 @@ function CityCanvas({ data, onSelectUser }) {
                     panSpeed={0.8}
                     rotateSpeed={0.5}
                 />
-                {data && <CitySceneInner roster={roster} onSelectUser={onSelectUser} />}
+                {data && <CitySceneInner roster={roster} onSelectUser={onSelectUser} showBlockLabels={showBlockLabels} />}
             </Canvas>
-            {data && <ActivityOverlay data={data} />}
+            {data && showActivityOverlay && <ActivityOverlay data={data} />}
         </div>
     );
 }

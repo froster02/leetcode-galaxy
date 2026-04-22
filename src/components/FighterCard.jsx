@@ -465,6 +465,7 @@ function VSModal({ myData, opponent, onClose }) {
 ══════════════════════════════════════════════════════════ */
 function FighterCard({ data, username, onBack }) {
     const [vsOpponent, setVsOpponent] = useState(null);
+    const [quickSearch, setQuickSearch] = useState('');
     const [viewport, setViewport] = useState(() => ({
         width: typeof window !== 'undefined' ? window.innerWidth : 1440,
         height: typeof window !== 'undefined' ? window.innerHeight : 900,
@@ -491,6 +492,16 @@ function FighterCard({ data, username, onBack }) {
     const sectionGap = compactLaptop ? 6 : 10;
 
     const shooters = useMemo(() => Array.from({length:3},(_,i) => ({ x:8+i*28, y:3+i*18, dur:8+i*5, del:i*5+2 })), []);
+
+    const handleQuickSearch = (e) => {
+        e.preventDefault();
+        const nextUser = quickSearch.trim();
+        if (!nextUser) return;
+        window.dispatchEvent(new CustomEvent('quickSearch', {
+            detail: { username: nextUser, targetView: 'card' }
+        }));
+        setQuickSearch('');
+    };
 
     if (!data) return null;
 
@@ -626,12 +637,47 @@ function FighterCard({ data, username, onBack }) {
 
                     {/* ── Nav back ── */}
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.05 }}
-                        style={{ display: 'flex', alignItems: 'center', padding: '10px 0 8px' }}>
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 0 8px' }}>
                         <button onClick={onBack} style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.8)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,245,212,0.2)', borderRadius: 20, padding: '4px 12px', cursor: 'pointer', transition: 'all 0.2s' }}
                             onMouseEnter={e => { e.currentTarget.style.color = C_TEAL; e.currentTarget.style.borderColor = `${C_TEAL}50`; }}
                             onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; e.currentTarget.style.borderColor = 'rgba(0,245,212,0.2)'; }}>
                             ← ARENA
                         </button>
+                        <form onSubmit={handleQuickSearch} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <input
+                                value={quickSearch}
+                                onChange={(e) => setQuickSearch(e.target.value)}
+                                placeholder="search username..."
+                                style={{
+                                    width: compactLaptop ? 160 : 190,
+                                    padding: '7px 10px',
+                                    borderRadius: 10,
+                                    border: '1px solid rgba(0,245,212,0.2)',
+                                    background: 'rgba(255,255,255,0.04)',
+                                    color: 'rgba(255,255,255,0.88)',
+                                    fontFamily: Fm,
+                                    fontSize: 10,
+                                    letterSpacing: '0.08em',
+                                    outline: 'none',
+                                }}
+                            />
+                            <button
+                                type="submit"
+                                style={{
+                                    fontFamily: Fm,
+                                    fontSize: 9,
+                                    letterSpacing: '0.14em',
+                                    color: C_TEAL,
+                                    background: 'rgba(0,245,212,0.08)',
+                                    border: '1px solid rgba(0,245,212,0.28)',
+                                    borderRadius: 10,
+                                    padding: '7px 10px',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                SEARCH
+                            </button>
+                        </form>
                     </motion.div>
 
                     {/* ════ 1. HERO HEADER ════ */}

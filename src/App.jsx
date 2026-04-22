@@ -208,7 +208,7 @@ function App() {
     });
   }, []);
 
-  const handleSearch = useCallback(async (username, pushUrl = true) => {
+  const handleSearch = useCallback(async (username, pushUrl = true, targetView = 'city') => {
     setSearchError('');
     setPhase(2);
     setViewMode('city');
@@ -235,6 +235,7 @@ function App() {
 
       transitionTimerRef.current = setTimeout(() => {
         setPhase(3);
+        setViewMode(targetView);
         setTransitionStage(0);
         playArrivalChord();
         startCityAmbient();
@@ -283,7 +284,16 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const handler = (e) => handleSearch(e.detail);
+    const handler = (e) => {
+      const detail = e.detail;
+      if (typeof detail === 'string') {
+        handleSearch(detail);
+        return;
+      }
+      if (detail && typeof detail.username === 'string') {
+        handleSearch(detail.username, true, detail.targetView || 'city');
+      }
+    };
     window.addEventListener('quickSearch', handler);
     return () => window.removeEventListener('quickSearch', handler);
   }, [handleSearch]);
@@ -347,8 +357,15 @@ function App() {
       {phase === 1 && <TarsHud />}
 
       {/* 3D Canvas */}
-      {phase === 3 && viewMode === 'city' ? (
-        <CityCanvas data={mappedData} isNight={isNight} onSelectUser={handleQuickInspect} recentlyExplored={recentlyExplored} />
+      {phase === 3 ? (
+        <CityCanvas
+          data={mappedData}
+          isNight={isNight}
+          onSelectUser={handleQuickInspect}
+          recentlyExplored={recentlyExplored}
+          showActivityOverlay={viewMode !== 'card'}
+          showBlockLabels={viewMode !== 'card'}
+        />
       ) : (
         <Canvas
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
