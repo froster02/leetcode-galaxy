@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { calcPower, getFighterClass } from '../utils/gameData';
+import { mapLeetCodeDataToCity } from '../utils/dataMapper';
 
 /* ── Canvas star field — drawn once, zero ongoing CPU cost ── */
 function StarCanvas() {
@@ -94,8 +95,8 @@ function timeAgo(ts) {
 
 /* ══════════════════════════════════════════════════════════
    CircularGauge — 240° arc, car-startup sweep animation
-   Phase 1: 0 → 100% (ignition sweep, ~550ms)
-   Phase 2: 100% → actual (elastic settle, ~900ms)
+    Phase 1: 0 → 100% (ignition sweep, ~1050ms)
+    Phase 2: 100% → actual (elastic settle, ~1550ms)
 ══════════════════════════════════════════════════════════ */
 function CircularGauge({ count, total, color, label, size = 130, delay = 0 }) {
     const [displayPct, setDisplayPct] = useState(0);
@@ -107,7 +108,7 @@ function CircularGauge({ count, total, color, label, size = 130, delay = 0 }) {
             /* Phase 1 — ignition sweep to max */
             const t0 = performance.now();
             const sweep = (now) => {
-                const p = Math.min((now - t0) / 550, 1);
+                const p = Math.min((now - t0) / 1050, 1);
                 const ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; // ease-in-out quad
                 setDisplayPct(ease * 100);
                 if (p < 1) {
@@ -116,7 +117,7 @@ function CircularGauge({ count, total, color, label, size = 130, delay = 0 }) {
                     /* Phase 2 — elastic settle to real value */
                     const t1 = performance.now();
                     const settle = (now2) => {
-                        const p2 = Math.min((now2 - t1) / 900, 1);
+                        const p2 = Math.min((now2 - t1) / 1550, 1);
                         const ep = elasticOut(p2);
                         setDisplayPct(100 - (100 - actual) * ep);
                         if (p2 < 1) {
@@ -375,6 +376,8 @@ function VSModal({ myData, opponent, onClose }) {
     const resultColor = iWin ? '#22c55e' : '#ef4444';
     const diff = Math.abs(myPow - oppPow);
     const dominance = Math.round((Math.max(myPow, oppPow) / (myPow + oppPow)) * 100);
+    const winnerName = iWin ? myData.username : opponent.u;
+    const winnerPow = iWin ? myPow : oppPow;
 
     return (
         <motion.div
@@ -409,6 +412,9 @@ function VSModal({ myData, opponent, onClose }) {
                             textShadow: `0 0 40px ${resultColor}80, 0 0 80px ${resultColor}30`, letterSpacing: '0.05em' }}>
                         {iWin ? 'VICTORY' : 'DEFEAT'}
                     </motion.div>
+                    <div style={{ marginTop: 10, fontFamily: Fm, fontSize: 9, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' }}>
+                        More powerful: <span style={{ color: resultColor }}>{winnerName}</span> · {winnerPow.toLocaleString()} power
+                    </div>
                 </div>
 
                 {/* Fighter columns */}
@@ -460,12 +466,47 @@ function VSModal({ myData, opponent, onClose }) {
     );
 }
 
+function ChallengeNoticeModal({ query, onClose }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}
+            style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+            onClick={onClose}
+        >
+            <motion.div
+                initial={{ scale: 0.92, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.92, y: 16 }}
+                transition={{ duration: 0.18, ease: [0.16,1,0.3,1] }}
+                onClick={e => e.stopPropagation()}
+                style={{ background: 'rgba(5,7,16,0.99)', backdropFilter: 'blur(6px)', border: '1px solid rgba(245,166,35,0.35)', borderRadius: 20, padding: '28px 24px', maxWidth: 520, width: '100%', boxShadow: '0 0 0 1px rgba(245,166,35,0.12), 0 40px 80px rgba(0,0,0,0.9), 0 0 60px rgba(245,166,35,0.08)', position: 'relative', overflow: 'hidden' }}
+            >
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, #f5a623, transparent)' }} />
+                <div style={{ textAlign: 'center', marginBottom: 18 }}>
+                    <div style={{ fontFamily: Fm, fontSize: 8, letterSpacing: '0.35em', color: 'rgba(255,255,255,0.35)', marginBottom: 6 }}>BATTLE RESULT</div>
+                    <div style={{ fontFamily: Fd, fontSize: 30, fontWeight: 900, color: '#f5a623', letterSpacing: '0.05em' }}>NO MATCH</div>
+                </div>
+                <div style={{ textAlign: 'center', fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.08em', marginBottom: 16 }}>
+                    No user found for <span style={{ color: '#fff' }}>{query}</span>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                    <button onClick={onClose} style={{ fontFamily: Fm, fontSize: 9.5, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.75)', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '9px 32px', cursor: 'pointer', transition: 'all 0.18s' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(245,166,35,0.55)'; e.currentTarget.style.color = '#f5a623'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; }}>
+                        CLOSE
+                    </button>
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+}
+
 /* ══════════════════════════════════════════════════════════
    FIGHTER CARD — Galaxy Dashboard
 ══════════════════════════════════════════════════════════ */
-function FighterCard({ data, username, onBack }) {
+function FighterCard({ data, username, onBack, fetchProfile }) {
     const [vsOpponent, setVsOpponent] = useState(null);
     const [quickSearch, setQuickSearch] = useState('');
+    const [challengeName, setChallengeName] = useState('');
+    const [challengeMiss, setChallengeMiss] = useState('');
     const [viewport, setViewport] = useState(() => ({
         width: typeof window !== 'undefined' ? window.innerWidth : 1440,
         height: typeof window !== 'undefined' ? window.innerHeight : 900,
@@ -545,6 +586,33 @@ function FighterCard({ data, username, onBack }) {
     const topPct    = contestInfo?.topPercentage ?? null;
     const badges    = badgesInfo?.total ?? 0;
     const badgesList = Array.isArray(badgesInfo?.badges) ? badgesInfo.badges : [];
+
+    const handleChallengeSubmit = (e) => {
+        e.preventDefault();
+        const query = challengeName.trim();
+        if (!query) return;
+
+        const run = async () => {
+            try {
+                if (!fetchProfile) throw new Error('No user found');
+                const raw = await fetchProfile(query);
+                const mapped = mapLeetCodeDataToCity(raw);
+                const opponent = {
+                    u: mapped.username,
+                    easy: mapped.stats.find(s => s.difficulty === 'Easy')?.count || 0,
+                    med: mapped.stats.find(s => s.difficulty === 'Medium')?.count || 0,
+                    hard: mapped.stats.find(s => s.difficulty === 'Hard')?.count || 0,
+                };
+                setVsOpponent(opponent);
+                setChallengeMiss('');
+            } catch {
+                setVsOpponent(null);
+                setChallengeMiss(query);
+            }
+        };
+
+        run();
+    };
 
     /* Districts / specialties */
     const topDistricts  = districts ? [...districts].sort((a, b) => b.problemsSolved - a.problemsSolved).slice(0, 5) : [];
@@ -768,9 +836,9 @@ function FighterCard({ data, username, onBack }) {
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
                             {[
-                                { count: easy, total: lcEasy, color: C_EASY, label: 'Easy',   beats: easyBeats, delay: 200 },
-                                { count: med,  total: lcMed,  color: C_MED,  label: 'Medium', beats: medBeats,  delay: 450 },
-                                { count: hard, total: lcHard, color: C_HARD, label: 'Hard',   beats: hardBeats, delay: 700 },
+                                { count: easy, total: lcEasy, color: C_EASY, label: 'Easy',   beats: easyBeats, delay: 360 },
+                                { count: med,  total: lcMed,  color: C_MED,  label: 'Medium', beats: medBeats,  delay: 740 },
+                                { count: hard, total: lcHard, color: C_HARD, label: 'Hard',   beats: hardBeats, delay: 1120 },
                             ].map(({ count: c, total: t, color, label, beats, delay: d }) => (
                                 <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                                     <CircularGauge count={c} total={t} color={color} label={label} size={compactLaptop?100:118} delay={d} />
@@ -805,7 +873,7 @@ function FighterCard({ data, username, onBack }) {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
                             {[
                                 { head: 'Current Rating', val: rating,    color: '#00f5d4', sub: cls.label,   big: true  },
-                                { head: 'Peak Rating',    val: topRating, color: '#a78bfa', sub: null,        big: true  },
+                                { head: 'Accepted Streak', val: streak,   color: '#a78bfa', sub: lastSubmit ? `Last AC ${lastSubmit}` : 'Recent activity', big: true  },
                                 { head: 'Contests',       val: attended,  color: '#fb923c', sub: topPct ? `Top ${topPct}%` : null, big: false },
                                 { head: 'Top %',          val: topPct ? `${topPct}%` : null, color: C_EASY, sub: 'Global',  big: false },
                             ].map(({ head, val, color, sub, big }) => (
@@ -1050,26 +1118,53 @@ function FighterCard({ data, username, onBack }) {
                     {/* ════ CHALLENGE A LEGEND ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.53 }}
                         style={{ padding: blockPad, background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(8px)', border: '1px solid rgba(0,245,212,0.2)', borderRadius: 10, marginBottom: sectionGap }}>
-                        <div style={{ fontFamily: Fm, fontSize: 8, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginBottom: 16 }}>Challenge a Legend</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
-                            {LEGENDS_SHORT.map((opp, i) => {
-                                const oppPow = calcPower(opp.easy, opp.med, opp.hard);
-                                const oppCls = getFighterClass(opp.hard);
-                                return (
-                                    <motion.button key={opp.u} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.56 + i * 0.05 }}
-                                        whileHover={{ y: -3 }} whileTap={{ scale: 0.97 }} onClick={() => setVsOpponent(opp)}
-                                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, padding: compactLaptop?'8px 10px':'11px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', textAlign: 'left', position: 'relative', overflow: 'hidden', transition: 'border-color 0.2s, box-shadow 0.2s' }}
-                                        onMouseEnter={e => { e.currentTarget.style.borderColor = `${oppCls.color}35`; e.currentTarget.style.boxShadow = `0 8px 24px rgba(0,0,0,0.4)`; }}
-                                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.boxShadow = 'none'; }}>
-                                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${oppCls.color}50, transparent)` }} />
-                                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: `${oppCls.color}14`, border: `1px solid ${oppCls.color}28`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: Fd, fontSize: 11, fontWeight: 900, color: oppCls.color }}>{opp.u[0].toUpperCase()}</div>
-                                        <span style={{ fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{opp.u}</span>
-                                        <span style={{ fontFamily: Fm, fontSize: 8, letterSpacing: '0.14em', color: oppCls.color, textTransform: 'uppercase' }}>{oppCls.label}</span>
-                                        <span style={{ fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.7)', fontVariantNumeric: 'tabular-nums' }}>{oppPow.toLocaleString()}</span>
-                                    </motion.button>
-                                );
-                            })}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+                            <div>
+                                <div style={{ fontFamily: Fm, fontSize: 8, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginBottom: 6 }}>Challenge a Legend</div>
+                                <div style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.06em' }}>Type legend name, then compare power in popup.</div>
+                            </div>
+                            <div style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>search any username</div>
                         </div>
+                        <form onSubmit={handleChallengeSubmit} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <input
+                                value={challengeName}
+                                onChange={(e) => setChallengeName(e.target.value)}
+                                placeholder="enter username..."
+                                style={{
+                                    flex: '1 1 240px',
+                                    minWidth: 220,
+                                    padding: compactLaptop ? '10px 12px' : '12px 14px',
+                                    borderRadius: 10,
+                                    border: '1px solid rgba(0,245,212,0.22)',
+                                    background: 'rgba(255,255,255,0.04)',
+                                    color: 'rgba(255,255,255,0.9)',
+                                    fontFamily: Fm,
+                                    fontSize: 10,
+                                    letterSpacing: '0.08em',
+                                    outline: 'none',
+                                }}
+                            />
+                            <button
+                                type="submit"
+                                style={{
+                                    fontFamily: Fm,
+                                    fontSize: 9.5,
+                                    letterSpacing: '0.16em',
+                                    textTransform: 'uppercase',
+                                    color: '#00f5d4',
+                                    background: 'rgba(0,245,212,0.08)',
+                                    border: '1px solid rgba(0,245,212,0.28)',
+                                    borderRadius: 10,
+                                    padding: compactLaptop ? '10px 14px' : '12px 16px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.18s',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,245,212,0.5)'; e.currentTarget.style.background = 'rgba(0,245,212,0.12)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,245,212,0.28)'; e.currentTarget.style.background = 'rgba(0,245,212,0.08)'; }}
+                            >
+                                Challenge
+                            </button>
+                        </form>
                     </motion.div>
 
                     {/* Bottom accent line */}
@@ -1101,6 +1196,12 @@ function FighterCard({ data, username, onBack }) {
             {/* VS Modal */}
             {createPortal(
                 <AnimatePresence>
+                    {challengeMiss && (
+                        <ChallengeNoticeModal
+                            query={challengeMiss}
+                            onClose={() => setChallengeMiss('')}
+                        />
+                    )}
                     {vsOpponent && (
                         <VSModal
                             myData={myFighterData}
