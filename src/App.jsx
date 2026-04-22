@@ -413,6 +413,7 @@ function App() {
                 data={mappedData}
                 username={mappedData?.username}
                 onBack={() => setViewMode('city')}
+                fetchProfile={fetchProfile}
               />
             </motion.div>
           )}
