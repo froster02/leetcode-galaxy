@@ -705,7 +705,23 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
                     {/* ── Nav back ── */}
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.05 }}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 0 8px' }}>
+                        style={{
+                            position: 'sticky',
+                            top: 0,
+                            zIndex: 20,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 10,
+                            width: '100vw',
+                            marginLeft: 'calc(50% - 50vw)',
+                            marginRight: 'calc(50% - 50vw)',
+                            padding: compactLaptop ? '10px 18px 8px' : '10px 24px 8px',
+                            marginBottom: 8,
+                            background: 'rgba(8,12,24,0.78)',
+                            backdropFilter: 'blur(10px)',
+                            borderBottom: '1px solid rgba(0,245,212,0.18)',
+                        }}>
                         <button onClick={onBack} style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.8)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,245,212,0.2)', borderRadius: 20, padding: '4px 12px', cursor: 'pointer', transition: 'all 0.2s' }}
                             onMouseEnter={e => { e.currentTarget.style.color = C_TEAL; e.currentTarget.style.borderColor = `${C_TEAL}50`; }}
                             onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; e.currentTarget.style.borderColor = 'rgba(0,245,212,0.2)'; }}>
