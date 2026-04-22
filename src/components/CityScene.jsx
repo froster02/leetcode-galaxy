@@ -758,7 +758,7 @@ function Aurora() {
 }
 
 /* ─────────────────── City Scene Inner ─────────────────── */
-function CitySceneInner({ roster, isNight, onSelectUser }) {
+function CitySceneInner({ roster, onSelectUser }) {
     const globalMax = useMemo(() => {
         let m = 1;
         for (const user of roster) {
@@ -771,7 +771,7 @@ function CitySceneInner({ roster, isNight, onSelectUser }) {
     return (
         <>
             <Aurora />
-            <StreetGrid isNight={isNight} />
+            <StreetGrid isNight={true} />
             <CarLights />
 
             {roster.map((user, i) => {
@@ -785,7 +785,7 @@ function CitySceneInner({ roster, isNight, onSelectUser }) {
                         gridRow={row}
                         gridCol={col}
                         globalMax={globalMax}
-                        isNight={isNight}
+                        isNight={true}
                         onSelect={onSelectUser}
                     />
                 );
@@ -796,7 +796,7 @@ function CitySceneInner({ roster, isNight, onSelectUser }) {
                     mipmapBlur
                     luminanceThreshold={0.5}
                     luminanceSmoothing={0.7}
-                    intensity={isNight ? 1.4 : 1.0}
+                    intensity={1.4}
                     radius={0.6}
                 />
             </EffectComposer>
@@ -805,7 +805,7 @@ function CitySceneInner({ roster, isNight, onSelectUser }) {
 }
 
 /* ─────────────────── Main Export ─────────────────── */
-export default function CityCanvas({ data, isNight, onSelectUser }) {
+function CityCanvas({ data, onSelectUser }) {
     const totalWidth = GRID_COLS * CELL_SIZE;
     const roster = useMemo(() => buildRoster(data), [data]);
 
@@ -817,7 +817,7 @@ export default function CityCanvas({ data, isNight, onSelectUser }) {
                 gl={{ antialias: false, alpha: false, preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
                 dpr={Math.min(window.devicePixelRatio, 1.5)}
             >
-                <SceneLighting isNight={isNight} totalWidth={totalWidth} />
+                <SceneLighting isNight={true} totalWidth={totalWidth} />
                 <CityCamera />
                 <OrbitControls
                     target={[0, 1, 0]}
@@ -831,9 +831,11 @@ export default function CityCanvas({ data, isNight, onSelectUser }) {
                     panSpeed={0.8}
                     rotateSpeed={0.5}
                 />
-                {data && <CitySceneInner roster={roster} isNight={isNight} onSelectUser={onSelectUser} />}
+                {data && <CitySceneInner roster={roster} onSelectUser={onSelectUser} />}
             </Canvas>
             {data && <ActivityOverlay data={data} />}
         </div>
     );
 }
+
+export default React.memo(CityCanvas);

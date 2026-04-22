@@ -144,7 +144,7 @@ const FEATURED_USERS = [
     { username: 'ecnerwala', position: [-25, 15, 35] },
 ];
 
-export default function GalaxyScene({ isTransitioning, onSelectUser }) {
+function GalaxyScene({ isTransitioning, onSelectUser }) {
     const groupRef = useRef();
     const { camera } = useThree();
     const mouseRef = useRef({ x: 0, y: 0 });
@@ -279,3 +279,5 @@ export default function GalaxyScene({ isTransitioning, onSelectUser }) {
         </group>
     );
 }
+
+export default React.memo(GalaxyScene);

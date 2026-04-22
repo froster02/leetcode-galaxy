@@ -27,6 +27,7 @@ function DonutRing({ easy, medium, hard }) {
 
     let offset = 0;
     const arcs = segments.map(seg => {
+        // Use validated total - percentages are capped at 100% by fixPercentages
         const pct = seg.val / total;
         const len = pct * c;
         const gap = c * 0.012;
@@ -80,15 +81,17 @@ function StatBar({ label, value, max, color }) {
     );
 }
 
-const LANG_COLORS = { cpp: '#6366f1', python3: '#f59e0b', javascript: '#22c55e', java: '#38bdf8', other: '#71717a' };
-
 /* ─── Main Dashboard ─── */
 export default function Dashboard({ data, username, onBack }) {
     if (!data) return null;
 
-    const { profile, stats, recent, planets } = data;
-
-    const totalSolved = stats.find(s => s.difficulty === 'All')?.count || 0;
+    const { profile, stats, recent, planets, _normalized } = data;
+    
+    // Use normalized data if available, otherwise fallback
+    const totalSolved = _normalized?.totalSolved 
+        || stats.find(s => s.difficulty === 'All')?.count 
+        || 0;
+    
     const easySolved = stats.find(s => s.difficulty === 'Easy')?.count || 0;
     const medSolved = stats.find(s => s.difficulty === 'Medium')?.count || 0;
     const hardSolved = stats.find(s => s.difficulty === 'Hard')?.count || 0;
@@ -154,7 +157,7 @@ export default function Dashboard({ data, username, onBack }) {
                             return (
                                 <div key={t.name} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, padding: 14, cursor: 'default', transition: 'border-color 0.2s' }}
                                     onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(99,102,241,0.3)'}
-                                    onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'}>
+                                    onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'}}>
                                     <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 20, fontWeight: 700, color: '#f5f5f5', lineHeight: 1, marginBottom: 4 }}>{t.problemsSolved}</div>
                                     <div style={{ fontSize: 11, color: '#52525b', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</div>
                                     <div style={{ background: 'rgba(255,255,255,0.05)', height: 3, borderRadius: 99, overflow: 'hidden' }}>
@@ -173,11 +176,11 @@ export default function Dashboard({ data, username, onBack }) {
                         {recent.map((s, i) => {
                             const ok = s.statusDisplay === 'Accepted';
                             const lang = s.lang || 'other';
-                            const lc = LANG_COLORS[lang] || LANG_COLORS.other;
+                            const lc = lang === 'cpp' ? '#6366f1' : lang === 'python3' ? '#f59e0b' : lang === 'javascript' ? '#22c55e' : lang === 'java' ? '#38bdf8' : '#71717a';
                             return (
                                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.02)', transition: 'background 0.15s' }}
                                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}>
+                                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}}>
                                     <div style={{ width: 7, height: 7, borderRadius: '50%', background: ok ? '#22c55e' : '#ef4444', flexShrink: 0, boxShadow: `0 0 6px ${ok ? '#22c55e' : '#ef4444'}` }} />
                                     <span style={{ flex: 1, fontSize: 13, color: '#d4d4d8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</span>
                                     <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: lc, background: `${lc}18`, border: `1px solid ${lc}30`, borderRadius: 5, padding: '2px 7px', flexShrink: 0 }}>{lang}</span>
@@ -192,12 +195,14 @@ export default function Dashboard({ data, username, onBack }) {
                 <div style={{ ...card, gridColumn: 'span 5', background: '#0d0d0f' }}>
                     <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#3f3f46', fontFamily: 'JetBrains Mono, monospace', marginBottom: 20 }}>Profile Config</div>
                     <pre style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, lineHeight: 1.9, userSelect: 'none', margin: 0 }}>
-                        <span style={{ color: '#52525b' }}>$ profile.analyze(</span><span style={{ color: '#a78bfa' }}>"{username}"</span><span style={{ color: '#52525b' }}>)</span>{'\n'}
-                        <span style={{ color: '#3f3f46' }}>  → </span><span style={{ color: '#71717a' }}>rank</span><span style={{ color: '#3f3f46' }}>: </span><span style={{ color: '#818cf8' }}>#{profile.ranking}</span>{'\n'}
-                        <span style={{ color: '#3f3f46' }}>  → </span><span style={{ color: '#71717a' }}>solved</span><span style={{ color: '#3f3f46' }}>: </span><span style={{ color: '#22c55e' }}>{totalSolved}</span>{'\n'}
-                        <span style={{ color: '#3f3f46' }}>  → </span><span style={{ color: '#71717a' }}>level</span><span style={{ color: '#3f3f46' }}>: </span><span style={{ color: rank.color }}>"{rank.label}"</span>{'\n'}
-                        <span style={{ color: '#3f3f46' }}>  → </span><span style={{ color: '#71717a' }}>hard_ratio</span><span style={{ color: '#3f3f46' }}>: </span><span style={{ color: '#f59e0b' }}>{totalSolved > 0 ? ((hardSolved / totalSolved) * 100).toFixed(1) : 0}%</span>{'\n'}
-                        <span style={{ color: '#52525b' }}>✓ Done in 132ms</span><span style={{ color: '#6366f1', animation: 'blink-cursor 1s step-end infinite' }}>█</span>
+                        <span style={{ color: '#52525b' }}>$ profile.analyze(</span><span style={{ color: '#a78bfa' }}>&quot;{username}&quot;</span><span style={{ color: '#52525b' }})</span>{'
+'}
+                        <span style={{ color: '#3f3f46' }}>  → </span><span style={{ color: '#71717a' }}>solved</span><span style={{ color: '#3f3f46' }}>: </span><span style={{ color: '#22c55e' }}>{totalSolved}</span>{'
+'}
+                        <span style={{ color: '#3f3f46' }}>  → </span><span style={{ color: '#71717a' }}>level</span><span style={{ color: '#3f3f46' }}>: </span><span style={{ color: rank.color }}>&quot;{rank.label}&quot;</span>{'
+'}
+                        <span style={{ color: '#3f3f46' }}>  → </span><span style={{ color: '#71717a' }}>hard_ratio</span><span style={{ color: '#3f3f46' }}>: </span><span style={{ color: '#f59e0b' }}>{_normalized?.hardRatio || hardSolved > 0 ? ((hardSolved / totalSolved) * 100).toFixed(1) : '0.0'}%</span>{'
+'}
                     </pre>
                 </div>
 

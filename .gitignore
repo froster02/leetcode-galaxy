@@ -31,3 +31,4 @@ dist-ssr
 .github/agent.md
 .github/copilot-instructions.md
 everything-claude-code
+lint_output.txt

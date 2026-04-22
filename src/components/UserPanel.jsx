@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Share2, Search, X, Target, Zap, Star, Trophy, TrendingUp, Code2, Flame, Shield, Swords, Crown, Sparkles, Building2, Moon, Sun } from 'lucide-react';
+import { ArrowLeft, Search, X, Target, Zap, Star, Trophy, TrendingUp, Code2, Flame, Shield, Swords, Crown, Sparkles, Building2 } from 'lucide-react';
 
 const PLANET_COLORS = ['#00f5d4', '#8b5cf6', '#f5a623', '#3b82f6', '#ef4444', '#ec4899', '#10b981', '#f59e0b'];
 const FONT_ORBIT = 'Orbitron, sans-serif';
@@ -251,7 +251,7 @@ function AchievementBadge({ icon: Icon, label, color, unlocked, delay }) {
 }
 
 /* ── Main component ──────────────────────────────────── */
-export default function UserPanel({ data, onBack, viewMode, onViewModeChange, isNight, onToggleNight }) {
+function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
     const [quickSearch, setQuickSearch] = useState('');
     const [showSearch, setShowSearch] = useState(false);
     const [activeTab, setActiveTab] = useState('stats');
@@ -265,12 +265,12 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
     }, []);
 
     if (!data) return null;
-    const { profile, stats, recent, districts, username } = data;
+    const { profile, stats, recent, districts, username, totalQuestions } = data;
     const totalSolved = stats.find(s => s.difficulty === 'All')?.count || 0;
     const easySolved = stats.find(s => s.difficulty === 'Easy')?.count || 0;
     const medSolved = stats.find(s => s.difficulty === 'Medium')?.count || 0;
     const hardSolved = stats.find(s => s.difficulty === 'Hard')?.count || 0;
-    const estimatedTotal = 3200;
+    const totalAvailable = totalQuestions?.all || 0;
     const ranking = profile?.ranking || 0;
 
     const powerLevel = useMemo(() => calculatePowerLevel(stats, districts), [stats, districts]);
@@ -285,16 +285,6 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
         { icon: Crown, label: 'LEGEND', color: '#00f5d4', unlocked: ranking > 0 && ranking <= 1000 },
     ], [totalSolved, hardSolved, districts, ranking]);
 
-    const handleShare = () => {
-        try {
-            const glCanvas = document.querySelector('canvas');
-            if (!glCanvas) return;
-            const link = document.createElement('a');
-            link.href = glCanvas.toDataURL('image/png');
-            link.download = `${username}-${viewMode === 'city' ? 'city' : 'card'}.png`;
-            link.click();
-        } catch (err) { console.error('Share failed', err); }
-    };
 
     const handleQuickSearch = (e) => {
         e.preventDefault();
@@ -333,89 +323,74 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
     );
 
     return (
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', padding: isMobile ? 8 : 16, zIndex: 10, color: '#fff' }}>
-            {/* ── Top left buttons ── */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10, color: '#fff' }}>
+
+            {/* ── Floating top controls ── */}
+            {/* Left — back */}
+            <button onClick={onBack} className="cyber-btn"
+                style={{ ...btnStyle, position: 'absolute', top: 16, left: 16, pointerEvents: 'auto', zIndex: 20 }}>
+                <ArrowLeft size={13} /> GALAXY
+            </button>
+
+            {/* Center — view toggles */}
             <div style={{
-                position: 'absolute', top: isMobile ? 8 : 16, left: isMobile ? 8 : 16,
-                display: 'flex', gap: isMobile ? 6 : 10, pointerEvents: 'auto', flexWrap: 'wrap',
-                alignItems: 'center',
+                position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
+                display: 'flex', gap: 2, background: 'rgba(3,5,10,0.6)', backdropFilter: 'blur(10px)',
+                borderRadius: 10, padding: 3, border: '1px solid rgba(255,255,255,0.08)',
+                pointerEvents: 'auto', zIndex: 20,
             }}>
-                <button onClick={onBack} className="cyber-btn" style={btnStyle}>
-                    <ArrowLeft size={14} /> GALAXY
-                </button>
-
-                {/* Search icon button — compact, no text */}
-                <button
-                    onClick={() => setShowSearch(s => !s)}
-                    className="cyber-btn"
-                    title="Search username"
-                    style={{
-                        ...btnStyle,
-                        padding: isMobile ? '6px' : '8px',
-                        borderColor: showSearch ? 'rgba(139,92,246,0.5)' : 'rgba(139,92,246,0.25)',
-                        color: showSearch ? '#c4b5fd' : '#a78bfa',
-                        minWidth: 36,
-                        justifyContent: 'center',
-                    }}
-                >
-                    {showSearch ? <X size={14} /> : <Search size={14} />}
-                </button>
-
-                {/* View mode toggles */}
-                <div style={{ display: 'flex', gap: 3, background: 'var(--btn-bg)', borderRadius: 10, padding: 2, border: '1px solid var(--section-border)' }}>
-                    {[
-                        { mode: 'city', icon: Building2, label: 'CITY' },
-                        { mode: 'card', icon: Swords, label: 'CARD' },
-                    ].map(({ mode, icon: Icon, label }) => (
-                        <button key={mode} onClick={() => onViewModeChange?.(mode)}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: 4,
-                                padding: isMobile ? '5px 8px' : '6px 12px', borderRadius: 8, fontFamily: FONT_MONO,
-                                fontSize: isMobile ? 9 : 10, fontWeight: 700,
-                                background: viewMode === mode ? 'rgba(0,245,212,0.12)' : 'transparent',
-                                border: viewMode === mode ? '1px solid rgba(0,245,212,0.3)' : '1px solid transparent',
-                                color: viewMode === mode ? '#00f5d4' : '#555', cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                            }}>
-                            <Icon size={12} /> {!isMobile && label}
-                        </button>
-                    ))}
-                </div>
+                {[
+                    { mode: 'city', icon: Building2, label: 'CITY' },
+                    { mode: 'card', icon: Swords,    label: 'CARD' },
+                ].map(({ mode, icon: Icon, label }) => (
+                    <button key={mode} onClick={() => onViewModeChange?.(mode)} style={{
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        padding: '5px 14px', borderRadius: 7, fontFamily: FONT_MONO,
+                        fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                        background: viewMode === mode ? 'rgba(0,245,212,0.15)' : 'transparent',
+                        border: viewMode === mode ? '1px solid rgba(0,245,212,0.35)' : '1px solid transparent',
+                        color: viewMode === mode ? '#00f5d4' : 'rgba(255,255,255,0.35)',
+                        transition: 'all 0.18s ease',
+                        boxShadow: viewMode === mode ? '0 0 12px rgba(0,245,212,0.2)' : 'none',
+                    }}>
+                        <Icon size={12} /> {label}
+                    </button>
+                ))}
             </div>
 
-            {/* Quick search dropdown — clears the button row */}
+            {/* Right — search */}
+            <button onClick={() => setShowSearch(s => !s)} className="cyber-btn" title="Search username"
+                style={{
+                    ...btnStyle, position: 'absolute', top: 16, right: 16,
+                    padding: '7px 10px', pointerEvents: 'auto', zIndex: 20,
+                    borderColor: showSearch ? 'rgba(139,92,246,0.5)' : 'rgba(139,92,246,0.25)',
+                    color: showSearch ? '#c4b5fd' : '#a78bfa',
+                }}>
+                {showSearch ? <X size={14} /> : <Search size={14} />}
+            </button>
+
+            {/* Quick search — drops below search icon */}
             <AnimatePresence>
                 {showSearch && (
                     <motion.form onSubmit={handleQuickSearch}
-                        initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                        style={{ position: 'absolute', top: isMobile ? 56 : 64, left: isMobile ? 8 : 16, display: 'flex', gap: 6, pointerEvents: 'auto', zIndex: 20 }}>
+                        initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+                        style={{ position: 'absolute', top: 56, right: 16, display: 'flex', gap: 6, pointerEvents: 'auto', zIndex: 20 }}>
                         <input autoFocus value={quickSearch} onChange={e => setQuickSearch(e.target.value)} placeholder="username..."
                             style={{
                                 padding: '8px 12px', borderRadius: 10, fontFamily: FONT_MONO, fontSize: 11,
-                                background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(139,92,246,0.4)', color: '#fff', width: 180, outline: 'none',
-                                backdropFilter: 'blur(16px)',
-                                boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+                                background: 'rgba(0,0,0,0.9)', border: '1px solid rgba(139,92,246,0.4)',
+                                color: '#fff', width: 180, outline: 'none', backdropFilter: 'blur(16px)',
+                                boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
                             }} />
                         <button type="submit" style={{
                             padding: '8px 14px', borderRadius: 10, fontSize: 11, fontWeight: 700,
-                            background: 'linear-gradient(135deg,#8b5cf6,#6d28d9)', color: '#fff', border: 'none', cursor: 'pointer',
-                            fontFamily: FONT_MONO,
+                            background: 'linear-gradient(135deg,#8b5cf6,#6d28d9)', color: '#fff',
+                            border: 'none', cursor: 'pointer', fontFamily: FONT_MONO,
                         }}>GO</button>
                     </motion.form>
                 )}
             </AnimatePresence>
 
-            {/* Top right — night toggle + share */}
-            <div style={{ position: 'absolute', top: isMobile ? 8 : 16, right: isMobile ? 8 : 16, pointerEvents: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
-                {viewMode === 'city' && (
-                    <button onClick={onToggleNight} className="cyber-btn" style={{ ...btnStyle, borderColor: 'rgba(245,166,35,0.25)', color: isNight ? '#f5a623' : '#8b5cf6' }}>
-                        {isNight ? <Sun size={14} /> : <Moon size={14} />}
-                    </button>
-                )}
-                <button onClick={handleShare} className="cyber-btn" style={btnStyle}>
-                    <Share2 size={14} /> {!isMobile && (viewMode === 'city' ? 'SHARE CITY' : 'SHARE')}
-                </button>
-            </div>
 
             {/* ── Side panel ── */}
             <motion.div
@@ -508,7 +483,7 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
 
                     {/* Progress ring + stat pills row */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 16 }}>
-                        <ProgressRing value={totalSolved} max={estimatedTotal} size={isMobile ? 70 : 90} label="SOLVED" />
+                        <ProgressRing value={totalSolved} max={totalAvailable} size={isMobile ? 70 : 90} label={totalAvailable > 0 ? 'SOLVED' : '--'} />
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
                             {[
                                 { icon: Zap, color: '#23d18b', count: easySolved, label: 'EASY' },
@@ -732,3 +707,5 @@ export default function UserPanel({ data, onBack, viewMode, onViewModeChange, is
         </div>
     );
 }
+
+export default React.memo(UserPanel);

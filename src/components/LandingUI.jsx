@@ -223,7 +223,7 @@ function CommandHint() {
 }
 
 /* ── Main component ──────────────────────────────────── */
-export default function LandingUI({ onSearch }) {
+function LandingUI({ onSearch, errorMessage = '' }) {
     const [username, setUsername] = useState('');
     const [focused, setFocused] = useState(false);
     const [searchHovered, setSearchHovered] = useState(false);
@@ -469,6 +469,28 @@ export default function LandingUI({ onSearch }) {
                     )}
                 </motion.form>
 
+                {errorMessage && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        style={{
+                            marginTop: 2,
+                            marginBottom: 6,
+                            padding: '7px 12px',
+                            borderRadius: 10,
+                            background: 'rgba(255,56,96,0.08)',
+                            border: '1px solid rgba(255,56,96,0.25)',
+                            color: '#ff7d95',
+                            fontFamily: FONT_MONO,
+                            fontSize: 10,
+                            letterSpacing: '0.08em',
+                            textTransform: 'uppercase',
+                        }}
+                    >
+                        {errorMessage}
+                    </motion.div>
+                )}
+
                 {/* ── Featured explorers ── */}
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -510,6 +532,8 @@ export default function LandingUI({ onSearch }) {
         </div>
     );
 }
+
+export default React.memo(LandingUI);
 
 /* ── Easter egg overlay — PHM + Interstellar references ── */
 function EasterEggOverlay({ type }) {

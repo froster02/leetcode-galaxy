@@ -1,24 +1,16 @@
 import { useState, useCallback } from 'react';
-import { normalizeStats, validateTotalQuestions, fixPercentages } from '../utils/normalization';
 
 // For local dev, you might run wrangler dev in the worker directory (http://127.0.0.1:8787)
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-const CACHE_VERSION = 2;
 
 function getCached(username) {
     try {
         const raw = localStorage.getItem(`lc_${username.toLowerCase()}`);
         if (!raw) return null;
-        const { data, ts, v } = JSON.parse(raw);
+        const { data, ts } = JSON.parse(raw);
         
-        const isExpired = Date.now() - ts > CACHE_TTL;
-        const isOutdated = v !== CACHE_VERSION;
-        const hasCanonicalShape =
-            !!data?.profile?.matchedUser?.submitStats?.acSubmissionNum &&
-            !!data?.totalQuestions &&
-            !!data?._normalized;
-
-        if (isExpired || isOutdated || !hasCanonicalShape) {
+        // Invalidate if TTL expired OR if it's an old cache from before we added competitive records
+        if (Date.now() - ts > CACHE_TTL || !data.contest || !data.badges || !data.calendar) {
             localStorage.removeItem(`lc_${username.toLowerCase()}`);
             return null;
         }
@@ -29,7 +21,7 @@ function getCached(username) {
 
 function setCache(username, data) {
     try {
-        localStorage.setItem(`lc_${username.toLowerCase()}`, JSON.stringify({ data, ts: Date.now(), v: CACHE_VERSION }));
+        localStorage.setItem(`lc_${username.toLowerCase()}`, JSON.stringify({ data, ts: Date.now() }));
     } catch { /* quota exceeded */ }
 }
 
@@ -49,7 +41,7 @@ export function useLeetCode() {
             return res;
         } catch (err) {
             if (retries > 0) {
-                await new Promise(resolve => setTimeout(resolve, delay * 2));
+                await new Promise(resolve => setTimeout(resolve, delay));
                 return fetchWithRetry(url, retries - 1, delay * 2);
             }
             throw err;
@@ -89,44 +81,16 @@ export function useLeetCode() {
                 safeFetch(`https://alfa-leetcode-api.onrender.com/${encodedUser}/calendar`),
             ]);
 
-            if (profileData.errors || Object.keys(profileData).length === 0) {
-                throw new Error('No user found');
+            if (profileData.errors || Object.keys(profileData).length === 0 || !profileData.totalQuestions) {
+                throw new Error('User not found or Proxy API is asleep');
             }
-
-            const rawTotalQuestions = profileData.totalQuestions;
-            const totalQuestionsShape = typeof rawTotalQuestions === 'object' && rawTotalQuestions !== null;
-            const validatedTotalQuestions = validateTotalQuestions({
-                all: totalQuestionsShape ? rawTotalQuestions.total ?? rawTotalQuestions.all : rawTotalQuestions,
-                easy: totalQuestionsShape ? rawTotalQuestions.easy : profileData.totalEasy,
-                medium: totalQuestionsShape ? rawTotalQuestions.medium : profileData.totalMedium,
-                hard: totalQuestionsShape ? rawTotalQuestions.hard : profileData.totalHard,
-            });
-
-            const normalizedStats = normalizeStats(
-                profileData.matchedUserStats?.acSubmissionNum || [],
-                validatedTotalQuestions
-            );
-
-            if (validatedTotalQuestions.all === 0) {
-                throw new Error('No user found');
-            }
-
-            const percentages = fixPercentages(normalizedStats, validatedTotalQuestions);
-            const hardRatio = normalizedStats.hard > 0 && validatedTotalQuestions.all > 0 
-                ? ((normalizedStats.hard / validatedTotalQuestions.all) * 100).toFixed(1) 
-                : '0.0';
 
             const json = {
                 profile: {
                     matchedUser: {
                         username: username,
                         submitStats: {
-                            acSubmissionNum: [
-                                { difficulty: 'Easy', count: normalizedStats.easy },
-                                { difficulty: 'Medium', count: normalizedStats.medium },
-                                { difficulty: 'Hard', count: normalizedStats.hard },
-                                { difficulty: 'All', count: normalizedStats.all }
-                            ]
+                            acSubmissionNum: profileData.matchedUserStats?.acSubmissionNum || []
                         },
                         profile: {
                             ranking: profileData.ranking || 0,
@@ -135,20 +99,19 @@ export function useLeetCode() {
                         }
                     }
                 },
-                totalQuestions: validatedTotalQuestions,
+                totalQuestions: {
+                    all:    profileData.totalQuestions   || 0,
+                    easy:   profileData.totalEasy        || 0,
+                    medium: profileData.totalMedium      || 0,
+                    hard:   profileData.totalHard        || 0,
+                },
                 tags: statsData,
                 recent: {
                     recentSubmissionList: profileData.recentSubmissions || []
                 },
                 contest: contestData,
                 badges: badgesData,
-                calendar: calendarData,
-                // Pre-calculated normalized values for easy access
-                _normalized: {
-                    hardRatio: hardRatio,
-                    totalSolved: normalizedStats.all,
-                    percentages,
-                }
+                calendar: calendarData
             };
 
             setData(json);

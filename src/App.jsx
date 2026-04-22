@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,8 +13,6 @@ import { playDrone, playWarpSweep, playArrivalChord, startCityAmbient, stopCityA
 import { mapLeetCodeDataToCity } from './utils/dataMapper';
 
 const MAX_RECENT = 12;
-const PARTICLE_COUNT = 12;
-const PARTICLE_COLORS = ['#00f5d4', '#8b5cf6', '#3b82f6', '#f5a623'];
 
 /* ── Rotating status ticker messages (PHM + Interstellar easter eggs) ── */
 const STATUS_TICKS = [
@@ -48,80 +46,8 @@ const TRANSITION_LINES = {
 };
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-/* ── Cursor trail particle system ──────────────────────── */
-function CursorTrail() {
-  const particles = useRef([]);
-  const containerRef = useRef();
-  const mousePos = useRef({ x: -100, y: -100 });
-  const rafId = useRef();
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    // Create particle DOM elements
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      const el = document.createElement('div');
-      el.className = 'cursor-particle';
-      const size = Math.random() * 6 + 2;
-      el.style.width = `${size}px`;
-      el.style.height = `${size}px`;
-      el.style.background = PARTICLE_COLORS[i % PARTICLE_COLORS.length];
-      el.style.boxShadow = `0 0 ${size * 2}px ${PARTICLE_COLORS[i % PARTICLE_COLORS.length]}`;
-      el.style.opacity = '0';
-      container.appendChild(el);
-      particles.current.push({
-        el,
-        x: -100, y: -100,
-        vx: 0, vy: 0,
-        life: 0, maxLife: 20 + Math.random() * 20,
-        size,
-        delay: i * 2,
-      });
-    }
-
-    const handleMouse = (e) => {
-      mousePos.current.x = e.clientX;
-      mousePos.current.y = e.clientY;
-    };
-
-    let frame = 0;
-    const animate = () => {
-      frame++;
-      particles.current.forEach((p, i) => {
-        if (frame % 3 === (i % 3)) {
-          p.x += (mousePos.current.x - p.x) * (0.15 - i * 0.008);
-          p.y += (mousePos.current.y - p.y) * (0.15 - i * 0.008);
-        } else {
-          p.x += (mousePos.current.x - p.x) * 0.08;
-          p.y += (mousePos.current.y - p.y) * 0.08;
-        }
-        const dx = mousePos.current.x - p.x;
-        const dy = mousePos.current.y - p.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const opacity = Math.min(dist / 50, 0.6) * (1 - i / PARTICLE_COUNT);
-        p.el.style.transform = `translate(${p.x - p.size / 2}px, ${p.y - p.size / 2}px)`;
-        p.el.style.opacity = `${opacity}`;
-      });
-      rafId.current = requestAnimationFrame(animate);
-    };
-
-    window.addEventListener('mousemove', handleMouse);
-    rafId.current = requestAnimationFrame(animate);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouse);
-      cancelAnimationFrame(rafId.current);
-      particles.current.forEach(p => p.el.remove());
-      particles.current = [];
-    };
-  }, []);
-
-  return <div ref={containerRef} style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9997 }} />;
-}
-
 /* ── TARS monolith HUD (Interstellar easter egg) ──────── */
-function TarsHud() {
+const TarsHud = React.memo(function TarsHud() {
   const [settings, setSettings] = useState({ humor: 75, honesty: 90, trust: 100 });
   const [openQuote, setOpenQuote] = useState(false);
   const quips = [
@@ -215,12 +141,54 @@ function TarsHud() {
       </AnimatePresence>
     </div>
   );
+});
+
+function StatusTicker({ phase }) {
+  const [tickIndex, setTickIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTickIndex(i => (i + 1) % STATUS_TICKS.length);
+    }, 4200);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="status-bar-bottom" style={{
+      position: 'fixed', bottom: 12, left: 16, zIndex: 50, pointerEvents: 'none',
+      display: 'flex', alignItems: 'center', gap: 8,
+      fontFamily: '"Share Tech Mono", monospace', fontSize: 9.5, color: 'rgba(0,245,212,0.9)',
+      letterSpacing: '0.15em',
+      padding: '6px 12px', borderRadius: 6,
+      background: 'rgba(3,5,8,0.78)',
+      border: '1px solid rgba(0,245,212,0.12)',
+      backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+    }}>
+      <span style={{
+        width: 6, height: 6, borderRadius: '50%', background: '#00f5d4',
+        boxShadow: '0 0 8px #00f5d4', animation: 'energy-pulse 2s ease infinite',
+      }} />
+      <span>PHASE_{phase}</span>
+      <span style={{ color: 'rgba(255,255,255,0.15)' }}>//</span>
+      <span
+        key={tickIndex}
+        style={{
+          color: 'var(--amber)',
+          animation: 'ticker-fade 4.2s ease-in-out both',
+          textShadow: '0 0 8px rgba(245,166,35,0.35)',
+        }}
+      >
+        {STATUS_TICKS[tickIndex]}
+      </span>
+    </div>
+  );
 }
 
 function App() {
   const [phase, setPhase] = useState(1);
   const [viewMode, setViewMode] = useState('city');
   const [isNight, setIsNight] = useState(true);
+  const [searchError, setSearchError] = useState('');
   const [transitionStage, setTransitionStage] = useState(0);
   const [transitionMsg, setTransitionMsg] = useState('');
   const [mappedData, setMappedData] = useState(null);
@@ -229,26 +197,7 @@ function App() {
     try { return JSON.parse(localStorage.getItem('recentExplorers') || '[]'); }
     catch { return []; }
   });
-  const [tickIndex, setTickIndex] = useState(0);
   const { fetchProfile } = useLeetCode();
-
-  // Rotating status bar ticker
-  useEffect(() => {
-    const id = setInterval(() => {
-      setTickIndex(i => (i + 1) % STATUS_TICKS.length);
-    }, 4200);
-    return () => clearInterval(id);
-  }, []);
-
-  // Console easter egg — Rocky + TARS greeting
-  useEffect(() => {
-    console.log(
-      '%c QUESTION? \n%c TARS :: HUMOR 75% // HONESTY 90% // LEETCODE_GALAXY v2.0 \n%c Try typing "rocky" or "tars" into the search. ',
-      'background:#d4c168;color:#030508;font-weight:700;padding:4px 10px;border-radius:4px;font-family:monospace;',
-      'color:#00f5d4;font-family:monospace;padding:4px 0;',
-      'color:#f5a623;font-style:italic;font-family:monospace;'
-    );
-  }, []);
 
   const addToRecent = useCallback((username) => {
     setRecentlyExplored(prev => {
@@ -260,6 +209,7 @@ function App() {
   }, []);
 
   const handleSearch = useCallback(async (username, pushUrl = true) => {
+    setSearchError('');
     setPhase(2);
     setViewMode('city');
     setTransitionStage(1);
@@ -291,7 +241,7 @@ function App() {
       }, 1800);
 
     } catch (err) {
-      console.error(err);
+      setSearchError(err?.message === 'No user found' ? 'No user found' : 'Unable to load profile');
       clearTimeout(transitionTimerRef.current);
       setPhase(1);
       setTransitionStage(0);
@@ -301,6 +251,7 @@ function App() {
 
   // Clickable blocks within the City Scene
   const handleQuickInspect = useCallback(async (username) => {
+    setSearchError('');
     setTransitionStage(1);
     setTransitionMsg(`FETCHING: ${username.toUpperCase()}`);
 
@@ -313,7 +264,7 @@ function App() {
       setViewMode('card');
       window.history.pushState({}, '', `/u/${encodeURIComponent(username)}`);
     } catch (err) {
-      console.error(err);
+      setSearchError(err?.message === 'No user found' ? 'No user found' : 'Unable to load profile');
       setTransitionStage(0);
     }
   }, [fetchProfile, addToRecent]);
@@ -324,6 +275,7 @@ function App() {
     setPhase(1);
     setTransitionStage(0);
     setMappedData(null);
+    setSearchError('');
     setViewMode('city');
     if (pushUrl) {
       window.history.pushState({}, '', '/');
@@ -375,7 +327,6 @@ function App() {
       {/* Cinematic overlays */}
       <div className="noise-overlay" />
       <div className="scanline-overlay" />
-      <CursorTrail />
 
       {/* Corner decorations */}
       <div className="corner-deco" style={{
@@ -390,33 +341,7 @@ function App() {
       }} />
 
       {/* Status bar — rotating PHM/Interstellar ticker */}
-      <div className="status-bar-bottom" style={{
-        position: 'fixed', bottom: 12, left: 16, zIndex: 50, pointerEvents: 'none',
-        display: 'flex', alignItems: 'center', gap: 8,
-        fontFamily: '"Share Tech Mono", monospace', fontSize: 9.5, color: 'rgba(0,245,212,0.9)',
-        letterSpacing: '0.15em',
-        padding: '6px 12px', borderRadius: 6,
-        background: 'rgba(3,5,8,0.78)',
-        border: '1px solid rgba(0,245,212,0.12)',
-        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-      }}>
-        <span style={{
-          width: 6, height: 6, borderRadius: '50%', background: '#00f5d4',
-          boxShadow: '0 0 8px #00f5d4', animation: 'energy-pulse 2s ease infinite',
-        }} />
-        <span style={{ opacity: 0.85 }}>PHASE_{phase}</span>
-        <span style={{ color: 'rgba(255,255,255,0.15)' }}>//</span>
-        <span
-          key={tickIndex}
-          style={{
-            color: 'var(--amber)',
-            animation: 'ticker-fade 4.2s ease-in-out both',
-            textShadow: '0 0 8px rgba(245,166,35,0.35)',
-          }}
-        >
-          {STATUS_TICKS[tickIndex]}
-        </span>
-      </div>
+      <StatusTicker phase={phase} />
 
       {/* TARS monolith HUD — top right on landing */}
       {phase === 1 && <TarsHud />}
@@ -478,7 +403,7 @@ function App() {
       </div>
 
       {/* UI Overlays */}
-      {phase === 1 && <LandingUI onSearch={handleSearch} />}
+      {phase === 1 && <LandingUI onSearch={handleSearch} errorMessage={searchError} />}
       <TransitionOverlay stage={transitionStage} message={transitionMsg} />
       {phase === 3 && viewMode !== 'card' && (
         <UserPanel

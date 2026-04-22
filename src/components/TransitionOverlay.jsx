@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const FONT_ORBIT = 'Orbitron, sans-serif';
@@ -13,35 +13,40 @@ const LOADING_MESSAGES = [
 ];
 
 function HyperspaceStreaks({ count = 60 }) {
+    const streaks = useMemo(() => Array.from({ length: count }, (_, i) => {
+        const angle = (i / count) * 360;
+        return {
+            angle,
+            length: 60 + Math.random() * 200,
+            delay: Math.random() * 0.5,
+            duration: 0.3 + Math.random() * 0.4,
+            hue: Math.random() > 0.7 ? 270 : 170,
+            width: Math.random() > 0.5 ? 2 : 1,
+        };
+    }), [count]);
+
     return (
         <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-            {Array.from({ length: count }).map((_, i) => {
-                const angle = (i / count) * 360;
-                const length = 60 + Math.random() * 200;
-                const delay = Math.random() * 0.5;
-                const duration = 0.3 + Math.random() * 0.4;
-                const hue = Math.random() > 0.7 ? 270 : 170;
-                return (
-                    <motion.div
-                        key={i}
-                        style={{
-                            position: 'absolute', left: '50%', top: '50%',
-                            width: Math.random() > 0.5 ? 2 : 1,
-                            height: length,
-                            background: `linear-gradient(to bottom, transparent 0%, hsla(${hue}, 80%, 60%, 0) 10%, hsla(${hue}, 80%, 70%, 0.9) 50%, hsla(0, 0%, 100%, 0.6) 80%, transparent 100%)`,
-                            transformOrigin: 'top center',
-                            transform: `rotate(${angle}deg) translateX(-50%)`,
-                            borderRadius: 4,
-                        }}
-                        initial={{ scaleY: 0, opacity: 0 }}
-                        animate={{
-                            scaleY: [0, 1.2, 1.5, 0],
-                            opacity: [0, 0.9, 0.9, 0],
-                        }}
-                        transition={{ duration, delay, repeat: Infinity, ease: 'easeIn' }}
-                    />
-                );
-            })}
+            {streaks.map((s, i) => (
+                <motion.div
+                    key={i}
+                    style={{
+                        position: 'absolute', left: '50%', top: '50%',
+                        width: s.width,
+                        height: s.length,
+                        background: `linear-gradient(to bottom, transparent 0%, hsla(${s.hue}, 80%, 60%, 0) 10%, hsla(${s.hue}, 80%, 70%, 0.9) 50%, hsla(0, 0%, 100%, 0.6) 80%, transparent 100%)`,
+                        transformOrigin: 'top center',
+                        transform: `rotate(${s.angle}deg) translateX(-50%)`,
+                        borderRadius: 4,
+                    }}
+                    initial={{ scaleY: 0, opacity: 0 }}
+                    animate={{
+                        scaleY: [0, 1.2, 1.5, 0],
+                        opacity: [0, 0.9, 0.9, 0],
+                    }}
+                    transition={{ duration: s.duration, delay: s.delay, repeat: Infinity, ease: 'easeIn' }}
+                />
+            ))}
         </div>
     );
 }
@@ -189,7 +194,7 @@ function LoadingSequence({ message }) {
     );
 }
 
-export default function TransitionOverlay({ stage, message }) {
+function TransitionOverlay({ stage, message }) {
     if (stage === 0) return null;
 
     return (
@@ -225,3 +230,5 @@ export default function TransitionOverlay({ stage, message }) {
         </AnimatePresence>
     );
 }
+
+export default React.memo(TransitionOverlay);

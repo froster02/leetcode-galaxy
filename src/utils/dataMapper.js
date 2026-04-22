@@ -1,3 +1,5 @@
+import { normalizeStats, validateTotalQuestions, fixPercentages } from './normalization';
+
 export function mapLeetCodeDataToCity(data) {
     if (!data || !data.profile?.matchedUser) return null;
 
@@ -5,7 +7,16 @@ export function mapLeetCodeDataToCity(data) {
     const tags = data.tags?.matchedUser?.tagProblemCounts || { advanced: [], intermediate: [], fundamental: [] };
     const recent = data.recent?.recentSubmissionList || [];
 
-    const stats = user.submitStats?.acSubmissionNum || [];
+    const totalQuestions = validateTotalQuestions(data.totalQuestions || {});
+    const solved = normalizeStats(user.submitStats?.acSubmissionNum || [], totalQuestions);
+    const percentages = fixPercentages(solved, totalQuestions);
+
+    const stats = [
+        { difficulty: 'Easy', count: solved.easy, percentage: percentages.easyPct },
+        { difficulty: 'Medium', count: solved.medium, percentage: percentages.mediumPct },
+        { difficulty: 'Hard', count: solved.hard, percentage: percentages.hardPct },
+        { difficulty: 'All', count: solved.all, percentage: percentages.totalPct },
+    ];
 
     // Flatten and sort tags by problems solved
     const allTags = [
@@ -41,15 +52,18 @@ export function mapLeetCodeDataToCity(data) {
         profile: user.profile,
         stats,
         recent,
-        districts, // Renamed from planets
+        districts,
+        totalQuestions,
         contestInfo: {
-            rating: contest.contestRating || null,
-            ranking: contest.contestGlobalRanking || null,
-            attended: contest.contestAttend || 0,
-            topPercentage: contest.contestTopPercentage || null
+            rating:        contest.contestRating        || null,
+            topRating:     contest.contestTopRating     || null,
+            ranking:       contest.contestGlobalRanking || null,
+            attended:      contest.contestAttend        || 0,
+            topPercentage: contest.contestTopPercentage || null,
         },
         badgesInfo: {
-            total: badges.badgesCount || 0
+            total:  badges.badgesCount || 0,
+            badges: Array.isArray(badges.badges) ? badges.badges : [],
         },
         calendar,
     };
