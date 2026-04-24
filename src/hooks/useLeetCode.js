@@ -4,6 +4,13 @@ import { normalizeStats, validateTotalQuestions, fixPercentages } from '../utils
 // For local dev, you might run wrangler dev in the worker directory (http://127.0.0.1:8787)
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 const CACHE_VERSION = 2;
+const FETCH_TIMEOUT = 12000; // 12s per request — free Render tier cold-starts in ~10s
+const API = 'https://alfa-leetcode-api.onrender.com';
+
+/* Fire-and-forget ping so Render wakes before user searches */
+export function prewarmApi() {
+    fetch(`${API}/`, { signal: AbortSignal.timeout(8000) }).catch(() => {});
+}
 
 function getCached(username) {
     try {
@@ -38,19 +45,18 @@ export function useLeetCode() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const fetchWithRetry = async (url, retries = 2, delay = 500) => {
+    const fetchWithRetry = async (url, retries = 1, retryDelay = 300) => {
         try {
-            const res = await fetch(url);
+            const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT) });
             if (!res.ok) {
-                if (res.status === 429 && retries > 0) throw new Error('Rate limited');
-                if (res.status >= 500 && retries > 0) throw new Error('Server error');
-                return res; // let the component handle 404s
+                if ((res.status === 429 || res.status >= 500) && retries > 0) throw new Error('Server error');
+                return res;
             }
             return res;
         } catch (err) {
             if (retries > 0) {
-                await new Promise(resolve => setTimeout(resolve, delay * 2));
-                return fetchWithRetry(url, retries - 1, delay * 2);
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+                return fetchWithRetry(url, retries - 1, retryDelay);
             }
             throw err;
         }
@@ -82,11 +88,11 @@ export function useLeetCode() {
 
             const encodedUser = encodeURIComponent(username);
             const [profileData, statsData, contestData, badgesData, calendarData] = await Promise.all([
-                safeFetch(`https://alfa-leetcode-api.onrender.com/userProfile/${encodedUser}`),
-                safeFetch(`https://alfa-leetcode-api.onrender.com/skillStats/${encodedUser}`),
-                safeFetch(`https://alfa-leetcode-api.onrender.com/${encodedUser}/contest`),
-                safeFetch(`https://alfa-leetcode-api.onrender.com/${encodedUser}/badges`),
-                safeFetch(`https://alfa-leetcode-api.onrender.com/${encodedUser}/calendar`),
+                safeFetch(`${API}/userProfile/${encodedUser}`),
+                safeFetch(`${API}/skillStats/${encodedUser}`),
+                safeFetch(`${API}/${encodedUser}/contest`),
+                safeFetch(`${API}/${encodedUser}/badges`),
+                safeFetch(`${API}/${encodedUser}/calendar`),
             ]);
 
             if (profileData.errors || Object.keys(profileData).length === 0) {

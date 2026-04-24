@@ -85,19 +85,18 @@ function StatBar({ label, value, max, color }) {
 export default function Dashboard({ data, username, onBack }) {
     if (!data) return null;
 
-    const { profile, stats, recent, planets, _normalized } = data;
-    
-    // Use normalized data if available, otherwise fallback
-    const totalSolved = _normalized?.totalSolved 
-        || stats.find(s => s.difficulty === 'All')?.count 
+    const { profile, stats, recent, districts, _normalized } = data;
+
+    const totalSolved = _normalized?.totalSolved
+        || stats.find(s => s.difficulty === 'All')?.count
         || 0;
-    
+
     const easySolved = stats.find(s => s.difficulty === 'Easy')?.count || 0;
     const medSolved = stats.find(s => s.difficulty === 'Medium')?.count || 0;
     const hardSolved = stats.find(s => s.difficulty === 'Hard')?.count || 0;
 
     const rank = getRankBadge(totalSolved);
-    const topTopics = [...planets].sort((a, b) => b.problemsSolved - a.problemsSolved).slice(0, 9);
+    const topTopics = [...(districts || [])].sort((a, b) => b.problemsSolved - a.problemsSolved).slice(0, 9);
 
     const card = { border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, background: '#111214', padding: 24, position: 'relative', overflow: 'hidden' };
 

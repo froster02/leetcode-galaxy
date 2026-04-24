@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { calcPower, getFighterClass } from '../utils/gameData';
 import { mapLeetCodeDataToCity } from '../utils/dataMapper';
+import ShareModal from './ShareCard';
 
 /* ── Canvas star field — drawn once, zero ongoing CPU cost ── */
 function StarCanvas() {
@@ -507,6 +508,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
     const [quickSearch, setQuickSearch] = useState('');
     const [challengeName, setChallengeName] = useState('');
     const [challengeMiss, setChallengeMiss] = useState('');
+    const [showShare, setShowShare] = useState(false);
     const [viewport, setViewport] = useState(() => ({
         width: typeof window !== 'undefined' ? window.innerWidth : 1440,
         height: typeof window !== 'undefined' ? window.innerHeight : 900,
@@ -525,12 +527,12 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
     }, []);
 
     const compactLaptop = viewport.width <= 1440 && viewport.height <= 900;
-    const contentMaxWidth = compactLaptop ? 920 : 1060;
-    const pageBottomPad = compactLaptop ? 44 : 80;
-    const heroPad = compactLaptop ? '16px 18px' : '22px 28px';
-    const blockPad = compactLaptop ? '16px 18px' : '22px 24px';
-    const blockPadWide = compactLaptop ? '18px 20px' : '24px 28px';
-    const sectionGap = compactLaptop ? 6 : 10;
+    const contentMaxWidth = compactLaptop ? 960 : 1100;
+    const pageBottomPad = 24;
+    const heroPad = '10px 14px';
+    const blockPad = '10px 12px';
+    const blockPadWide = '10px 14px';
+    const sectionGap = 5;
     const panelSurface = {
         background: 'linear-gradient(165deg, rgba(12,18,34,0.86) 0%, rgba(8,12,24,0.76) 100%)',
         backdropFilter: 'blur(10px)',
@@ -561,11 +563,6 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
     const { profile, stats, recent, districts, contestInfo, badgesInfo, totalQuestions } = data;
 
-    const lcEasy = totalQuestions?.easy || 0;
-    const lcMed = totalQuestions?.medium || 0;
-    const lcHard = totalQuestions?.hard || 0;
-    const lcTotal = totalQuestions?.all || 0;
-
     const easyStats = stats.find(s => s.difficulty === 'Easy');
     const medStats  = stats.find(s => s.difficulty === 'Medium');
     const hardStats = stats.find(s => s.difficulty === 'Hard');
@@ -574,7 +571,18 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
     const med   = medStats?.count  || 0;
     const hard  = hardStats?.count || 0;
     const total = stats.find(s => s.difficulty === 'All')?.count || 0;
-    const totalPctCleared = lcTotal > 0 ? Math.round((total / lcTotal) * 100) : null;
+
+    /* Denominators — use API totals but never let solved exceed them */
+    const LC_EASY_FB  = 900;
+    const LC_MED_FB   = 1900;
+    const LC_HARD_FB  = 850;
+    const LC_TOTAL_FB = 3700;
+    const lcEasy  = Math.max(totalQuestions?.easy   || LC_EASY_FB,  easy);
+    const lcMed   = Math.max(totalQuestions?.medium || LC_MED_FB,   med);
+    const lcHard  = Math.max(totalQuestions?.hard   || LC_HARD_FB,  hard);
+    const lcTotal = Math.max(totalQuestions?.all    || LC_TOTAL_FB, total);
+
+    const totalPctCleared = lcTotal > 0 ? Math.min(Math.round((total / lcTotal) * 100), 100) : null;
 
     /* Beats % — may or may not be in API response */
     const easyBeats = easyStats?.beatPercentage ?? easyStats?.beats ?? null;
@@ -715,66 +723,84 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                     <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 1, ease: [0.16,1,0.3,1] }}
                         style={{ height: 1, transformOrigin: 'left', background: `linear-gradient(90deg, ${C_TEAL}, ${C_TEAL}60, transparent)`, boxShadow: `0 0 12px ${C_TEAL}80` }} />
 
-                    {/* ── Nav back ── */}
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.05 }}
+                    {/* ── Nav ── */}
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.05 }}
                         style={{
-                            position: 'sticky',
-                            top: 0,
-                            zIndex: 20,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: 10,
-                            width: '100vw',
-                            marginLeft: 'calc(50% - 50vw)',
-                            marginRight: 'calc(50% - 50vw)',
-                            padding: compactLaptop ? '10px 18px 8px' : '10px 24px 8px',
+                            position: 'sticky', top: 0, zIndex: 20,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            padding: compactLaptop ? '12px 18px' : '14px 24px',
                             marginBottom: 8,
-                            background: 'rgba(8,12,24,0.78)',
-                            backdropFilter: 'blur(10px)',
-                            borderBottom: '1px solid rgba(0,245,212,0.18)',
-                            boxShadow: '0 10px 24px rgba(0,0,0,0.35)',
+                            width: '100vw', marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)',
                         }}>
-                        <button onClick={onBack} style={{ fontFamily: Fm, fontSize: 10, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.88)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(0,245,212,0.2)', borderRadius: 20, padding: '6px 14px', cursor: 'pointer', transition: 'all 0.2s' }}
-                            onMouseEnter={e => { e.currentTarget.style.color = C_TEAL; e.currentTarget.style.borderColor = `${C_TEAL}50`; }}
-                            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; e.currentTarget.style.borderColor = 'rgba(0,245,212,0.2)'; }}>
-                            ← ARENA
-                        </button>
-                        <form onSubmit={handleQuickSearch} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <input
-                                value={quickSearch}
-                                onChange={(e) => setQuickSearch(e.target.value)}
-                                placeholder="search username..."
+                        {/* Floating pill */}
+                        <div style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            background: 'rgba(4,7,18,0.82)', backdropFilter: 'blur(20px)',
+                            border: '1px solid rgba(0,245,212,0.18)', borderRadius: 18,
+                            padding: '6px 8px',
+                            boxShadow: '0 0 0 1px rgba(0,245,212,0.06), 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
+                        }}>
+                            {/* ← ARENA */}
+                            <motion.button onClick={onBack}
+                                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 13px', borderRadius: 12, background: 'rgba(0,245,212,0.07)', border: '1px solid rgba(0,245,212,0.2)', color: C_TEAL, cursor: 'pointer', fontFamily: Fm, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', transition: 'background 0.18s' }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,245,212,0.16)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,245,212,0.07)'}>
+                                ← CITY
+                            </motion.button>
+
+                            {/* Divider */}
+                            <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+
+                            {/* ✦ SHARE CARD ✦ — highlighted */}
+                            <motion.button onClick={() => setShowShare(true)}
+                                whileHover={{ scale: 1.05, boxShadow: '0 0 24px rgba(167,139,250,0.55)' }}
+                                whileTap={{ scale: 0.96 }}
                                 style={{
-                                    width: compactLaptop ? 160 : 190,
-                                    padding: '7px 10px',
-                                    borderRadius: 10,
-                                    border: '1px solid rgba(0,245,212,0.2)',
-                                    background: 'rgba(255,255,255,0.04)',
-                                    color: 'rgba(255,255,255,0.88)',
-                                    fontFamily: Fm,
-                                    fontSize: 11,
-                                    letterSpacing: '0.04em',
-                                    outline: 'none',
-                                }}
-                            />
-                            <button
-                                type="submit"
-                                style={{
-                                    fontFamily: Fm,
-                                    fontSize: 10,
-                                    letterSpacing: '0.1em',
-                                    color: C_TEAL,
-                                    background: 'rgba(0,245,212,0.08)',
-                                    border: '1px solid rgba(0,245,212,0.28)',
-                                    borderRadius: 10,
-                                    padding: '7px 10px',
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                SEARCH
-                            </button>
-                        </form>
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    padding: '7px 20px', borderRadius: 12, cursor: 'pointer',
+                                    fontFamily: Fm, fontSize: 12, fontWeight: 700, letterSpacing: '0.14em',
+                                    color: '#e9d5ff',
+                                    background: 'linear-gradient(135deg, rgba(139,92,246,0.3) 0%, rgba(109,40,217,0.22) 100%)',
+                                    border: '1px solid rgba(167,139,250,0.55)',
+                                    boxShadow: '0 0 18px rgba(139,92,246,0.3), inset 0 1px 0 rgba(255,255,255,0.1)',
+                                    transition: 'all 0.18s',
+                                }}>
+                                <span style={{ fontSize: 13, color: '#a78bfa' }}>✦</span>
+                                SHARE CARD
+                                <span style={{ fontSize: 13, color: '#a78bfa' }}>✦</span>
+                            </motion.button>
+
+                            {/* Divider */}
+                            <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+
+                            {/* Search */}
+                            <form onSubmit={handleQuickSearch} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <input
+                                    value={quickSearch}
+                                    onChange={(e) => setQuickSearch(e.target.value)}
+                                    placeholder="search user..."
+                                    style={{
+                                        width: compactLaptop ? 130 : 160,
+                                        padding: '7px 12px', borderRadius: 10,
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        color: 'rgba(255,255,255,0.88)',
+                                        fontFamily: Fm, fontSize: 11, letterSpacing: '0.04em', outline: 'none',
+                                    }}
+                                />
+                                <motion.button type="submit"
+                                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 10, background: 'rgba(0,245,212,0.08)', border: '1px solid rgba(0,245,212,0.25)', color: C_TEAL, cursor: 'pointer', transition: 'background 0.18s' }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,245,212,0.18)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,245,212,0.08)'}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                                    </svg>
+                                </motion.button>
+                            </form>
+                        </div>
                     </motion.div>
 
                     {/* ════ 1. HERO HEADER ════ */}
@@ -814,34 +840,21 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
                     {/* ════ 2. POWER LEVEL ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.14 }}
-                        style={{ ...panelSurface, padding: blockPadWide, marginBottom: sectionGap, display: 'flex', alignItems: 'center', gap: compactLaptop ? 20 : 28 }}>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.18em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase', marginBottom: 6 }}>Power Level</div>
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: compactLaptop?8:12 }}>
-                                <PowerCounter target={power} color={tier.color} />
-                                <span style={{ fontFamily: Fm, fontSize: compactLaptop?11:13, color: 'rgba(255,255,255,0.7)' }}>/ {tier.max.toLocaleString()}</span>
-                            </div>
-                            {/* Tier progress bar */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                <span style={{ fontFamily: Fd, fontSize: 8.5, letterSpacing: '0.1em', color: tier.color, whiteSpace: 'nowrap' }}>{tier.name}</span>
-                                <div style={{ flex: 1, height: compactLaptop?3:5, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden', position: 'relative' }}>
-                                    <motion.div initial={{ width: 0 }} animate={{ width: `${tierPct}%` }} transition={{ duration: 1.4, ease: [0.16,1,0.3,1], delay: 0.3 }}
-                                        style={{ height: '100%', borderRadius: 3, background: `linear-gradient(90deg, ${tier.color}70, ${tier.color})`, boxShadow: `0 0 10px ${tier.color}70` }} />
-                                </div>
-                                {nextTier && <span style={{ fontFamily: Fd, fontSize: 9, letterSpacing: '0.09em', color: nextTier.color, whiteSpace: 'nowrap' }}>{nextTier.name}</span>}
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.78)', letterSpacing: '0.06em' }}>{tier.min.toLocaleString()}</span>
-                                {toNextTier > 0 && <span style={{ fontFamily: Fm, fontSize: 9, color: tier.color, letterSpacing: '0.06em' }}>{toNextTier.toLocaleString()} TO NEXT TIER</span>}
-                                <span style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.78)', letterSpacing: '0.06em' }}>{tier.max.toLocaleString()}</span>
-                            </div>
+                        style={{ ...panelSurface, padding: blockPadWide, marginBottom: sectionGap }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 6 }}>
+                            <div style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.18em', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase' }}>Power Level</div>
+                            <PowerCounter target={power} color={tier.color} />
+                            <span style={{ fontFamily: Fm, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>/ {tier.max.toLocaleString()}</span>
+                            {toNextTier > 0 && <span style={{ fontFamily: Fm, fontSize: 9, color: tier.color, letterSpacing: '0.06em', marginLeft: 'auto' }}>{toNextTier.toLocaleString()} TO NEXT TIER</span>}
                         </div>
-                        <MiniRing pct={winRate} size={compactLaptop?66:78} color={winColor} stroke={5}>
-                            <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontFamily: Fd, fontSize: compactLaptop?13:15, fontWeight: 900, color: winColor }}>{winRate}%</div>
-                                <div style={{ fontFamily: Fm, fontSize: 6.5, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.1em', marginTop: 1 }}>AC RATE</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontFamily: Fd, fontSize: 8, letterSpacing: '0.1em', color: tier.color, whiteSpace: 'nowrap' }}>{tier.name}</span>
+                            <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+                                <motion.div initial={{ width: 0 }} animate={{ width: `${tierPct}%` }} transition={{ duration: 1.4, ease: [0.16,1,0.3,1], delay: 0.3 }}
+                                    style={{ height: '100%', borderRadius: 3, background: `linear-gradient(90deg, ${tier.color}70, ${tier.color})`, boxShadow: `0 0 10px ${tier.color}70` }} />
                             </div>
-                        </MiniRing>
+                            {nextTier && <span style={{ fontFamily: Fd, fontSize: 8, letterSpacing: '0.09em', color: nextTier.color, whiteSpace: 'nowrap' }}>{nextTier.name}</span>}
+                        </div>
                     </motion.div>
 
                     {/* ════ 3. STATS ROW ════ */}
@@ -863,109 +876,72 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                 <span style={{ marginLeft: 8, color: tier.color }}>· {totalPctCleared != null ? `${totalPctCleared}% CLEARED` : '--'}</span>
                             </span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', gap: 8 }}>
                             {[
                                 { count: easy, total: lcEasy, color: C_EASY, label: 'Easy',   beats: easyBeats, delay: 360 },
                                 { count: med,  total: lcMed,  color: C_MED,  label: 'Medium', beats: medBeats,  delay: 740 },
                                 { count: hard, total: lcHard, color: C_HARD, label: 'Hard',   beats: hardBeats, delay: 1120 },
                             ].map(({ count: c, total: t, color, label, beats, delay: d }) => (
-                                <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                                    <CircularGauge count={c} total={t} color={color} label={label} size={compactLaptop?100:118} delay={d} />
+                                <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+                                    <CircularGauge count={c} total={t} color={color} label={label} size={84} delay={d} />
                                     {beats != null && (
-                                        <span style={{ fontFamily: Fm, fontSize: 8.5, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.1em' }}>
+                                        <span style={{ fontFamily: Fm, fontSize: 7.5, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.1em' }}>
                                             BEATS <span style={{ color }}>{typeof beats === 'number' ? beats.toFixed(1) : beats}%</span>
                                         </span>
                                     )}
                                 </div>
                             ))}
                             {/* Total ring */}
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                                <MiniRing pct={lcTotal > 0 ? Math.min((total / lcTotal) * 100, 100) : 0} size={compactLaptop?100:118} color={tier.color} stroke={7}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+                                <MiniRing pct={lcTotal > 0 ? Math.min((total / lcTotal) * 100, 100) : 0} size={84} color={tier.color} stroke={6}>
                                     <div style={{ textAlign: 'center' }}>
-                                        <div style={{ fontFamily: Fd, fontSize: compactLaptop?16:20, fontWeight: 900, color: tier.color, lineHeight: 1 }}>{total}</div>
-                                        <div style={{ fontFamily: Fm, fontSize: 7.5, color: 'rgba(255,255,255,0.7)' }}>/ {lcTotal > 0 ? lcTotal : '--'}</div>
-                                        <div style={{ fontFamily: Fm, fontSize: compactLaptop?8:9.5, color: tier.color, opacity: 0.75, fontWeight: 700 }}>{totalPctCleared != null ? `${totalPctCleared}%` : '--'}</div>
+                                        <div style={{ fontFamily: Fd, fontSize: 14, fontWeight: 900, color: tier.color, lineHeight: 1 }}>{total}</div>
+                                        <div style={{ fontFamily: Fm, fontSize: 7, color: 'rgba(255,255,255,0.7)' }}>/ {lcTotal > 0 ? lcTotal : '--'}</div>
+                                        <div style={{ fontFamily: Fm, fontSize: 8, color: tier.color, opacity: 0.75, fontWeight: 700 }}>{totalPctCleared != null ? `${totalPctCleared}%` : '--'}</div>
                                     </div>
                                 </MiniRing>
-                                <span style={{ fontFamily: Fd, fontSize: 8, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: tier.color, opacity: 0.85 }}>Total</span>
+                                <span style={{ fontFamily: Fd, fontSize: 7.5, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: tier.color, opacity: 0.85 }}>Total</span>
                             </div>
                         </div>
                     </motion.div>
 
-                    {/* ════ 5. CONTEST & RATING ════ */}
+                    {/* ════ 5+6. CONTEST & STANDING (merged) ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.33 }}
                         style={{ ...panelSurface, padding: blockPad, marginBottom: sectionGap }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: compactLaptop?8:12 }}>
-                            <span style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Contest & Rating</span>
-                            {attended && <span style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em' }}>{attended} ATTENDED</span>}
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-                            {[
-                                { head: 'Current Rating', val: rating,    color: '#00f5d4', sub: cls.label,   big: true  },
-                                { head: 'Accepted Streak', val: streak,   color: '#a78bfa', sub: lastSubmit ? `Last AC ${lastSubmit}` : 'Recent activity', big: true  },
-                                { head: 'Contests',       val: attended,  color: '#fb923c', sub: topPct ? `Top ${topPct}%` : null, big: false },
-                                { head: 'Top %',          val: topPct ? `${topPct}%` : null, color: C_EASY, sub: 'Global',  big: false },
-                            ].map(({ head, val, color, sub, big }) => (
-                                <motion.div key={head} whileHover={{ y: -2 }}
-                                    style={{ ...tileSurface, padding: compactLaptop ? '9px 12px' : '13px 16px', transition: 'border-color 0.2s' }}
-                                    onMouseEnter={e => { e.currentTarget.style.borderColor = `${color}30`; }}
-                                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
-                                    <div style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.13em', color: 'rgba(255,255,255,0.84)', textTransform: 'uppercase', marginBottom: 8 }}>{head}</div>
-                                    <div style={{ fontFamily: Fd, fontSize: big ? (compactLaptop?18:22) : (compactLaptop?15:18), fontWeight: 900, color: val ? color : 'rgba(255,255,255,0.15)', lineHeight: 1, marginBottom: 4 }}>{val ?? '—'}</div>
-                                    {sub && <div style={{ fontFamily: Fm, fontSize: 8.5, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.08em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</div>}
-                                </motion.div>
-                            ))}
-                        </div>
-                    </motion.div>
-
-                    {/* ════ 6. STANDING ════ */}
-                    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.38 }}
-                        style={{ ...panelSurface, padding: blockPad, marginBottom: sectionGap }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: compactLaptop?8:12 }}>
-                            <span style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Standing</span>
-                            <span style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                            <span style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Contest & Standing</span>
+                            <span style={{ fontFamily: Fm, fontSize: 8.5, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>
                                 RANK #{profile.ranking?.toLocaleString() || '—'}
                                 {topPct && <span style={{ marginLeft: 8, color: C_EASY }}>· TOP {topPct}%</span>}
                             </span>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                             {[
-                                {
-                                    head: 'Tier', val: tier.name, color: tier.color,
-                                    sub: nextTier ? `NEXT · ${nextTier.name} @ ${tier.max}` : 'MAX TIER',
-                                },
-                                {
-                                    head: 'Class', val: cls.label, color: cls.color,
-                                    sub: `${power.toLocaleString()} PTS`,
-                                },
-                                {
-                                    head: 'Rank', val: profile.ranking ? `#${profile.ranking.toLocaleString()}` : '—', color: 'rgba(255,255,255,0.7)',
-                                    sub: topPct ? `Top ${topPct}% global` : null,
-                                },
-                                {
-                                    head: 'Badges', val: badges || '—', color: '#fbbf24',
-                                    sub: badgesList.length > 0 ? `${badgesList.length} earned` : null,
-                                },
+                                { head: 'Rating',  val: rating,    color: '#00f5d4', sub: cls.label },
+                                { head: 'Streak',  val: streak,    color: '#a78bfa', sub: lastSubmit ? `Last AC ${lastSubmit}` : null },
+                                { head: 'Contests', val: attended, color: '#fb923c', sub: topPct ? `Top ${topPct}%` : null },
+                                { head: 'Top %',   val: topPct ? `${topPct}%` : null, color: C_EASY, sub: 'Global' },
+                                { head: 'Tier',    val: tier.name, color: tier.color, sub: nextTier ? `→ ${nextTier.name}` : 'MAX' },
+                                { head: 'Class',   val: cls.label, color: cls.color,  sub: `${power.toLocaleString()} pts` },
+                                { head: 'Rank',    val: profile.ranking ? `#${profile.ranking.toLocaleString()}` : '—', color: 'rgba(255,255,255,0.7)', sub: null },
+                                { head: 'Badges',  val: badges || '—', color: '#fbbf24', sub: badgesList.length > 0 ? `${badgesList.length} earned` : null },
                             ].map(({ head, val, color, sub }) => (
-                                <motion.div key={head} whileHover={{ y: -2 }}
-                                    style={{ ...tileSurface, padding: compactLaptop ? '8px 11px' : '12px 14px', border: '1px solid rgba(0,245,212,0.2)', transition: 'border-color 0.2s' }}
-                                    onMouseEnter={e => { e.currentTarget.style.borderColor = `${color}35`; }}
+                                <motion.div key={head} whileHover={{ y: -1 }}
+                                    style={{ ...tileSurface, padding: '7px 10px', transition: 'border-color 0.2s' }}
+                                    onMouseEnter={e => { e.currentTarget.style.borderColor = `${color}30`; }}
                                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
-                                    <div style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.13em', color: 'rgba(255,255,255,0.84)', textTransform: 'uppercase', marginBottom: 6 }}>{head}</div>
-                                    <div style={{ fontFamily: Fd, fontSize: compactLaptop?11:13, fontWeight: 900, color, letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 3 }}>{val}</div>
-                                    {sub && <div style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.62)', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</div>}
+                                    <div style={{ fontFamily: Fm, fontSize: 7.5, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 4 }}>{head}</div>
+                                    <div style={{ fontFamily: Fd, fontSize: 13, fontWeight: 900, color: val ? color : 'rgba(255,255,255,0.15)', lineHeight: 1, marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val ?? '—'}</div>
+                                    {sub && <div style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.06em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</div>}
                                 </motion.div>
                             ))}
                         </div>
-
-                        {/* Badge pills */}
                         {badgesList.length > 0 && (
-                            <div style={{ display: 'flex', gap: 7, marginTop: 14, flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', gap: 5, marginTop: 8, flexWrap: 'wrap' }}>
                                 {badgesList.slice(0, 8).map((b, i) => (
-                                    <motion.span key={i} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.45 + i * 0.04 }}
-                                        style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.1em', color: '#fbbf24', padding: '3px 10px', borderRadius: 20, background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)' }}>
+                                    <span key={i} style={{ fontFamily: Fm, fontSize: 8, letterSpacing: '0.1em', color: '#fbbf24', padding: '2px 8px', borderRadius: 20, background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)' }}>
                                         {b.displayName || b.name || `Badge ${i + 1}`}
-                                    </motion.span>
+                                    </span>
                                 ))}
                             </div>
                         )}
@@ -974,26 +950,23 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                     {/* ════ 6.5. POWER DNA ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.40 }}
                         style={{ ...panelSurface, padding: blockPad, marginBottom: sectionGap }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: compactLaptop?8:12 }}>
-                            <div>
-                                <span style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Power DNA</span>
-                                <div style={{ fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.8)', marginTop: 6, letterSpacing: '0.04em', fontStyle: 'italic' }}>"{motiv}"</div>
-                            </div>
-                            <span style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em' }}>~{estHours.toLocaleString()}h INVESTED</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                            <span style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Power DNA</span>
+                            <span style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', fontStyle: 'italic' }}>"{motiv}"</span>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
                             {[
                                 { label: 'Easy', mult: '×1',  count: easy, pwr: easyPwr, pct: easyPct, color: C_EASY },
                                 { label: 'Medium', mult: '×3', count: med,  pwr: medPwr,  pct: medPct,  color: C_MED  },
                                 { label: 'Hard',  mult: '×10', count: hard, pwr: hardPwr, pct: hardPct, color: C_HARD },
                             ].map(({ label, mult, count, pwr, pct, color }) => (
-                                <div key={label} style={{ padding: '14px 16px', borderRadius: 12, background: `${color}07`, border: `1px solid ${color}18` }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                                        <span style={{ fontFamily: Fd, fontSize: 7.5, letterSpacing: '0.22em', color, textTransform: 'uppercase' }}>{label}</span>
-                                        <span style={{ fontFamily: Fm, fontSize: 8, color: `${color}80`, letterSpacing: '0.08em' }}>{mult}</span>
+                                <div key={label} style={{ padding: '9px 11px', borderRadius: 10, background: `${color}07`, border: `1px solid ${color}18` }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                                        <span style={{ fontFamily: Fd, fontSize: 7.5, letterSpacing: '0.18em', color, textTransform: 'uppercase' }}>{label}</span>
+                                        <span style={{ fontFamily: Fm, fontSize: 8, color: `${color}80` }}>{mult}</span>
                                     </div>
-                                    <div style={{ fontFamily: Fd, fontSize: compactLaptop?18:22, fontWeight: 900, color, lineHeight: 1, marginBottom: 3 }}>{pwr.toLocaleString()}</div>
-                                    <div style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.62)', letterSpacing: '0.04em', marginBottom: 10 }}>{count} solved · {pct}% of power</div>
+                                    <div style={{ fontFamily: Fd, fontSize: 16, fontWeight: 900, color, lineHeight: 1, marginBottom: 2 }}>{pwr.toLocaleString()}</div>
+                                    <div style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>{count} solved · {pct}%</div>
                                     <div style={{ height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
                                         <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
                                             transition={{ duration: 1.2, ease: [0.16,1,0.3,1], delay: 0.5 }}
@@ -1001,11 +974,6 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                     </div>
                                 </div>
                             ))}
-                        </div>
-                        <div style={{ fontFamily: Fm, fontSize: 9.5, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.06em', textAlign: 'center' }}>
-                            Hard problems are <span style={{ color: C_HARD }}>10× more powerful</span> — your {hard} hard solves alone generate{' '}
-                            <span style={{ color: tier.color, fontWeight: 700 }}>{hardPwr.toLocaleString()} pts</span>.
-                            {hard > 0 && hardPct >= 40 && <span style={{ color: C_EASY }}> Hard is your superpower.</span>}
                         </div>
                     </motion.div>
 
@@ -1016,168 +984,95 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                             <span style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Battle Momentum</span>
                             {lastSubmit && <span style={{ fontFamily: Fm, fontSize: 8.5, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.06em' }}>LAST ACTIVE · {lastSubmit}</span>}
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                             {[
-                                {
-                                    head: 'AC STREAK', val: streak, color: streak >= 3 ? C_EASY : streak >= 1 ? C_MED : 'rgba(255,255,255,0.2)',
-                                    big: true, sub: streak >= 5 ? '🔥 on fire' : streak >= 1 ? 'consecutive wins' : 'break the ice',
-                                },
-                                {
-                                    head: 'RECENT WIN RATE', val: `${winRate}%`, color: winColor,
-                                    big: true, sub: winRate >= 80 ? 'Dominant form' : winRate >= 60 ? 'Strong performer' : 'Building momentum',
-                                },
-                                {
-                                    head: 'HARD BATTLES', val: recentHardCount, color: recentHardCount >= 3 ? C_HARD : 'rgba(255,255,255,0.5)',
-                                    big: false, sub: 'in last 10 subs',
-                                },
-                                {
-                                    head: 'GLOBAL TOP', val: topPct ? `${topPct}%` : '—', color: '#a78bfa',
-                                    big: false, sub: topPct ? `Better than ${Math.round(100 - topPct)}% of users` : null,
-                                },
-                            ].map(({ head, val, color, big, sub }) => (
-                                <motion.div key={head} whileHover={{ y: -2 }}
-                                    style={{ ...tileSurface, padding: compactLaptop ? '8px 11px' : '12px 14px', border: '1px solid rgba(0,245,212,0.2)', transition: 'border-color 0.2s' }}
+                                { head: 'AC STREAK',      val: streak,                color: streak >= 3 ? C_EASY : streak >= 1 ? C_MED : 'rgba(255,255,255,0.2)', sub: streak >= 5 ? '🔥 on fire' : streak >= 1 ? 'wins' : 'break the ice' },
+                                { head: 'WIN RATE',       val: `${winRate}%`,          color: winColor,  sub: winRate >= 80 ? 'Dominant' : 'Building' },
+                                { head: 'HARD BATTLES',   val: recentHardCount,        color: recentHardCount >= 3 ? C_HARD : 'rgba(255,255,255,0.5)', sub: 'last 10 subs' },
+                                { head: 'GLOBAL TOP',     val: topPct ? `${topPct}%` : '—', color: '#a78bfa', sub: topPct ? `Top ${Math.round(100-topPct)}%` : null },
+                            ].map(({ head, val, color, sub }) => (
+                                <motion.div key={head} whileHover={{ y: -1 }}
+                                    style={{ ...tileSurface, padding: '7px 10px', border: '1px solid rgba(0,245,212,0.15)', transition: 'border-color 0.2s' }}
                                     onMouseEnter={e => { e.currentTarget.style.borderColor = `${color}30`; }}
                                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}>
-                                    <div style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.13em', color: 'rgba(255,255,255,0.84)', textTransform: 'uppercase', marginBottom: 8 }}>{head}</div>
-                                    <div style={{ fontFamily: Fd, fontSize: big ? (compactLaptop?19:23) : (compactLaptop?16:19), fontWeight: 900, color, lineHeight: 1, marginBottom: 4 }}>{val ?? '—'}</div>
-                                    {sub && <div style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.62)', letterSpacing: '0.04em' }}>{sub}</div>}
+                                    <div style={{ fontFamily: Fm, fontSize: 7.5, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 4 }}>{head}</div>
+                                    <div style={{ fontFamily: Fd, fontSize: 16, fontWeight: 900, color, lineHeight: 1, marginBottom: 3 }}>{val ?? '—'}</div>
+                                    {sub && <div style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.55)' }}>{sub}</div>}
                                 </motion.div>
                             ))}
                         </div>
-                        {/* Motivational insight row */}
-                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                            {total >= 100 && (
-                                <div style={{ flex: 1, minWidth: 160, padding: '10px 14px', borderRadius: 10, background: `${C_EASY}08`, border: `1px solid ${C_EASY}18` }}>
-                                    <span style={{ fontFamily: Fm, fontSize: 8.5, color: C_EASY, letterSpacing: '0.06em' }}>
-                                        You've cracked <strong>{totalPctCleared != null ? `${totalPctCleared}%` : '--'}</strong> of all LeetCode — that's top-tier dedication.
-                                    </span>
-                                </div>
-                            )}
-                            {hard >= 10 && (
-                                <div style={{ flex: 1, minWidth: 160, padding: '10px 14px', borderRadius: 10, background: `${C_HARD}08`, border: `1px solid ${C_HARD}18` }}>
-                                    <span style={{ fontFamily: Fm, fontSize: 8.5, color: C_HARD, letterSpacing: '0.06em' }}>
-                                        {hard} Hard problems solved — fewer than <strong>8% of users</strong> reach this milestone.
-                                    </span>
-                                </div>
-                            )}
-                            {toNextTier > 0 && (
-                                <div style={{ flex: 1, minWidth: 160, padding: '10px 14px', borderRadius: 10, background: `${tier.color}08`, border: `1px solid ${tier.color}18` }}>
-                                    <span style={{ fontFamily: Fm, fontSize: 8.5, color: tier.color, letterSpacing: '0.06em' }}>
-                                        Only <strong>{toNextTier.toLocaleString()} pts</strong> to {nextTier?.name || 'next tier'} — you're close.
-                                    </span>
-                                </div>
-                            )}
-                        </div>
                     </motion.div>
 
-                    {/* ════ 7. WHERE YOU'RE POWERFUL ════ */}
-                    {topDistricts.length > 0 && (
-                        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.43 }}
-                            style={{ ...panelSurface, padding: blockPad, marginBottom: sectionGap }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-                            <span style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Where You're Powerful</span>
-                            <span style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.62)', letterSpacing: '0.06em' }}>TOP SPECIALTIES · BY SOLVE VOLUME</span>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 20 }}>
-                            {/* Specialty bar list */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                {topDistricts.map((d, i) => (
-                                    <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                        <span style={{ fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.75)', width: 80, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
-                                        <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
-                                            <motion.div
-                                                initial={{ width: 0 }} animate={{ width: `${(d.problemsSolved / maxDistrictSolved) * 100}%` }}
-                                                transition={{ duration: 1, ease: [0.16,1,0.3,1], delay: 0.5 + i * 0.06 }}
-                                                style={{ height: '100%', borderRadius: 2, background: i === 0 ? tier.color : `rgba(255,255,255,0.25)` }}
-                                            />
-                                        </div>
-                                        <span style={{ fontFamily: Fd, fontSize: 11, fontWeight: 700, color: i === 0 ? tier.color : 'rgba(255,255,255,0.5)', width: 32, textAlign: 'right', flexShrink: 0 }}>{d.problemsSolved}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        </motion.div>
-                    )}
+                    {/* ════ 7+8. SPECIALTIES + RECENT (side-by-side) ════ */}
+                    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.43 }}
+                        style={{ display: 'grid', gridTemplateColumns: topDistricts.length > 0 ? '1fr 1.6fr' : '1fr', gap: 5, marginBottom: sectionGap }}>
 
-                    {/* ════ 8. RECENT BATTLES ════ */}
-                    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.48 }}
-                        style={{ ...panelSurface, padding: blockPad, marginBottom: sectionGap }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: compactLaptop?8:12 }}>
-                            <span style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Recent Battles</span>
-                            <span style={{ fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.62)' }}>{Math.min(recent.length, 10)} submissions</span>
-                        </div>
-                        {recent.length === 0 ? (
-                            <div style={{ fontFamily: Fm, fontSize: 11, color: 'rgba(255,255,255,0.4)', padding: '12px 0', letterSpacing: '0.08em' }}>$ no_submissions_yet...</div>
-                        ) : (
-                            <div>
-                                {recent.slice(0, 10).map((r, i) => {
+                        {/* Specialties */}
+                        {topDistricts.length > 0 && (
+                            <div style={{ ...panelSurface, padding: blockPad }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                    <span style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Specialties</span>
+                                    <span style={{ fontFamily: Fm, fontSize: 7.5, color: 'rgba(255,255,255,0.4)' }}>BY SOLVE VOLUME</span>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                                    {topDistricts.map((d, i) => (
+                                        <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <span style={{ fontFamily: Fm, fontSize: 9.5, color: 'rgba(255,255,255,0.7)', width: 72, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
+                                            <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
+                                                <motion.div initial={{ width: 0 }} animate={{ width: `${(d.problemsSolved / maxDistrictSolved) * 100}%` }}
+                                                    transition={{ duration: 1, ease: [0.16,1,0.3,1], delay: 0.5 + i * 0.06 }}
+                                                    style={{ height: '100%', borderRadius: 2, background: i === 0 ? tier.color : 'rgba(255,255,255,0.22)' }} />
+                                            </div>
+                                            <span style={{ fontFamily: Fd, fontSize: 10, fontWeight: 700, color: i === 0 ? tier.color : 'rgba(255,255,255,0.45)', width: 28, textAlign: 'right', flexShrink: 0 }}>{d.problemsSolved}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Recent Battles */}
+                        <div style={{ ...panelSurface, padding: blockPad }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                <span style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Recent Battles</span>
+                                {lastSubmit && <span style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.4)' }}>LAST · {lastSubmit}</span>}
+                            </div>
+                            {recent.length === 0 ? (
+                                <div style={{ fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em' }}>$ no_submissions_yet...</div>
+                            ) : (
+                                recent.slice(0, 8).map((r, i) => {
                                     const ok = r.statusDisplay === 'Accepted';
                                     const ts = timeAgo(r.timestamp);
                                     const diffColor = r.difficulty === 'Easy' ? C_EASY : r.difficulty === 'Hard' ? C_HARD : r.difficulty === 'Medium' ? C_MED : null;
                                     return (
-                                        <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, delay: 0.52 + i * 0.03 }} whileHover={{ x: 5, transition: { duration: 0.12 } }}
-                                            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: compactLaptop?'4px 0':'6px 0', borderBottom: i < Math.min(recent.length, 10) - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none', cursor: 'default' }}>
-                                            <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: ok ? C_EASY : C_HARD, boxShadow: `0 0 6px ${ok ? C_EASY : C_HARD}80` }} />
-                                            <span style={{ flex: 1, fontFamily: Fm, fontSize: compactLaptop?10:11, color: 'rgba(255,255,255,0.75)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</span>
-                                            {diffColor && <span style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.08em', color: diffColor, padding: '3px 7px', background: `${diffColor}14`, borderRadius: 4, border: `1px solid ${diffColor}28`, flexShrink: 0, textTransform: 'uppercase' }}>{r.difficulty}</span>}
-                                            {ts && <span style={{ fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.58)', flexShrink: 0 }}>{ts}</span>}
-                                            <span style={{ fontFamily: Fm, fontSize: 10, letterSpacing: '0.1em', color: ok ? C_EASY : C_HARD, flexShrink: 0, fontWeight: 700 }}>{ok ? 'AC' : 'WA'}</span>
+                                        <motion.div key={i} whileHover={{ x: 4, transition: { duration: 0.1 } }}
+                                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', borderBottom: i < 7 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
+                                            <div style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0, background: ok ? C_EASY : C_HARD, boxShadow: `0 0 5px ${ok ? C_EASY : C_HARD}80` }} />
+                                            <span style={{ flex: 1, fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.72)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</span>
+                                            {diffColor && <span style={{ fontFamily: Fm, fontSize: 8, color: diffColor, padding: '2px 5px', background: `${diffColor}14`, borderRadius: 3, flexShrink: 0, textTransform: 'uppercase' }}>{r.difficulty?.slice(0,1)}</span>}
+                                            {ts && <span style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.45)', flexShrink: 0 }}>{ts}</span>}
+                                            <span style={{ fontFamily: Fm, fontSize: 9, color: ok ? C_EASY : C_HARD, flexShrink: 0, fontWeight: 700 }}>{ok ? 'AC' : 'WA'}</span>
                                         </motion.div>
                                     );
-                                })}
-                            </div>
-                        )}
+                                })
+                            )}
+                        </div>
                     </motion.div>
 
                     {/* ════ CHALLENGE A LEGEND ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.53 }}
                         style={{ ...panelSurface, padding: blockPad, marginBottom: sectionGap }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
-                            <div>
-                                <div style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase', marginBottom: 6 }}>Challenge a Legend</div>
-                                <div style={{ fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.66)', letterSpacing: '0.04em' }}>Type legend name, then compare power in popup.</div>
-                            </div>
-                            <div style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>search any username</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                            <span style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Challenge a Legend</span>
+                            <span style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.4)' }}>Type username, compare power in popup</span>
                         </div>
-                        <form onSubmit={handleChallengeSubmit} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                            <input
-                                value={challengeName}
-                                onChange={(e) => setChallengeName(e.target.value)}
-                                placeholder="enter username..."
-                                style={{
-                                    flex: '1 1 240px',
-                                    minWidth: 220,
-                                    padding: compactLaptop ? '10px 12px' : '12px 14px',
-                                    borderRadius: 10,
-                                    border: '1px solid rgba(0,245,212,0.22)',
-                                    background: 'rgba(255,255,255,0.04)',
-                                    color: 'rgba(255,255,255,0.9)',
-                                    fontFamily: Fm,
-                                    fontSize: 10,
-                                    letterSpacing: '0.08em',
-                                    outline: 'none',
-                                }}
-                            />
-                            <button
-                                type="submit"
-                                style={{
-                                    fontFamily: Fm,
-                                    fontSize: 9.5,
-                                    letterSpacing: '0.16em',
-                                    textTransform: 'uppercase',
-                                    color: '#00f5d4',
-                                    background: 'rgba(0,245,212,0.08)',
-                                    border: '1px solid rgba(0,245,212,0.28)',
-                                    borderRadius: 10,
-                                    padding: compactLaptop ? '10px 14px' : '12px 16px',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.18s',
-                                }}
-                                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,245,212,0.5)'; e.currentTarget.style.background = 'rgba(0,245,212,0.12)'; }}
-                                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,245,212,0.28)'; e.currentTarget.style.background = 'rgba(0,245,212,0.08)'; }}
-                            >
-                                Challenge
+                        <form onSubmit={handleChallengeSubmit} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                            <input value={challengeName} onChange={(e) => setChallengeName(e.target.value)} placeholder="enter username..."
+                                style={{ flex: 1, padding: '8px 12px', borderRadius: 9, border: '1px solid rgba(0,245,212,0.22)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.9)', fontFamily: Fm, fontSize: 10, letterSpacing: '0.06em', outline: 'none' }} />
+                            <button type="submit"
+                                style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#00f5d4', background: 'rgba(0,245,212,0.08)', border: '1px solid rgba(0,245,212,0.28)', borderRadius: 9, padding: '8px 14px', cursor: 'pointer', transition: 'all 0.18s', whiteSpace: 'nowrap' }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,245,212,0.5)'; e.currentTarget.style.background = 'rgba(0,245,212,0.14)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,245,212,0.28)'; e.currentTarget.style.background = 'rgba(0,245,212,0.08)'; }}>
+                                CHALLENGE
                             </button>
                         </form>
                     </motion.div>
@@ -1207,6 +1102,9 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                     </motion.div>
                 </div>
             </div>
+
+            {/* Share Modal */}
+            {showShare && <ShareModal data={data} onClose={() => setShowShare(false)} />}
 
             {/* VS Modal */}
             {createPortal(

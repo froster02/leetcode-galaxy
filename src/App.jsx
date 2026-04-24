@@ -8,8 +8,7 @@ import UserPanel from './components/UserPanel';
 import TransitionOverlay from './components/TransitionOverlay';
 import CityCanvas from './components/CityScene';
 import FighterCard from './components/FighterCard';
-import { useLeetCode } from './hooks/useLeetCode';
-import { playDrone, playWarpSweep, playArrivalChord, startCityAmbient, stopCityAmbient } from './hooks/useSpaceSound';
+import { useLeetCode, prewarmApi } from './hooks/useLeetCode';
 import { mapLeetCodeDataToCity } from './utils/dataMapper';
 
 const MAX_RECENT = 12;
@@ -187,7 +186,7 @@ function StatusTicker({ phase }) {
 function App() {
   const [phase, setPhase] = useState(1);
   const [viewMode, setViewMode] = useState('city');
-  const [isNight, setIsNight] = useState(true);
+  const [isNight] = useState(true);
   const [searchError, setSearchError] = useState('');
   const [transitionStage, setTransitionStage] = useState(0);
   const [transitionMsg, setTransitionMsg] = useState('');
@@ -198,6 +197,8 @@ function App() {
     catch { return []; }
   });
   const { fetchProfile } = useLeetCode();
+
+  useEffect(() => { prewarmApi(); }, []);
 
   const addToRecent = useCallback((username) => {
     setRecentlyExplored(prev => {
@@ -214,14 +215,13 @@ function App() {
     setViewMode('city');
     setTransitionStage(1);
     setTransitionMsg(pick(TRANSITION_LINES.lock));
-    playDrone();
 
     if (pushUrl) {
-      window.history.pushState({}, '', `/u/${encodeURIComponent(username)}`);
+      const qs = targetView === 'card' ? '?view=card' : '';
+      window.history.pushState({}, '', `/u/${encodeURIComponent(username)}${qs}`);
     }
 
     try {
-      await new Promise(r => setTimeout(r, 800));
       setTransitionMsg(pick(TRANSITION_LINES.map));
 
       const rawData = await fetchProfile(username);
@@ -231,15 +231,12 @@ function App() {
 
       setTransitionStage(2);
       setTransitionMsg(pick(TRANSITION_LINES.jump));
-      playWarpSweep();
 
       transitionTimerRef.current = setTimeout(() => {
         setPhase(3);
         setViewMode(targetView);
         setTransitionStage(0);
-        playArrivalChord();
-        startCityAmbient();
-      }, 1800);
+      }, 600);
 
     } catch (err) {
       setSearchError(err?.message === 'No user found' ? 'No user found' : 'Unable to load profile');
@@ -263,7 +260,7 @@ function App() {
       addToRecent(username);
       setTransitionStage(0);
       setViewMode('card');
-      window.history.pushState({}, '', `/u/${encodeURIComponent(username)}`);
+      window.history.pushState({}, '', `/u/${encodeURIComponent(username)}?view=card`);
     } catch (err) {
       setSearchError(err?.message === 'No user found' ? 'No user found' : 'Unable to load profile');
       setTransitionStage(0);
@@ -272,7 +269,6 @@ function App() {
 
   const handleBack = useCallback((pushUrl = true) => {
     clearTimeout(transitionTimerRef.current);
-    stopCityAmbient();
     setPhase(1);
     setTransitionStage(0);
     setMappedData(null);
@@ -282,6 +278,15 @@ function App() {
       window.history.pushState({}, '', '/');
     }
   }, []);
+
+  const handleViewModeChange = useCallback((mode) => {
+    setViewMode(mode);
+    const u = mappedData?.username;
+    if (u) {
+      const qs = mode === 'card' ? '?view=card' : '';
+      window.history.pushState({}, '', `/u/${encodeURIComponent(u)}${qs}`);
+    }
+  }, [mappedData?.username]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -298,18 +303,13 @@ function App() {
     return () => window.removeEventListener('quickSearch', handler);
   }, [handleSearch]);
 
-  useEffect(() => {
-    const onHide = () => { if (document.hidden) stopCityAmbient(); };
-    document.addEventListener('visibilitychange', onHide);
-    return () => document.removeEventListener('visibilitychange', onHide);
-  }, []);
-
   // URL-based profile loading
   useEffect(() => {
     const path = window.location.pathname;
     const match = path.match(/^\/u\/(.+)$/);
     if (match) {
-      handleSearch(decodeURIComponent(match[1]), false);
+      const view = new URLSearchParams(window.location.search).get('view') || 'city';
+      handleSearch(decodeURIComponent(match[1]), false, view);
     }
   }, [handleSearch]);
 
@@ -319,7 +319,8 @@ function App() {
       const path = window.location.pathname;
       const match = path.match(/^\/u\/(.+)$/);
       if (match) {
-        handleSearch(decodeURIComponent(match[1]), false);
+        const view = new URLSearchParams(window.location.search).get('view') || 'city';
+        handleSearch(decodeURIComponent(match[1]), false, view);
       } else {
         handleBack(false);
       }
@@ -412,7 +413,11 @@ function App() {
               <FighterCard
                 data={mappedData}
                 username={mappedData?.username}
-                onBack={() => setViewMode('city')}
+                onBack={() => {
+                  setViewMode('city');
+                  const u = mappedData?.username;
+                  if (u) window.history.pushState({}, '', `/u/${encodeURIComponent(u)}`);
+                }}
                 fetchProfile={fetchProfile}
               />
             </motion.div>
@@ -428,9 +433,7 @@ function App() {
           data={mappedData}
           onBack={handleBack}
           viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          isNight={isNight}
-          onToggleNight={() => setIsNight(n => !n)}
+          onViewModeChange={handleViewModeChange}
         />
       )}
     </div>
