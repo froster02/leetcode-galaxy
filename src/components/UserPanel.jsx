@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Search, X, Target, Zap, Star, Trophy, TrendingUp, Code2, Flame, Shield, Swords, Crown, Sparkles, Building2 } from 'lucide-react';
+import { ArrowLeft, Search, X, Target, Zap, Star, Trophy, Code2, Flame, Shield, Swords, Crown, Sparkles, Building2 } from 'lucide-react';
+import ShareModal from './ShareCard';
 
 const PLANET_COLORS = ['#00f5d4', '#8b5cf6', '#f5a623', '#3b82f6', '#ef4444', '#ec4899', '#10b981', '#f59e0b'];
 const FONT_ORBIT = 'Orbitron, sans-serif';
@@ -254,6 +255,7 @@ function AchievementBadge({ icon: Icon, label, color, unlocked, delay }) {
 function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
     const [quickSearch, setQuickSearch] = useState('');
     const [showSearch, setShowSearch] = useState(false);
+    const [showShare, setShowShare] = useState(false);
     const [activeTab, setActiveTab] = useState('stats');
     const [isMobile, setIsMobile] = useState(false);
     const [panelExpanded, setPanelExpanded] = useState(false);
@@ -294,15 +296,6 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
         }
     };
 
-    const btnStyle = {
-        display: 'flex', alignItems: 'center', gap: 6,
-        padding: isMobile ? '6px 10px' : '8px 14px', borderRadius: 10, fontFamily: FONT_MONO,
-        fontSize: isMobile ? 10 : 11, fontWeight: 700,
-        background: 'var(--btn-bg)', backdropFilter: 'blur(16px)',
-        border: '1px solid var(--accent-border)', color: 'var(--accent)', cursor: 'pointer',
-        transition: 'all 0.3s ease',
-    };
-
     const tabStyle = (active) => ({
         flex: 1, padding: '10px 0', fontFamily: FONT_MONO,
         fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer',
@@ -325,67 +318,157 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
     return (
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10, color: '#fff' }}>
 
-            {/* ── Floating top controls ── */}
-            {/* Left — back */}
-            <button onClick={onBack} className="cyber-btn"
-                style={{ ...btnStyle, position: 'absolute', top: 16, left: 16, pointerEvents: 'auto', zIndex: 20 }}>
-                <ArrowLeft size={13} /> GALAXY
-            </button>
-
-            {/* Center — view toggles */}
+            {/* ══════════════════════════════════════════════
+                TOP HUD — floating island nav
+            ══════════════════════════════════════════════ */}
             <div style={{
                 position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
-                display: 'flex', gap: 2, background: 'rgba(3,5,10,0.6)', backdropFilter: 'blur(10px)',
-                borderRadius: 10, padding: 3, border: '1px solid rgba(255,255,255,0.08)',
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'rgba(4,7,18,0.82)', backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(0,245,212,0.18)',
+                borderRadius: 18,
+                padding: '6px 8px',
+                boxShadow: '0 0 0 1px rgba(0,245,212,0.06), 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
                 pointerEvents: 'auto', zIndex: 20,
+                whiteSpace: 'nowrap',
             }}>
+                {/* ── Back ── */}
+                <motion.button
+                    onClick={onBack}
+                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: 7,
+                        padding: '7px 13px', borderRadius: 12,
+                        background: 'rgba(0,245,212,0.07)', border: '1px solid rgba(0,245,212,0.2)',
+                        color: '#00f5d4', cursor: 'pointer',
+                        fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+                        transition: 'background 0.18s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,245,212,0.16)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,245,212,0.07)'}
+                >
+                    <ArrowLeft size={15} strokeWidth={2.5} />
+                    <span>GALAXY</span>
+                </motion.button>
+
+                {/* ── Divider ── */}
+                <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+
+                {/* ── View toggles ── */}
                 {[
                     { mode: 'city', icon: Building2, label: 'CITY' },
                     { mode: 'card', icon: Swords,    label: 'CARD' },
-                ].map(({ mode, icon: Icon, label }) => (
-                    <button key={mode} onClick={() => onViewModeChange?.(mode)} style={{
-                        display: 'flex', alignItems: 'center', gap: 5,
-                        padding: '5px 14px', borderRadius: 7, fontFamily: FONT_MONO,
-                        fontSize: 10, fontWeight: 700, cursor: 'pointer',
-                        background: viewMode === mode ? 'rgba(0,245,212,0.15)' : 'transparent',
-                        border: viewMode === mode ? '1px solid rgba(0,245,212,0.35)' : '1px solid transparent',
-                        color: viewMode === mode ? '#00f5d4' : 'rgba(255,255,255,0.35)',
-                        transition: 'all 0.18s ease',
-                        boxShadow: viewMode === mode ? '0 0 12px rgba(0,245,212,0.2)' : 'none',
-                    }}>
-                        <Icon size={12} /> {label}
-                    </button>
-                ))}
+                ].map(({ mode, icon: Icon, label }) => {
+                    const active = viewMode === mode;
+                    return (
+                        <motion.button
+                            key={mode}
+                            onClick={() => onViewModeChange?.(mode)}
+                            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: 7,
+                                padding: '7px 14px', borderRadius: 12,
+                                fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+                                cursor: 'pointer', transition: 'all 0.18s ease',
+                                background: active ? 'rgba(0,245,212,0.15)' : 'transparent',
+                                border: active ? '1px solid rgba(0,245,212,0.4)' : '1px solid transparent',
+                                color: active ? '#00f5d4' : 'rgba(255,255,255,0.4)',
+                                boxShadow: active ? '0 0 14px rgba(0,245,212,0.2), inset 0 1px 0 rgba(0,245,212,0.15)' : 'none',
+                            }}
+                        >
+                            <Icon size={15} strokeWidth={active ? 2.5 : 2} />
+                            <span>{label}</span>
+                            <AnimatePresence>
+                                {active && (
+                                    <motion.span
+                                        key="nav-dot"
+                                        layoutId="nav-dot"
+                                        initial={{ scale: 0, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        exit={{ scale: 0, opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        style={{ width: 5, height: 5, borderRadius: '50%', background: '#00f5d4', boxShadow: '0 0 6px #00f5d4' }}
+                                    />
+                                )}
+                            </AnimatePresence>
+                        </motion.button>
+                    );
+                })}
+
+                {/* ── Divider ── */}
+                <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+
+                {/* ── Share ── highlighted */}
+                <motion.button
+                    onClick={() => setShowShare(true)}
+                    whileHover={{ scale: 1.05, boxShadow: '0 0 24px rgba(139,92,246,0.55)' }}
+                    whileTap={{ scale: 0.96 }}
+                    title="Share your card"
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: 7,
+                        padding: '7px 16px', borderRadius: 12,
+                        background: 'linear-gradient(135deg, rgba(139,92,246,0.28) 0%, rgba(109,40,217,0.2) 100%)',
+                        border: '1px solid rgba(167,139,250,0.5)',
+                        color: '#e9d5ff', cursor: 'pointer',
+                        fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.12em',
+                        boxShadow: '0 0 14px rgba(139,92,246,0.25), inset 0 1px 0 rgba(255,255,255,0.08)',
+                        transition: 'all 0.18s',
+                    }}
+                >
+                    <span style={{ fontSize: 12, color: '#a78bfa' }}>✦</span>
+                    <span>SHARE CARD</span>
+                    <span style={{ fontSize: 12, color: '#a78bfa' }}>✦</span>
+                </motion.button>
+
+                {/* ── Search toggle ── */}
+                <motion.button
+                    onClick={() => setShowSearch(s => !s)}
+                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                    title="Search username"
+                    style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: 36, height: 36, borderRadius: 12, flexShrink: 0,
+                        background: showSearch ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.08)',
+                        border: showSearch ? '1px solid rgba(139,92,246,0.5)' : '1px solid rgba(139,92,246,0.2)',
+                        color: showSearch ? '#c4b5fd' : '#a78bfa',
+                        cursor: 'pointer', transition: 'all 0.18s',
+                        boxShadow: showSearch ? '0 0 12px rgba(139,92,246,0.3)' : 'none',
+                    }}
+                >
+                    {showSearch ? <X size={16} strokeWidth={2.5} /> : <Search size={16} strokeWidth={2.5} />}
+                </motion.button>
             </div>
 
-            {/* Right — search */}
-            <button onClick={() => setShowSearch(s => !s)} className="cyber-btn" title="Search username"
-                style={{
-                    ...btnStyle, position: 'absolute', top: 16, right: 16,
-                    padding: '7px 10px', pointerEvents: 'auto', zIndex: 20,
-                    borderColor: showSearch ? 'rgba(139,92,246,0.5)' : 'rgba(139,92,246,0.25)',
-                    color: showSearch ? '#c4b5fd' : '#a78bfa',
-                }}>
-                {showSearch ? <X size={14} /> : <Search size={14} />}
-            </button>
-
-            {/* Quick search — drops below search icon */}
+            {/* Quick search — drops below HUD */}
             <AnimatePresence>
                 {showSearch && (
                     <motion.form onSubmit={handleQuickSearch}
-                        initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
-                        style={{ position: 'absolute', top: 56, right: 16, display: 'flex', gap: 6, pointerEvents: 'auto', zIndex: 20 }}>
-                        <input autoFocus value={quickSearch} onChange={e => setQuickSearch(e.target.value)} placeholder="username..."
+                        initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                        transition={{ duration: 0.18, ease: [0.16,1,0.3,1] }}
+                        style={{
+                            position: 'absolute', top: 70, left: '50%', transform: 'translateX(-50%)',
+                            display: 'flex', gap: 8, pointerEvents: 'auto', zIndex: 20,
+                            background: 'rgba(4,7,18,0.9)', backdropFilter: 'blur(20px)',
+                            border: '1px solid rgba(139,92,246,0.35)', borderRadius: 14,
+                            padding: '8px 8px',
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.7), 0 0 0 1px rgba(139,92,246,0.1)',
+                        }}>
+                        <input
+                            autoFocus value={quickSearch} onChange={e => setQuickSearch(e.target.value)}
+                            placeholder="search user..."
                             style={{
-                                padding: '8px 12px', borderRadius: 10, fontFamily: FONT_MONO, fontSize: 11,
-                                background: 'rgba(0,0,0,0.9)', border: '1px solid rgba(139,92,246,0.4)',
-                                color: '#fff', width: 180, outline: 'none', backdropFilter: 'blur(16px)',
-                                boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
-                            }} />
+                                padding: '8px 14px', borderRadius: 9, fontFamily: FONT_MONO, fontSize: 12,
+                                background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)',
+                                color: '#fff', width: 210, outline: 'none', letterSpacing: '0.04em',
+                            }}
+                        />
                         <button type="submit" style={{
-                            padding: '8px 14px', borderRadius: 10, fontSize: 11, fontWeight: 700,
-                            background: 'linear-gradient(135deg,#8b5cf6,#6d28d9)', color: '#fff',
-                            border: 'none', cursor: 'pointer', fontFamily: FONT_MONO,
+                            padding: '8px 18px', borderRadius: 9, fontSize: 11, fontWeight: 700,
+                            background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: '#fff',
+                            border: 'none', cursor: 'pointer', fontFamily: FONT_MONO, letterSpacing: '0.1em',
+                            boxShadow: '0 0 12px rgba(139,92,246,0.4)',
                         }}>GO</button>
                     </motion.form>
                 )}
@@ -704,6 +787,8 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                     </span>
                 </div>
             </motion.div>
+
+            {showShare && <ShareModal data={data} onClose={() => setShowShare(false)} />}
         </div>
     );
 }

@@ -2,94 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { calcPower, getFighterClass, CODERS } from '../utils/gameData';
 
-/* ─── Canvas star field — drawn once, zero ongoing CPU cost ─── */
-function StarCanvas() {
-    const canvasRef = React.useRef(null);
+const Fd = 'Orbitron, sans-serif';
+const Fm = '"Share Tech Mono", monospace';
 
-    const draw = React.useCallback(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const W = canvas.width = window.innerWidth;
-        const H = canvas.height = window.innerHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, W, H);
-        const cols = ['#ccd6f6','#e8eeff','#c8d8ff','#ffffff','#b8ccff','#a8c4ff'];
-        for (let i = 0; i < 470; i++) {
-            const big = i > 420;
-            const mid = i > 300;
-            const x = ((i * 137.508) % 100) / 100 * W;
-            const y = ((i * 93.172) % 100) / 100 * H;
-            const r = big ? 1.1 + (i % 3) * 0.25 : mid ? 0.45 + (i % 4 === 0 ? 0.2 : 0) : 0.3;
-            const op = big ? 0.6 + (i % 3) * 0.1 : mid ? 0.15 + (i % 5) * 0.05 : 0.04 + (i % 6) * 0.015;
-            const col = cols[i % cols.length];
-            if (big) {
-                const g = ctx.createRadialGradient(x, y, 0, x, y, r * 3);
-                g.addColorStop(0, col);
-                g.addColorStop(1, 'transparent');
-                ctx.globalAlpha = op * 0.4;
-                ctx.fillStyle = g;
-                ctx.beginPath();
-                ctx.arc(x, y, r * 3, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            ctx.globalAlpha = op;
-            ctx.fillStyle = col;
-            ctx.beginPath();
-            ctx.arc(x, y, r, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }, []);
-
-    React.useEffect(() => {
-        draw();
-        window.addEventListener('resize', draw);
-        return () => window.removeEventListener('resize', draw);
-    }, [draw]);
-
-    return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />;
-}
-
-/* ── Fonts ───────────────────────────────────────────────── */
-const Fd = 'Orbitron, sans-serif';          // display — headings, numbers, power
-const Fm = '"Share Tech Mono", monospace';  // mono — labels, tags, secondary text
-const C_TEAL = '#00f5d4';
-
-/* ── Elastic-out easing (rubber-band settle) ─────────────── */
-function elasticOut(t) {
-    if (t <= 0) return 0;
-    if (t >= 1) return 1;
-    const p = 0.38;
-    return Math.pow(2, -10 * t) * Math.sin(((t - p / 4) * (2 * Math.PI)) / p) + 1;
-}
-
-/* ── Difficulty palette (matches City page) ───────────────── */
 const C_EASY = '#23d18b';
 const C_MED  = '#f5a623';
 const C_HARD = '#ff3860';
-
-/* ── Tier system ──────────────────────────────────────────── */
-function getTier(power) {
-    if (power >= 5000) return { name: 'HAIL MARY HERO',    color: '#fbbf24', min: 5000, max: 8000 };
-    if (power >= 3000) return { name: 'ENDURANCE CAPTAIN', color: '#a78bfa', min: 3000, max: 5000 };
-    if (power >= 1500) return { name: 'RANGER PILOT',      color: '#00f5d4', min: 1500, max: 3000 };
-    if (power >= 800)  return { name: 'LAZARUS CREW',      color: '#60a5fa', min: 800,  max: 1500 };
-    if (power >= 300)  return { name: 'SPACE CADET',       color: '#fb923c', min: 300,  max: 800  };
-    return               { name: 'EXPLORER',               color: '#94a3b8', min: 0,    max: 300  };
-}
-
-function tierProgress(power, tier) {
-    return Math.min(((power - tier.min) / (tier.max - tier.min)) * 100, 100);
-}
-
-/* ── Time ago ────────────────────────────────────────────── */
-function timeAgo(ts) {
-    if (!ts) return null;
-    const s = Math.floor(Date.now() / 1000 - Number(ts));
-    if (s < 60)    return `${s}s ago`;
-    if (s < 3600)  return `${Math.floor(s / 60)}m ago`;
-    if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-    return `${Math.floor(s / 86400)}d ago`;
-}
 
 /* ─── Animated power counter ─── */
 function PowerCounter({ target, color }) {
@@ -127,41 +45,21 @@ export const FighterPanel = React.memo(function FighterPanel({ coder, profileDat
     if (!coder) return null;
 
     const { easy: coderEasy, med: coderMed, hard: coderHard } = coder;
-    const power = calcPower(coderEasy, coderMed, coderHard);
-    const cls = getFighterClass(coderHard);
 
-    // Use real data if available, otherwise use the pre-set legend stats
+    /* profileData is already normalized by dataMapper — read counts directly */
     const stats = useMemo(() => {
         if (profileData) {
-            // Apply normalization to profile data counts
-            const validatedTotalQuestions = profileData.totalQuestions 
-                ? validateTotalQuestions(profileData.totalQuestions)
-                : { all: 0, easy: 0, medium: 0, hard: 0 };
-            
-            const normalizedStats = normalizeStats(
-                profileData.stats?.find(s => s.difficulty === 'Easy')?.count || 0,
-                profileData.stats?.find(s => s.difficulty === 'Medium')?.count || 0,
-                profileData.stats?.find(s => s.difficulty === 'Hard')?.count || 0,
-                validatedTotalQuestions
-            );
-
+            const easy = profileData.stats?.find(s => s.difficulty === 'Easy')?.count || 0;
+            const med  = profileData.stats?.find(s => s.difficulty === 'Medium')?.count || 0;
+            const hard = profileData.stats?.find(s => s.difficulty === 'Hard')?.count || 0;
             return {
-                easy: normalizedStats.easy,
-                med: normalizedStats.medium,
-                hard: normalizedStats.hard,
+                easy, med, hard,
                 rank: profileData.profile?.ranking,
-                planets: profileData.planets || [],
+                districts: profileData.districts || [],
                 recent: profileData.recent || [],
-                _normalized: {
-                    hardRatio: normalizedStats.hard > 0 && validatedTotalQuestions.all > 0 
-                        ? ((normalizedStats.hard / validatedTotalQuestions.all) * 100).toFixed(1)
-                        : '0.0'
-                }
             };
-        } else {
-            // Use pre-set legend stats as fallback
-            return { easy: coderEasy, med: coderMed, hard: coderHard, rank: coder.rank, planets: [], recent: [] };
         }
+        return { easy: coderEasy, med: coderMed, hard: coderHard, rank: coder.rank, districts: [], recent: [] };
     }, [profileData, coderEasy, coderMed, coderHard]);
 
     // Use normalized stats from data if available
@@ -247,8 +145,8 @@ export const FighterPanel = React.memo(function FighterPanel({ coder, profileDat
             <div style={{ marginBottom: 24 }}>
                 <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#3f3f46', fontFamily: Fm, marginBottom: 12 }}>Skill Proficiency</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                    {stats.planets.slice(0, 6).map((t, i) => {
-                        const maxT = stats.planets[0]?.problemsSolved || 1;
+                    {stats.districts.slice(0, 6).map((t) => {
+                        const maxT = stats.districts[0]?.problemsSolved || 1;
                         const pct = (t.problemsSolved / maxT) * 100;
                         return (
                             <div key={t.name} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, padding: 14, cursor: 'default', transition: 'border-color 0.2s' }}
@@ -266,7 +164,7 @@ export const FighterPanel = React.memo(function FighterPanel({ coder, profileDat
             </div>
 
             {/* Recent Submissions */}
-            <div style={{ ...card, background: '#0d0d0f' }}>
+            <div style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, background: '#0d0d0f', padding: 24, position: 'relative', overflow: 'hidden' }}>
                 <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#3f3f46', fontFamily: Fm, marginBottom: 20 }}>Execution Log</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {stats.recent.slice(0, 5).map((s, i) => {
