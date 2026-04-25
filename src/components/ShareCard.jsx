@@ -273,79 +273,46 @@ export function ShareCardView({ data }) {
     const { activeDays, maxStreak, totalSubmissions } = calendarStats(calendarRaw);
 
     return (
-        /* ── Border shell — single continuous conic-gradient path ──────────────
-           padding:1px exposes exactly 1px of the conic background as the border.
-           No separate strips. The gradient wraps the full perimeter in one shot.
-           Conic origin at 50% 50% (card center), starting from 270° (left edge).
-           Calibrated for ~520×900px card proportions:
-             270° = left center   → amber peak
-               0° = top center    → white highlight
-              90° = right center  → blue peak
-             180° = bottom center → near-transparent
-        ────────────────────────────────────────────────────────────────────── */
+        /* ONE div. overflow:hidden clips every child — glow, content, everything —
+           to the same 26px rounded rectangle. No inner card-body div.
+           Border is via box-shadow so it renders outside the clip and follows
+           the radius automatically — no separate layer, no stitched strips. */
         <div style={{
             width: 520,
             borderRadius: 26,
-            padding: 1,
-            background: `conic-gradient(
-                from 270deg at 50% 50%,
-                rgba(245,158,11,0.62)  0%,
-                rgba(245,158,11,0.38) 10%,
-                rgba(255,255,255,0.48) 20%,
-                rgba(255,255,255,0.60) 25%,
-                rgba(255,255,255,0.48) 30%,
-                rgba(59,130,246,0.38)  40%,
-                rgba(59,130,246,0.62)  50%,
-                rgba(59,130,246,0.20)  60%,
-                rgba(255,255,255,0.06) 68%,
-                rgba(255,255,255,0.04) 75%,
-                rgba(255,255,255,0.06) 82%,
-                rgba(245,158,11,0.20)  90%,
-                rgba(245,158,11,0.62) 100%
-            )`,
-            /* Outer shadow — controlled halo, sharp silhouette */
+            overflow: 'hidden',
+            position: 'relative',
+            background: 'linear-gradient(160deg, #0a0c18 0%, #0d1020 45%, #080b1a 75%, #06080f 100%)',
+            color: '#f8fafc',
+            fontFamily: Fs,
             boxShadow: [
-                '0 0 0 0.5px rgba(255,255,255,0.04)',
+                /* Hairline outer border — follows border-radius, no separate div */
+                '0 0 0 1px rgba(255,255,255,0.13)',
+                /* Inner glass highlight — inset, also follows border-radius */
+                'inset 0 0 0 1px rgba(255,255,255,0.06)',
+                /* Ambient halo */
                 '0 0 48px rgba(245,120,20,0.08)',
                 '0 0 72px rgba(59,130,246,0.06)',
                 '0 60px 100px rgba(0,0,0,0.95)',
             ].join(', '),
-            flexShrink: 0,
         }}>
 
-        {/* ── Card body — radius 1px less so border shell shows exactly 1px ── */}
-        <div style={{
-            borderRadius: 25,
-            background: 'linear-gradient(160deg, #0a0c18 0%, #0d1020 45%, #080b1a 75%, #06080f 100%)',
-            overflow: 'hidden',
-            position: 'relative',
-            transform: 'translateZ(0)',
-            WebkitTransform: 'translateZ(0)',
-            color: '#f8fafc',
-            fontFamily: Fs,
-            /* Inner glass highlight — follows exact inner radius as inset ring */
-            boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.055)',
-        }}>
-
-            {/* ── Ambient glows (interior only, clipped by inner radius) ── */}
+            {/* Ambient glows — clipped to card shape by overflow:hidden above */}
             <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-                {/* Orange top-left — soft, well back from edges */}
                 <div style={{
                     position: 'absolute', left: 0, top: 0, width: 220, height: 160,
                     background: 'radial-gradient(ellipse at 15% 15%, rgba(245,110,15,0.28) 0%, rgba(245,110,15,0.08) 50%, transparent 75%)',
                     filter: 'blur(14px)',
                 }} />
-                {/* Blue top-right — symmetric */}
                 <div style={{
                     position: 'absolute', right: 0, top: 0, width: 220, height: 160,
                     background: 'radial-gradient(ellipse at 85% 15%, rgba(59,130,246,0.24) 0%, rgba(59,130,246,0.07) 50%, transparent 75%)',
                     filter: 'blur(14px)',
                 }} />
-                {/* Bottom vignette */}
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 200, background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)' }} />
             </div>
 
-            {/* ── Content ── */}
+            {/* Content */}
             <div style={{ position: 'relative', zIndex: 1, padding: '36px 36px 22px' }}>
 
                 {/* ══ HEADER ══ */}
@@ -519,7 +486,6 @@ export function ShareCardView({ data }) {
                     </span>
                 </div>
             </div>
-        </div>
         </div>
     );
 }
