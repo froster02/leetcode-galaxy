@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import html2canvas from 'html2canvas';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -495,8 +495,24 @@ export function ShareCardView({ data }) {
    MODAL
 ══════════════════════════════════════════════ */
 export default function ShareModal({ data, onClose }) {
-    const cardRef = useRef(null);
+    const cardRef   = useRef(null);   /* capture target — full resolution */
+    const measureRef = useRef(null);  /* measure natural card height */
     const [status, setStatus] = useState('idle');
+    const [previewScale, setPreviewScale] = useState(1);
+    const [cardNaturalH, setCardNaturalH] = useState(null);
+
+    /* After first paint, compute scale so card + title + buttons fit viewport. */
+    useLayoutEffect(() => {
+        if (!measureRef.current) return;
+        const naturalH = measureRef.current.scrollHeight;
+        setCardNaturalH(naturalH);
+        /* Reserve: 24px top pad + 60px title + 16px gap + 16px gap + 50px buttons + 32px bottom */
+        const reserved = 198;
+        const available = window.innerHeight - reserved;
+        if (naturalH > available) {
+            setPreviewScale(Math.max(0.5, available / naturalH));
+        }
+    }, [data]);
 
     /* Fetch an external URL and return a base64 data URL — avoids canvas taint. */
     async function toDataUrl(url) {
@@ -590,21 +606,42 @@ export default function ShareModal({ data, onClose }) {
         <AnimatePresence>
             <motion.div key="share-bg"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '24px 16px 32px', overflowY: 'auto' }}
+                style={{ position: 'fixed', inset: 0, zIndex: 16777272, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px 32px', overflow: 'hidden' }}
                 onClick={onClose}>
                 <motion.div
                     initial={{ scale: 0.93, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.93, y: 20 }}
                     transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
                     onClick={e => e.stopPropagation()}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, maxWidth: 560, width: '100%' }}>
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, width: '100%', maxWidth: 560 }}>
 
-                    <div style={{ textAlign: 'center' }}>
+                    <div style={{ textAlign: 'center', flexShrink: 0 }}>
                         <div style={{ fontFamily: Fo, fontSize: 14, fontWeight: 900, color: '#fff', letterSpacing: '0.12em', marginBottom: 4 }}>SHARE YOUR CARD</div>
                         <div style={{ fontFamily: Fm, fontSize: 8.5, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.14em' }}>EXPORT AS HIGH-RES PNG · PERFECT FOR LINKEDIN</div>
                     </div>
 
-                    <div ref={cardRef} style={{ borderRadius: 24, overflow: 'hidden', isolation: 'isolate', transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}>
-                        <ShareCardView data={data} />
+                    {/* Scaled preview wrapper — collapses to scaled height so buttons stay visible */}
+                    <div style={{
+                        flexShrink: 0,
+                        width: 520 * previewScale,
+                        height: cardNaturalH ? cardNaturalH * previewScale : 'auto',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        borderRadius: 24,
+                    }}>
+                        {/* Measure ref — renders at natural size, invisible until scale computed */}
+                        <div
+                            ref={measureRef}
+                            style={{
+                                position: cardNaturalH ? 'absolute' : 'relative',
+                                top: 0, left: 0,
+                                transformOrigin: 'top left',
+                                transform: cardNaturalH ? `scale(${previewScale})` : 'none',
+                            }}
+                        >
+                            <div ref={cardRef} style={{ borderRadius: 24, overflow: 'hidden', isolation: 'isolate', transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}>
+                                <ShareCardView data={data} />
+                            </div>
+                        </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: 8, width: '100%', maxWidth: 520 }}>
