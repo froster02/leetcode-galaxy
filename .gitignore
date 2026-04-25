@@ -26,8 +26,11 @@ dist-ssr
 # Wrangler
 .wrangler
 
-# Agent
+# Agent / Claude Code tooling — developer-specific, not project source
 .agent
+.agents/
+.claude/
+skills-lock.json
 .github/agent.md
 .github/copilot-instructions.md
 everything-claude-code

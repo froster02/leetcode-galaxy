@@ -59,6 +59,56 @@ function useTotalQuestionsCount() {
     return totalQuestions;
 }
 
+/* ── Last weekly contest participant count ───────────────
+   Anchored at Weekly Contest 431 = 2025-01-12 (known).
+   Computes current slug dynamically, tries ±2 around it,
+   falls back to 28,400 if LeetCode API unreachable.
+────────────────────────────────────────────────────────── */
+function useLastContestParticipants() {
+    const [count, setCount] = useState(28400);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const load = async () => {
+            try {
+                const ANCHOR_N    = 431;
+                const ANCHOR_DATE = new Date('2025-01-12T02:30:00Z').getTime();
+                const weeksSince  = Math.floor((Date.now() - ANCHOR_DATE) / (7 * 24 * 60 * 60 * 1000));
+                const base        = ANCHOR_N + weeksSince;
+
+                for (const n of [base, base - 1, base - 2, base + 1]) {
+                    const slug = `weekly-contest-${n}`;
+                    const res  = await fetch(`https://leetcode.com/contest/api/info/${slug}/`, {
+                        signal: AbortSignal.timeout(5000),
+                    });
+                    if (!res.ok) continue;
+                    const json = await res.json();
+                    const num  = json?.contest?.user_num;
+                    if (num && num > 1000 && !cancelled) {
+                        setCount(num);
+                        return;
+                    }
+                }
+            } catch { /* use fallback */ }
+        };
+
+        load();
+        return () => { cancelled = true; };
+    }, []);
+
+    return count;
+}
+
+/* ── Longest possible streak — days since daily challenge launched ────
+   Daily Challenge went live 2020-04-01. Anyone solving every single day
+   from launch has exactly this many days. No API needed — computed live.
+────────────────────────────────────────────────────────────────────── */
+function useLongestStreak() {
+    const DAILY_CHALLENGE_LAUNCH = new Date('2020-04-01T00:00:00Z').getTime();
+    return Math.floor((Date.now() - DAILY_CHALLENGE_LAUNCH) / (24 * 60 * 60 * 1000));
+}
+
 /* ── Recently-explored chip marquee ──────────────────── */
 
 /* ── Typewriter with cursor ──────────────────────────── */
@@ -263,7 +313,9 @@ function LandingUI({ onSearch, errorMessage = '' }) {
     const [searchHovered, setSearchHovered] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const inputRef = useRef();
-    const totalQuestions = useTotalQuestionsCount();
+    const totalQuestions       = useTotalQuestionsCount();
+    const contestParticipants  = useLastContestParticipants();
+    const longestStreak        = useLongestStreak();
 
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth <= 768);
@@ -406,9 +458,9 @@ function LandingUI({ onSearch, errorMessage = '' }) {
                     transition={{ delay: 0.8 }}
                     style={{ display: 'flex', gap: isMobile ? 8 : 16, marginBottom: isMobile ? 20 : 32, flexWrap: 'wrap', justifyContent: 'center' }}
                 >
-                    <StatCard icon={Users} value={4829142} label="EXPLORERS" color="#00f5d4" delay={0.9} />
-                    <StatCard icon={Zap} value={3100000} label="SOLVED TODAY" color="#f5a623" delay={1.0} />
-                    <StatCard icon={Globe} value={totalQuestions ?? 3907} label="TOTAL QUESTIONS" color="#8b5cf6" delay={1.1} />
+                    <StatCard icon={Zap}   value={totalQuestions      ?? 3907}  label="TOTAL QUESTIONS"   color="#00f5d4" delay={0.9} />
+                    <StatCard icon={Users} value={contestParticipants ?? 28400} label="LAST CONTEST"       color="#f5a623" delay={1.0} />
+                    <StatCard icon={Star}  value={longestStreak        ?? 2200}  label="MAX DAILY STREAK"  color="#8b5cf6" delay={1.1} />
                 </motion.div>
 
                 {/* ── Search bar ── */}
