@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Fs = '"Inter", "SF Pro Display", system-ui, sans-serif';
@@ -220,11 +220,13 @@ function Panel({ children, style, accent }) {
             backdropFilter: 'blur(15px)',
             WebkitBackdropFilter: 'blur(15px)',
             border: `1px solid ${accent || 'rgba(255,255,255,0.1)'}`,
-            borderRadius: 16,
+            borderRadius: 18,
             padding: '14px 16px',
             position: 'relative',
-            overflow: 'hidden',
+            transform: 'translateZ(0)',       /* force GPU layer so overflow clips backdrop-filter */
+            WebkitTransform: 'translateZ(0)',
             ...style,
+            overflow: 'hidden',              /* always last — cannot be overridden by style prop */
         }}>
             {/* Top luminous edge */}
             <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: 1, background: `linear-gradient(90deg, transparent, ${accent || 'rgba(255,255,255,0.3)'}, transparent)`, borderRadius: 1 }} />
@@ -291,22 +293,22 @@ export function ShareCardView({ data }) {
         }}>
             {/* ── Ambient glows ── */}
             <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-                {/* Orange left */}
-                <div style={{ position: 'absolute', left: -80, top: -40, width: 320, height: '60%', background: 'radial-gradient(ellipse at 20% 30%, rgba(245,110,15,0.28) 0%, transparent 65%)', filter: 'blur(20px)' }} />
-                {/* Blue right */}
-                <div style={{ position: 'absolute', right: -80, top: '5%', width: 300, height: '55%', background: 'radial-gradient(ellipse at 80% 30%, rgba(59,130,246,0.22) 0%, transparent 65%)', filter: 'blur(20px)' }} />
+                {/* Orange top-left corner glow */}
+                <div style={{ position: 'absolute', left: 0, top: 0, width: 280, height: 200, background: 'radial-gradient(ellipse at 0% 0%, rgba(245,110,15,0.45) 0%, rgba(245,110,15,0.15) 40%, transparent 70%)', filter: 'blur(16px)', borderRadius: '24px 0 0 0' }} />
+                {/* Blue top-right corner glow */}
+                <div style={{ position: 'absolute', right: 0, top: 0, width: 260, height: 190, background: 'radial-gradient(ellipse at 100% 0%, rgba(59,130,246,0.4) 0%, rgba(59,130,246,0.12) 40%, transparent 70%)', filter: 'blur(16px)', borderRadius: '0 24px 0 0' }} />
                 {/* Bottom vignette */}
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 200, background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)' }} />
             </div>
 
             {/* ── Top neon rim ── */}
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, zIndex: 2,
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, zIndex: 2,
                 background: 'linear-gradient(90deg, #f59e0b 0%, rgba(251,191,36,0.6) 25%, rgba(59,130,246,0.5) 75%, #3b82f6 100%)' }} />
             {/* ── Left orange edge ── */}
-            <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 2, zIndex: 2,
+            <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 3, zIndex: 2,
                 background: 'linear-gradient(180deg, #f59e0b 0%, rgba(245,158,11,0.4) 40%, transparent 80%)' }} />
             {/* ── Right blue edge ── */}
-            <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 2, zIndex: 2,
+            <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 3, zIndex: 2,
                 background: 'linear-gradient(180deg, #3b82f6 0%, rgba(59,130,246,0.4) 40%, transparent 80%)' }} />
 
             <div style={{ position: 'relative', zIndex: 1, padding: '20px 22px 22px' }}>
@@ -495,16 +497,15 @@ export function ShareCardView({ data }) {
    MODAL
 ══════════════════════════════════════════════ */
 export default function ShareModal({ data, onClose }) {
-    const cardRef   = useRef(null);   /* capture target — full resolution */
-    const measureRef = useRef(null);  /* measure natural card height */
-    const [status, setStatus] = useState('idle');
+    const cardRef    = useRef(null);
+    const measureRef = useRef(null);
     const [previewScale, setPreviewScale] = useState(1);
     const [cardNaturalH, setCardNaturalH] = useState(null);
 
-    /* After first paint, compute scale so card + title + buttons fit viewport. */
+    /* After first paint, measure off-screen cardRef (no transforms) for accurate natural height. */
     useLayoutEffect(() => {
-        if (!measureRef.current) return;
-        const naturalH = measureRef.current.scrollHeight;
+        if (!cardRef.current) return;
+        const naturalH = cardRef.current.scrollHeight;
         setCardNaturalH(naturalH);
         /* Reserve: 24px top pad + 60px title + 16px gap + 16px gap + 50px buttons + 32px bottom */
         const reserved = 198;
@@ -514,93 +515,65 @@ export default function ShareModal({ data, onClose }) {
         }
     }, [data]);
 
-    /* Fetch an external URL and return a base64 data URL — avoids canvas taint. */
-    async function toDataUrl(url) {
-        try {
-            const res = await fetch(url);
-            const blob = await res.blob();
-            return await new Promise((res, rej) => {
-                const r = new FileReader();
-                r.onload = () => res(r.result);
-                r.onerror = rej;
-                r.readAsDataURL(blob);
-            });
-        } catch { return null; }
-    }
-
-    const capture = useCallback(async () => {
-        if (!cardRef.current) return null;
-
-        /* Collect all img elements and their original srcs */
-        const imgs = Array.from(cardRef.current.querySelectorAll('img[src]'));
-        const origSrcs = imgs.map(i => i.src);
-        const origVis  = imgs.map(i => i.style.visibility);
-
-        try {
-            /* Convert every external image to a data URL so the canvas stays clean */
-            await Promise.all(imgs.map(async (img) => {
-                if (!img.src.startsWith('data:')) {
-                    const du = await toDataUrl(img.src);
-                    if (du) img.src = du;
-                    else img.style.visibility = 'hidden';
-                }
-            }));
-
-            return await html2canvas(cardRef.current, {
-                backgroundColor: '#0a0c18',
-                scale: 2,
-                useCORS: false,
-                allowTaint: false,
-                logging: false,
-                /* Strip backdrop-filter — html2canvas v1 doesn't support it
-                   and it can cause silent failures on some browsers. */
-                onclone: (_doc, el) => {
-                    el.querySelectorAll('*').forEach(node => {
-                        if (node.style) {
-                            node.style.backdropFilter = '';
-                            node.style.webkitBackdropFilter = '';
-                        }
-                    });
-                },
-            });
-        } finally {
-            /* Always restore originals, even if html2canvas threw */
-            imgs.forEach((img, i) => {
-                img.src = origSrcs[i];
-                img.style.visibility = origVis[i];
-            });
-        }
+    const capture = useCallback(() => {
+        if (!cardRef.current) return Promise.reject(new Error('card not mounted'));
+        return toPng(cardRef.current, {
+            pixelRatio: 2,
+            backgroundColor: '#0a0c18',
+            skipFonts: false,
+            fetchRequestInit: { mode: 'cors' },
+        });
     }, []);
 
+    /* 'idle' | 'download' | 'copy' | 'done-download' | 'done-copy' | 'error-download' | 'error-copy' */
+    const [actionState, setActionState] = useState('idle');
+    const busy = actionState === 'download' || actionState === 'copy';
+
     const handleDownload = useCallback(async () => {
-        setStatus('capturing');
+        if (busy) return;
+        setActionState('download');
         try {
-            const canvas = await capture();
+            const dataUrl = await capture();
             const a = document.createElement('a');
             a.download = `leetcode-${data?.username || 'card'}.png`;
-            a.href = canvas.toDataURL('image/png');
+            a.href = dataUrl;
+            document.body.appendChild(a);
             a.click();
-            setStatus('done');
-        } catch { setStatus('error'); }
-        setTimeout(() => setStatus('idle'), 2200);
-    }, [capture, data]);
+            document.body.removeChild(a);
+            setActionState('done-download');
+        } catch (err) {
+            console.error('[ShareCard] Download failed:', err);
+            setActionState('error-download');
+        } finally {
+            setTimeout(() => setActionState('idle'), 2200);
+        }
+    }, [capture, data, busy]);
 
     const handleCopy = useCallback(async () => {
-        setStatus('capturing');
+        if (busy) return;
+        setActionState('copy');
         try {
-            const canvas = await capture();
-            canvas.toBlob(async blob => {
-                try {
-                    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                    setStatus('done');
-                } catch { setStatus('error'); }
-                setTimeout(() => setStatus('idle'), 2200);
-            }, 'image/png');
-        } catch { setStatus('error'); setTimeout(() => setStatus('idle'), 2200); }
-    }, [capture]);
+            const dataUrl = await capture();
+            const res = await fetch(dataUrl);
+            const blob = await res.blob();
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+            setActionState('done-copy');
+        } catch (err) {
+            console.error('[ShareCard] Copy failed:', err);
+            setActionState('error-copy');
+        } finally {
+            setTimeout(() => setActionState('idle'), 2200);
+        }
+    }, [capture, busy]);
 
-    const busy = status === 'capturing';
-    const statusLabel = busy ? 'RENDERING…' : status === 'done' ? '✓ DONE' : status === 'error' ? 'FAILED' : null;
+    const dlLabel   = actionState === 'download'       ? '⏳ RENDERING…'
+                    : actionState === 'done-download'   ? '✓  DOWNLOADED'
+                    : actionState === 'error-download'  ? '✕  FAILED'
+                    : '⬇  DOWNLOAD PNG';
+    const cpLabel   = actionState === 'copy'            ? '⏳ RENDERING…'
+                    : actionState === 'done-copy'        ? '✓  COPIED'
+                    : actionState === 'error-copy'       ? '✕  FAILED'
+                    : '⎘  COPY IMAGE';
 
     return createPortal(
         <AnimatePresence>
@@ -608,6 +581,7 @@ export default function ShareModal({ data, onClose }) {
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 style={{ position: 'fixed', inset: 0, zIndex: 16777272, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px 32px', overflow: 'hidden' }}
                 onClick={onClose}>
+
                 <motion.div
                     initial={{ scale: 0.93, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.93, y: 20 }}
                     transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
@@ -619,43 +593,61 @@ export default function ShareModal({ data, onClose }) {
                         <div style={{ fontFamily: Fm, fontSize: 8.5, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.14em' }}>EXPORT AS HIGH-RES PNG · PERFECT FOR LINKEDIN</div>
                     </div>
 
-                    {/* Scaled preview wrapper — collapses to scaled height so buttons stay visible */}
+                    {/* Capture target — full size, rendered off-screen so html2canvas sees real pixels */}
+                    <div
+                        ref={cardRef}
+                        style={{
+                            position: 'fixed', left: -9999, top: 0,
+                            width: 520, borderRadius: 24, overflow: 'hidden',
+                            pointerEvents: 'none',
+                        }}
+                    >
+                        <ShareCardView data={data} />
+                    </div>
+
+                    {/* Scaled visual preview — overflow:hidden clips to scaled height */}
                     <div style={{
                         flexShrink: 0,
                         width: 520 * previewScale,
                         height: cardNaturalH ? cardNaturalH * previewScale : 'auto',
                         position: 'relative',
+                        borderRadius: 24 * previewScale,
+                        boxShadow: '0 0 0 1.5px rgba(255,255,255,0.1)',
                         overflow: 'hidden',
-                        borderRadius: 24,
                     }}>
-                        {/* Measure ref — renders at natural size, invisible until scale computed */}
                         <div
                             ref={measureRef}
                             style={{
-                                position: cardNaturalH ? 'absolute' : 'relative',
-                                top: 0, left: 0,
+                                position: 'absolute', top: 0, left: 0,
                                 transformOrigin: 'top left',
-                                transform: cardNaturalH ? `scale(${previewScale})` : 'none',
+                                transform: `scale(${previewScale})`,
+                                borderRadius: 24, overflow: 'hidden',
+                                pointerEvents: 'none',
                             }}
                         >
-                            <div ref={cardRef} style={{ borderRadius: 24, overflow: 'hidden', isolation: 'isolate', transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}>
-                                <ShareCardView data={data} />
-                            </div>
+                            <ShareCardView data={data} />
                         </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: 8, width: '100%', maxWidth: 520 }}>
-                        {[
-                            { label: statusLabel || '⬇  DOWNLOAD PNG', action: handleDownload, color: '#22d3ee' },
-                            { label: statusLabel || '⎘  COPY IMAGE',   action: handleCopy,     color: '#a78bfa' },
-                            { label: '✕  CLOSE',                       action: onClose,         ghost: true },
-                        ].map(({ label, action, color, ghost }) => (
-                            <motion.button key={label} onClick={action} disabled={busy}
-                                whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
-                                style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', opacity: busy ? 0.5 : 1, transition: 'all 0.18s', background: ghost ? 'transparent' : `${color}18`, border: ghost ? '1px solid rgba(255,255,255,0.1)' : `1px solid ${color}50`, color: ghost ? 'rgba(255,255,255,0.4)' : color, boxShadow: ghost ? 'none' : `0 0 20px ${color}18` }}>
-                                {label}
-                            </motion.button>
-                        ))}
+                        {/* Download */}
+                        <motion.button onClick={handleDownload} disabled={busy}
+                            whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
+                            style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(34,211,238,0.1)', border: '1px solid rgba(34,211,238,0.5)', color: '#22d3ee', boxShadow: '0 0 20px rgba(34,211,238,0.1)' }}>
+                            {dlLabel}
+                        </motion.button>
+                        {/* Copy */}
+                        <motion.button onClick={handleCopy} disabled={busy}
+                            whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
+                            style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.5)', color: '#a78bfa', boxShadow: '0 0 20px rgba(167,139,250,0.1)' }}>
+                            {cpLabel}
+                        </motion.button>
+                        {/* Close */}
+                        <motion.button onClick={onClose} disabled={busy}
+                            whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
+                            style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', opacity: busy ? 0.4 : 1, transition: 'all 0.18s', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }}>
+                            ✕  CLOSE
+                        </motion.button>
                     </div>
                 </motion.div>
             </motion.div>
