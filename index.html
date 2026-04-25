@@ -10,6 +10,20 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <title>LeetCode Galaxy</title>
+    <!-- Restore path redirected via 404.html for GitHub Pages SPA routing -->
+    <script>
+      (function (l) {
+        if (l.search[1] === 'p') {
+          var qs = l.search.slice(1).split('&');
+          var path = decodeURIComponent(qs[0].replace(/^p=/, '').replace(/~and~/g, '&'));
+          var query = qs.slice(1).map(function (s) { return decodeURIComponent(s.replace(/^q=/, '').replace(/~and~/g, '&')); }).join('&');
+          window.history.replaceState(
+            null, null,
+            l.pathname.replace(/\/$/, '') + path + (query ? '?' + query : '') + l.hash
+          );
+        }
+      }(window.location));
+    </script>
   </head>
   <body>
     <div id="root"></div>

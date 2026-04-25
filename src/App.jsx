@@ -183,6 +183,9 @@ function StatusTicker({ phase }) {
   );
 }
 
+// Strip trailing slash, e.g. '/leetcode-galaxy/' → '/leetcode-galaxy', '/' → ''
+const BASE_PATH = import.meta.env.BASE_URL.replace(/\/$/, '');
+
 function App() {
   const [phase, setPhase] = useState(1);
   const [viewMode, setViewMode] = useState('city');
@@ -218,7 +221,7 @@ function App() {
 
     if (pushUrl) {
       const qs = targetView === 'card' ? '?view=card' : '';
-      window.history.pushState({}, '', `/u/${encodeURIComponent(username)}${qs}`);
+      window.history.pushState({}, '', `${BASE_PATH}/u/${encodeURIComponent(username)}${qs}`);
     }
 
     try {
@@ -243,7 +246,7 @@ function App() {
       clearTimeout(transitionTimerRef.current);
       setPhase(1);
       setTransitionStage(0);
-      if (pushUrl) window.history.pushState({}, '', '/');
+      if (pushUrl) window.history.pushState({}, '', `${BASE_PATH}/`);
     }
   }, [fetchProfile, addToRecent]);
 
@@ -260,7 +263,7 @@ function App() {
       addToRecent(username);
       setTransitionStage(0);
       setViewMode('card');
-      window.history.pushState({}, '', `/u/${encodeURIComponent(username)}?view=card`);
+      window.history.pushState({}, '', `${BASE_PATH}/u/${encodeURIComponent(username)}?view=card`);
     } catch (err) {
       setSearchError(err?.message === 'No user found' ? 'No user found' : 'Unable to load profile');
       setTransitionStage(0);
@@ -275,7 +278,7 @@ function App() {
     setSearchError('');
     setViewMode('city');
     if (pushUrl) {
-      window.history.pushState({}, '', '/');
+      window.history.pushState({}, '', `${BASE_PATH}/`);
     }
   }, []);
 
@@ -284,7 +287,7 @@ function App() {
     const u = mappedData?.username;
     if (u) {
       const qs = mode === 'card' ? '?view=card' : '';
-      window.history.pushState({}, '', `/u/${encodeURIComponent(u)}${qs}`);
+      window.history.pushState({}, '', `${BASE_PATH}/u/${encodeURIComponent(u)}${qs}`);
     }
   }, [mappedData?.username]);
 
@@ -306,7 +309,8 @@ function App() {
   // URL-based profile loading
   useEffect(() => {
     const path = window.location.pathname;
-    const match = path.match(/^\/u\/(.+)$/);
+    const appPath = BASE_PATH ? path.replace(BASE_PATH, '') || '/' : path;
+    const match = appPath.match(/^\/u\/(.+)$/);
     if (match) {
       const view = new URLSearchParams(window.location.search).get('view') || 'city';
       handleSearch(decodeURIComponent(match[1]), false, view);
@@ -317,7 +321,8 @@ function App() {
   useEffect(() => {
     const onPop = () => {
       const path = window.location.pathname;
-      const match = path.match(/^\/u\/(.+)$/);
+      const appPath = BASE_PATH ? path.replace(BASE_PATH, '') || '/' : path;
+      const match = appPath.match(/^\/u\/(.+)$/);
       if (match) {
         const view = new URLSearchParams(window.location.search).get('view') || 'city';
         handleSearch(decodeURIComponent(match[1]), false, view);
@@ -416,7 +421,7 @@ function App() {
                 onBack={() => {
                   setViewMode('city');
                   const u = mappedData?.username;
-                  if (u) window.history.pushState({}, '', `/u/${encodeURIComponent(u)}`);
+                  if (u) window.history.pushState({}, '', `${BASE_PATH}/u/${encodeURIComponent(u)}`);
                 }}
                 fetchProfile={fetchProfile}
               />
