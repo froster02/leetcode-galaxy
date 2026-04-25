@@ -419,7 +419,7 @@ function VSModal({ myData, opponent, onClose }) {
                 </div>
 
                 {/* Fighter columns */}
-                <div style={{ display: 'flex', gap: 12, alignItems: 'stretch', marginBottom: 20 }}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'stretch', marginBottom: 20, flexWrap: 'wrap' }}>
                     <FighterCol cls={myCls} name={myData.username} pow={myPow} isMe won={iWin} />
                     {/* VS divider */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, minWidth: 36 }}>
@@ -527,6 +527,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
     }, []);
 
     const compactLaptop = viewport.width <= 1440 && viewport.height <= 900;
+    const isMobile = viewport.width <= 768;
     const contentMaxWidth = compactLaptop ? 960 : 1100;
     const pageBottomPad = 24;
     const heroPad = '10px 14px';
@@ -741,13 +742,14 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                             padding: '6px 8px',
                             boxShadow: '0 0 0 1px rgba(0,245,212,0.06), 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
                         }}>
-                            {/* ← ARENA */}
+                            {/* ← CITY */}
                             <motion.button onClick={onBack}
                                 whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 13px', borderRadius: 12, background: 'rgba(0,245,212,0.07)', border: '1px solid rgba(0,245,212,0.2)', color: C_TEAL, cursor: 'pointer', fontFamily: Fm, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', transition: 'background 0.18s' }}
+                                title="Back to City"
+                                style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0 : 7, padding: isMobile ? '7px 10px' : '7px 13px', borderRadius: 12, background: 'rgba(0,245,212,0.07)', border: '1px solid rgba(0,245,212,0.2)', color: C_TEAL, cursor: 'pointer', fontFamily: Fm, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', transition: 'background 0.18s' }}
                                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,245,212,0.16)'}
                                 onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,245,212,0.07)'}>
-                                ← CITY
+                                ←{!isMobile && ' CITY'}
                             </motion.button>
 
                             {/* Divider */}
@@ -757,9 +759,10 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                             <motion.button onClick={() => setShowShare(true)}
                                 whileHover={{ scale: 1.05, boxShadow: '0 0 24px rgba(167,139,250,0.55)' }}
                                 whileTap={{ scale: 0.96 }}
+                                title="Share Card"
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: 8,
-                                    padding: '7px 20px', borderRadius: 12, cursor: 'pointer',
+                                    padding: isMobile ? '7px 10px' : '7px 20px', borderRadius: 12, cursor: 'pointer',
                                     fontFamily: Fm, fontSize: 12, fontWeight: 700, letterSpacing: '0.14em',
                                     color: '#e9d5ff',
                                     background: 'linear-gradient(135deg, rgba(139,92,246,0.3) 0%, rgba(109,40,217,0.22) 100%)',
@@ -768,45 +771,46 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                     transition: 'all 0.18s',
                                 }}>
                                 <span style={{ fontSize: 13, color: '#a78bfa' }}>✦</span>
-                                SHARE CARD
-                                <span style={{ fontSize: 13, color: '#a78bfa' }}>✦</span>
+                                {!isMobile && <>SHARE CARD<span style={{ fontSize: 13, color: '#a78bfa' }}>✦</span></>}
                             </motion.button>
 
                             {/* Divider */}
                             <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
 
-                            {/* Search */}
-                            <form onSubmit={handleQuickSearch} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <input
-                                    value={quickSearch}
-                                    onChange={(e) => setQuickSearch(e.target.value)}
-                                    placeholder="search user..."
-                                    style={{
-                                        width: compactLaptop ? 130 : 160,
-                                        padding: '7px 12px', borderRadius: 10,
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                        background: 'rgba(255,255,255,0.05)',
-                                        color: 'rgba(255,255,255,0.88)',
-                                        fontFamily: Fm, fontSize: 11, letterSpacing: '0.04em', outline: 'none',
-                                    }}
-                                />
-                                <motion.button type="submit"
-                                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 10, background: 'rgba(0,245,212,0.08)', border: '1px solid rgba(0,245,212,0.25)', color: C_TEAL, cursor: 'pointer', transition: 'background 0.18s' }}
-                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,245,212,0.18)'}
-                                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,245,212,0.08)'}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                                    </svg>
-                                </motion.button>
-                            </form>
+                            {/* Search — hidden on mobile (Challenge section below covers this) */}
+                            {!isMobile && (
+                                <form onSubmit={handleQuickSearch} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <input
+                                        value={quickSearch}
+                                        onChange={(e) => setQuickSearch(e.target.value)}
+                                        placeholder="search user..."
+                                        style={{
+                                            width: compactLaptop ? 130 : 160,
+                                            padding: '7px 12px', borderRadius: 10,
+                                            border: '1px solid rgba(255,255,255,0.1)',
+                                            background: 'rgba(255,255,255,0.05)',
+                                            color: 'rgba(255,255,255,0.88)',
+                                            fontFamily: Fm, fontSize: 11, letterSpacing: '0.04em', outline: 'none',
+                                        }}
+                                    />
+                                    <motion.button type="submit"
+                                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 10, background: 'rgba(0,245,212,0.08)', border: '1px solid rgba(0,245,212,0.25)', color: C_TEAL, cursor: 'pointer', transition: 'background 0.18s' }}
+                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,245,212,0.18)'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,245,212,0.08)'}>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                                        </svg>
+                                    </motion.button>
+                                </form>
+                            )}
                         </div>
                     </motion.div>
 
                     {/* ════ 1. HERO HEADER ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.08 }}
-                        style={{ ...panelSurface, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: heroPad, marginBottom: sectionGap }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: compactLaptop ? 14 : 20 }}>
+                        style={{ ...panelSurface, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: isMobile ? 'wrap' : 'nowrap', gap: isMobile ? 12 : 0, padding: heroPad, marginBottom: sectionGap }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: compactLaptop ? 14 : 20, flex: 1, minWidth: 0 }}>
                             <div style={{ position: 'relative', flexShrink: 0 }}>
                                 <motion.div animate={{ boxShadow: [`0 0 0 2px ${tier.color}30`, `0 0 0 5px ${tier.color}50`, `0 0 0 2px ${tier.color}30`] }} transition={{ duration: 3, repeat: Infinity }}
                                     style={{ width: compactLaptop ? 58 : 72, height: compactLaptop ? 58 : 72, borderRadius: 14, background: `radial-gradient(circle at 35% 35%, ${tier.color}30, ${tier.color}0a)`, border: `2px solid ${tier.color}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: Fd, fontSize: compactLaptop ? 22 : 28, fontWeight: 900, color: tier.color }}>
@@ -915,7 +919,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                 {topPct && <span style={{ marginLeft: 8, color: C_EASY }}>· TOP {topPct}%</span>}
                             </span>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 6 }}>
                             {[
                                 { head: 'Rating',  val: rating,    color: '#00f5d4', sub: cls.label },
                                 { head: 'Streak',  val: streak,    color: '#a78bfa', sub: lastSubmit ? `Last AC ${lastSubmit}` : null },
@@ -954,7 +958,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                             <span style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Power DNA</span>
                             <span style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', fontStyle: 'italic' }}>"{motiv}"</span>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 6 }}>
                             {[
                                 { label: 'Easy', mult: '×1',  count: easy, pwr: easyPwr, pct: easyPct, color: C_EASY },
                                 { label: 'Medium', mult: '×3', count: med,  pwr: medPwr,  pct: medPct,  color: C_MED  },
@@ -984,7 +988,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                             <span style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Battle Momentum</span>
                             {lastSubmit && <span style={{ fontFamily: Fm, fontSize: 8.5, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.06em' }}>LAST ACTIVE · {lastSubmit}</span>}
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 6 }}>
                             {[
                                 { head: 'AC STREAK',      val: streak,                color: streak >= 3 ? C_EASY : streak >= 1 ? C_MED : 'rgba(255,255,255,0.2)', sub: streak >= 5 ? '🔥 on fire' : streak >= 1 ? 'wins' : 'break the ice' },
                                 { head: 'WIN RATE',       val: `${winRate}%`,          color: winColor,  sub: winRate >= 80 ? 'Dominant' : 'Building' },
@@ -1005,7 +1009,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
                     {/* ════ 7+8. SPECIALTIES + RECENT (side-by-side) ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.43 }}
-                        style={{ display: 'grid', gridTemplateColumns: topDistricts.length > 0 ? '1fr 1.6fr' : '1fr', gap: 5, marginBottom: sectionGap }}>
+                        style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : (topDistricts.length > 0 ? '1fr 1.6fr' : '1fr'), gap: 5, marginBottom: sectionGap }}>
 
                         {/* Specialties */}
                         {topDistricts.length > 0 && (
@@ -1033,8 +1037,8 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                         {/* Recent Battles */}
                         <div style={{ ...panelSurface, padding: blockPad }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                                <span style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Recent Battles</span>
-                                {lastSubmit && <span style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.4)' }}>LAST · {lastSubmit}</span>}
+                                <span style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Last 8 Submissions</span>
+                                {lastSubmit && <span style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.4)' }}>LATEST · {lastSubmit}</span>}
                             </div>
                             {recent.length === 0 ? (
                                 <div style={{ fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em' }}>$ no_submissions_yet...</div>
@@ -1048,7 +1052,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                             style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', borderBottom: i < 7 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
                                             <div style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0, background: ok ? C_EASY : C_HARD, boxShadow: `0 0 5px ${ok ? C_EASY : C_HARD}80` }} />
                                             <span style={{ flex: 1, fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.72)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</span>
-                                            {diffColor && <span style={{ fontFamily: Fm, fontSize: 8, color: diffColor, padding: '2px 5px', background: `${diffColor}14`, borderRadius: 3, flexShrink: 0, textTransform: 'uppercase' }}>{r.difficulty?.slice(0,1)}</span>}
+                                            {diffColor && <span style={{ fontFamily: Fm, fontSize: 8, color: diffColor, padding: '2px 5px', background: `${diffColor}14`, borderRadius: 3, flexShrink: 0, textTransform: 'uppercase' }}>{r.difficulty}</span>}
                                             {ts && <span style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.45)', flexShrink: 0 }}>{ts}</span>}
                                             <span style={{ fontFamily: Fm, fontSize: 9, color: ok ? C_EASY : C_HARD, flexShrink: 0, fontWeight: 700 }}>{ok ? 'AC' : 'WA'}</span>
                                         </motion.div>
