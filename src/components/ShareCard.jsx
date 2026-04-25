@@ -319,15 +319,10 @@ export function ShareCardView({ data }) {
                         <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/leetcode-dark.png" alt="LeetCode" width="28" height="28" style={{ objectFit: 'contain' }} crossOrigin="anonymous" />
                         <span style={{ fontFamily: Fs, fontSize: 17, fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>LeetCode</span>
                     </div>
-                    {/* Username + elite badge */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontFamily: Fs, fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: '-0.01em' }}>{username}</span>
-                        {rank.elite && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 20, background: `${rank.color}18`, border: `1px solid ${rank.color}55`, boxShadow: `0 0 10px ${rank.color}20` }}>
-                                <span style={{ fontSize: 10 }}>{rank.name === 'Guardian' ? '⚡' : '🛡️'}</span>
-                                <span style={{ fontFamily: Fs, fontSize: 10, fontWeight: 700, color: rank.color }}>{rank.name}</span>
-                            </div>
-                        )}
+                    {/* User label — right-aligned, safe from corner curve */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, paddingRight: 4 }}>
+                        <span style={{ fontFamily: Fs, fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.72)', letterSpacing: '0.01em' }}>User :</span>
+                        <span style={{ fontFamily: Fs, fontSize: 13, fontWeight: 700, color: '#ffffff', letterSpacing: '-0.01em' }}>{username}</span>
                     </div>
                 </div>
 
@@ -575,21 +570,27 @@ export default function ShareModal({ data, onClose }) {
         }
     }, []);
 
-    /* 'idle' | 'download' | 'copy' | 'done-download' | 'done-copy' | 'error-download' | 'error-copy' */
+    /* 'idle' | 'download' | 'copy' | 'linkedin'
+       | 'done-download' | 'done-copy' | 'done-linkedin'
+       | 'error-download' | 'error-copy' | 'error-linkedin' */
     const [actionState, setActionState] = useState('idle');
-    const busy = actionState === 'download' || actionState === 'copy';
+    const busy = actionState === 'download' || actionState === 'copy' || actionState === 'linkedin';
+
+    const triggerDownload = (dataUrl, filename) => {
+        const a = document.createElement('a');
+        a.download = filename;
+        a.href = dataUrl;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
 
     const handleDownload = useCallback(async () => {
         if (busy) return;
         setActionState('download');
         try {
             const dataUrl = await capture();
-            const a = document.createElement('a');
-            a.download = `leetcode-${data?.username || 'card'}.png`;
-            a.href = dataUrl;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            triggerDownload(dataUrl, `leetcode-${data?.username || 'card'}.png`);
             setActionState('done-download');
         } catch (err) {
             console.error('[ShareCard] Download failed:', err);
@@ -616,14 +617,40 @@ export default function ShareModal({ data, onClose }) {
         }
     }, [capture, busy]);
 
-    const dlLabel   = actionState === 'download'       ? '⏳ RENDERING…'
-                    : actionState === 'done-download'   ? '✓  DOWNLOADED'
-                    : actionState === 'error-download'  ? '✕  FAILED'
-                    : '⬇  DOWNLOAD PNG';
-    const cpLabel   = actionState === 'copy'            ? '⏳ RENDERING…'
-                    : actionState === 'done-copy'        ? '✓  COPIED'
-                    : actionState === 'error-copy'       ? '✕  FAILED'
-                    : '⎘  COPY IMAGE';
+    const handleLinkedIn = useCallback(async () => {
+        if (busy) return;
+        setActionState('linkedin');
+        try {
+            const dataUrl = await capture();
+            /* Download the image first — LinkedIn can't receive images via URL,
+               so we hand it to the user and open the post composer. */
+            triggerDownload(dataUrl, `leetcode-${data?.username || 'card'}.png`);
+            /* Small delay so the download dialog appears before the new tab */
+            await new Promise(r => setTimeout(r, 300));
+            window.open('https://www.linkedin.com/feed/?shareActive=true', '_blank', 'noopener,noreferrer');
+            setActionState('done-linkedin');
+        } catch (err) {
+            console.error('[ShareCard] LinkedIn share failed:', err);
+            setActionState('error-linkedin');
+        } finally {
+            setTimeout(() => setActionState('idle'), 3000);
+        }
+    }, [capture, data, busy]);
+
+    const dlLabel = actionState === 'download'      ? '⏳ RENDERING…'
+                  : actionState === 'done-download'  ? '✓  DOWNLOADED'
+                  : actionState === 'error-download' ? '✕  FAILED'
+                  : '⬇  DOWNLOAD PNG';
+
+    const cpLabel = actionState === 'copy'           ? '⏳ RENDERING…'
+                  : actionState === 'done-copy'       ? '✓  COPIED'
+                  : actionState === 'error-copy'      ? '✕  FAILED'
+                  : '⎘  COPY IMAGE';
+
+    const liLabel = actionState === 'linkedin'       ? '⏳ RENDERING…'
+                  : actionState === 'done-linkedin'   ? '✓  OPENING…'
+                  : actionState === 'error-linkedin'  ? '✕  FAILED'
+                  : 'in  LINKEDIN';
 
     return createPortal(
         <AnimatePresence>
@@ -680,23 +707,42 @@ export default function ShareModal({ data, onClose }) {
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 8, width: '100%', maxWidth: 520 }}>
-                        {/* Download */}
-                        <motion.button onClick={handleDownload} disabled={busy}
-                            whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
-                            style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(34,211,238,0.1)', border: '1px solid rgba(34,211,238,0.5)', color: '#22d3ee', boxShadow: '0 0 20px rgba(34,211,238,0.1)' }}>
-                            {dlLabel}
-                        </motion.button>
-                        {/* Copy */}
-                        <motion.button onClick={handleCopy} disabled={busy}
-                            whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
-                            style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.5)', color: '#a78bfa', boxShadow: '0 0 20px rgba(167,139,250,0.1)' }}>
-                            {cpLabel}
-                        </motion.button>
-                        {/* Close */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 520 }}>
+                        {/* Row 1 — action buttons */}
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            {/* Download */}
+                            <motion.button onClick={handleDownload} disabled={busy}
+                                whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
+                                style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(34,211,238,0.1)', border: '1px solid rgba(34,211,238,0.5)', color: '#22d3ee', boxShadow: '0 0 20px rgba(34,211,238,0.1)' }}>
+                                {dlLabel}
+                            </motion.button>
+                            {/* Copy */}
+                            <motion.button onClick={handleCopy} disabled={busy}
+                                whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
+                                style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.5)', color: '#a78bfa', boxShadow: '0 0 20px rgba(167,139,250,0.1)' }}>
+                                {cpLabel}
+                            </motion.button>
+                            {/* LinkedIn */}
+                            <motion.button onClick={handleLinkedIn} disabled={busy}
+                                whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
+                                style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(10,102,194,0.15)', border: '1px solid rgba(10,102,194,0.6)', color: '#4fa3e0', boxShadow: '0 0 20px rgba(10,102,194,0.12)' }}>
+                                {liLabel}
+                            </motion.button>
+                        </div>
+
+                        {/* LinkedIn hint — shown after LinkedIn action */}
+                        {actionState === 'done-linkedin' && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                                style={{ textAlign: 'center', fontFamily: Fm, fontSize: 8.5, color: '#4fa3e0', letterSpacing: '0.08em', padding: '6px 0' }}>
+                                Image downloaded ↑ · Attach it to your LinkedIn post
+                            </motion.div>
+                        )}
+
+                        {/* Row 2 — close */}
                         <motion.button onClick={onClose} disabled={busy}
-                            whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
-                            style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', opacity: busy ? 0.4 : 1, transition: 'all 0.18s', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }}>
+                            whileHover={{ scale: busy ? 1 : 1.02 }} whileTap={{ scale: 0.98 }}
+                            style={{ width: '100%', padding: '9px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', opacity: busy ? 0.4 : 1, transition: 'all 0.18s', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }}>
                             ✕  CLOSE
                         </motion.button>
                     </div>
