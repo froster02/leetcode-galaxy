@@ -309,7 +309,7 @@ function App() {
   // URL-based profile loading
   useEffect(() => {
     const path = window.location.pathname;
-    const appPath = BASE_PATH ? path.replace(BASE_PATH, '') || '/' : path;
+    const appPath = BASE_PATH && path.startsWith(BASE_PATH) ? path.slice(BASE_PATH.length) || '/' : path;
     const match = appPath.match(/^\/u\/(.+)$/);
     if (match) {
       const view = new URLSearchParams(window.location.search).get('view') || 'city';
@@ -321,7 +321,7 @@ function App() {
   useEffect(() => {
     const onPop = () => {
       const path = window.location.pathname;
-      const appPath = BASE_PATH ? path.replace(BASE_PATH, '') || '/' : path;
+      const appPath = BASE_PATH && path.startsWith(BASE_PATH) ? path.slice(BASE_PATH.length) || '/' : path;
       const match = appPath.match(/^\/u\/(.+)$/);
       if (match) {
         const view = new URLSearchParams(window.location.search).get('view') || 'city';
