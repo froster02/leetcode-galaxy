@@ -507,12 +507,15 @@ export default function ShareModal({ data, onClose }) {
         if (!cardRef.current) return;
         const naturalH = cardRef.current.scrollHeight;
         setCardNaturalH(naturalH);
-        /* Reserve: 24px top pad + 60px title + 16px gap + 16px gap + 50px buttons + 32px bottom */
+        const CARD_W = 520;
+        /* Reserve: 24px top pad + 60px title + 16px gap + 50px buttons + 32px bottom */
         const reserved = 198;
-        const available = window.innerHeight - reserved;
-        if (naturalH > available) {
-            setPreviewScale(Math.max(0.5, available / naturalH));
-        }
+        const availableH = window.innerHeight - reserved;
+        const availableW = window.innerWidth - 32; // 16px padding each side
+        const scaleH = naturalH > availableH ? availableH / naturalH : 1;
+        const scaleW = availableW < CARD_W ? availableW / CARD_W : 1;
+        const scale = Math.min(scaleH, scaleW);
+        if (scale < 1) setPreviewScale(Math.max(0.35, scale));
     }, [data]);
 
     const capture = useCallback(() => {

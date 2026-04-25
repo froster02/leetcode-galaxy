@@ -619,7 +619,7 @@ function EasterEggOverlay({ type }) {
             }}
         >
             <div style={{
-                padding: '28px 44px', borderRadius: 4,
+                padding: 'clamp(20px, 5vw, 28px) clamp(16px, 8vw, 44px)', borderRadius: 4,
                 background: 'linear-gradient(180deg, rgba(6,9,13,0.95), rgba(3,5,8,0.95))',
                 border: `1px solid ${content.color}60`,
                 boxShadow: `0 0 60px ${content.color}40, inset 0 0 40px ${content.color}08`,

@@ -336,9 +336,10 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                 <motion.button
                     onClick={onBack}
                     whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                    title="Back to Galaxy"
                     style={{
-                        display: 'flex', alignItems: 'center', gap: 7,
-                        padding: '7px 13px', borderRadius: 12,
+                        display: 'flex', alignItems: 'center', gap: isMobile ? 0 : 7,
+                        padding: isMobile ? '7px 10px' : '7px 13px', borderRadius: 12,
                         background: 'rgba(0,245,212,0.07)', border: '1px solid rgba(0,245,212,0.2)',
                         color: '#00f5d4', cursor: 'pointer',
                         fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
@@ -348,7 +349,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                     onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,245,212,0.07)'}
                 >
                     <ArrowLeft size={15} strokeWidth={2.5} />
-                    <span>GALAXY</span>
+                    {!isMobile && <span>GALAXY</span>}
                 </motion.button>
 
                 {/* ── Divider ── */}
@@ -365,9 +366,10 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                             key={mode}
                             onClick={() => onViewModeChange?.(mode)}
                             whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                            title={label}
                             style={{
-                                display: 'flex', alignItems: 'center', gap: 7,
-                                padding: '7px 14px', borderRadius: 12,
+                                display: 'flex', alignItems: 'center', gap: isMobile ? 0 : 7,
+                                padding: isMobile ? '7px 10px' : '7px 14px', borderRadius: 12,
                                 fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
                                 cursor: 'pointer', transition: 'all 0.18s ease',
                                 background: active ? 'rgba(0,245,212,0.15)' : 'transparent',
@@ -377,20 +379,22 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                             }}
                         >
                             <Icon size={15} strokeWidth={active ? 2.5 : 2} />
-                            <span>{label}</span>
-                            <AnimatePresence>
-                                {active && (
-                                    <motion.span
-                                        key="nav-dot"
-                                        layoutId="nav-dot"
-                                        initial={{ scale: 0, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        exit={{ scale: 0, opacity: 0 }}
-                                        transition={{ duration: 0.2 }}
-                                        style={{ width: 5, height: 5, borderRadius: '50%', background: '#00f5d4', boxShadow: '0 0 6px #00f5d4' }}
-                                    />
-                                )}
-                            </AnimatePresence>
+                            {!isMobile && <span>{label}</span>}
+                            {!isMobile && (
+                                <AnimatePresence>
+                                    {active && (
+                                        <motion.span
+                                            key="nav-dot"
+                                            layoutId="nav-dot"
+                                            initial={{ scale: 0, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            exit={{ scale: 0, opacity: 0 }}
+                                            transition={{ duration: 0.2 }}
+                                            style={{ width: 5, height: 5, borderRadius: '50%', background: '#00f5d4', boxShadow: '0 0 6px #00f5d4' }}
+                                        />
+                                    )}
+                                </AnimatePresence>
+                            )}
                         </motion.button>
                     );
                 })}
@@ -406,7 +410,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                     title="Share your card"
                     style={{
                         display: 'flex', alignItems: 'center', gap: 7,
-                        padding: '7px 16px', borderRadius: 12,
+                        padding: isMobile ? '7px 10px' : '7px 16px', borderRadius: 12,
                         background: 'linear-gradient(135deg, rgba(139,92,246,0.28) 0%, rgba(109,40,217,0.2) 100%)',
                         border: '1px solid rgba(167,139,250,0.5)',
                         color: '#e9d5ff', cursor: 'pointer',
@@ -416,8 +420,8 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                     }}
                 >
                     <span style={{ fontSize: 12, color: '#a78bfa' }}>✦</span>
-                    <span>SHARE CARD</span>
-                    <span style={{ fontSize: 12, color: '#a78bfa' }}>✦</span>
+                    {!isMobile && <span>SHARE CARD</span>}
+                    {!isMobile && <span style={{ fontSize: 12, color: '#a78bfa' }}>✦</span>}
                 </motion.button>
 
                 {/* ── Search toggle ── */}
@@ -461,7 +465,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                             style={{
                                 padding: '8px 14px', borderRadius: 9, fontFamily: FONT_MONO, fontSize: 12,
                                 background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)',
-                                color: '#fff', width: 210, outline: 'none', letterSpacing: '0.04em',
+                                color: '#fff', width: isMobile ? 160 : 210, outline: 'none', letterSpacing: '0.04em',
                             }}
                         />
                         <button type="submit" style={{

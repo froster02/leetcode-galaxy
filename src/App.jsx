@@ -190,6 +190,12 @@ function App() {
   const [phase, setPhase] = useState(1);
   const [viewMode, setViewMode] = useState('city');
   const [isNight] = useState(true);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
   const [searchError, setSearchError] = useState('');
   const [transitionStage, setTransitionStage] = useState(0);
   const [transitionMsg, setTransitionMsg] = useState('');
@@ -359,8 +365,8 @@ function App() {
       {/* Status bar — rotating PHM/Interstellar ticker */}
       <StatusTicker phase={phase} />
 
-      {/* TARS monolith HUD — top right on landing */}
-      {phase === 1 && <TarsHud />}
+      {/* TARS monolith HUD — top right on landing (desktop only) */}
+      {phase === 1 && !isMobile && <TarsHud />}
 
       {/* 3D Canvas */}
       {phase === 3 ? (
