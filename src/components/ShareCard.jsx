@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { toPng } from 'html-to-image';
+import html2canvas from 'html2canvas';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Fs = '"Inter", "SF Pro Display", system-ui, sans-serif';
@@ -518,14 +518,61 @@ export default function ShareModal({ data, onClose }) {
         if (scale < 1) setPreviewScale(Math.max(0.35, scale));
     }, [data]);
 
-    const capture = useCallback(() => {
+    const capture = useCallback(async () => {
         if (!cardRef.current) return Promise.reject(new Error('card not mounted'));
-        return toPng(cardRef.current, {
-            pixelRatio: 2,
-            backgroundColor: '#0a0c18',
-            skipFonts: false,
-            fetchRequestInit: { mode: 'cors' },
-        });
+
+        /* 1. Pre-convert every external <img> to a data URL.
+              LeetCode badge URLs and CDN images block CORS — leaving them
+              cross-origin taints the canvas and makes toDataURL() throw. */
+        const imgs     = Array.from(cardRef.current.querySelectorAll('img[src]'));
+        const origSrcs = imgs.map(i => i.getAttribute('src'));
+        const origDisp = imgs.map(i => i.style.display);
+
+        await Promise.allSettled(imgs.map(async (img) => {
+            if (img.src.startsWith('data:')) return;
+            try {
+                const res  = await fetch(img.src, { cache: 'force-cache' });
+                const blob = await res.blob();
+                img.src = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload  = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            } catch {
+                /* Can't fetch → hide so it doesn't cause taint */
+                img.style.display = 'none';
+            }
+        }));
+
+        try {
+            /* 2. html2canvas — useCORS:false because all images are now data URLs.
+                  onclone: set opacity→1 (element is opacity:0 in DOM) and strip
+                  backdrop-filter which html2canvas v1 cannot render. */
+            const canvas = await html2canvas(cardRef.current, {
+                backgroundColor: '#0a0c18',
+                scale: 2,
+                useCORS: false,
+                allowTaint: false,
+                logging: false,
+                onclone: (_doc, el) => {
+                    el.style.opacity = '1';
+                    el.querySelectorAll('*').forEach(node => {
+                        if (!node.style) return;
+                        node.style.backdropFilter       = '';
+                        node.style.webkitBackdropFilter = '';
+                    });
+                },
+            });
+
+            return canvas.toDataURL('image/png');
+        } finally {
+            /* 3. Always restore original srcs and display */
+            imgs.forEach((img, i) => {
+                img.style.display = origDisp[i];
+                if (origSrcs[i]) img.setAttribute('src', origSrcs[i]);
+            });
+        }
     }, []);
 
     /* 'idle' | 'download' | 'copy' | 'done-download' | 'done-copy' | 'error-download' | 'error-copy' */
@@ -596,13 +643,14 @@ export default function ShareModal({ data, onClose }) {
                         <div style={{ fontFamily: Fm, fontSize: 8.5, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.14em' }}>EXPORT AS HIGH-RES PNG · PERFECT FOR LINKEDIN</div>
                     </div>
 
-                    {/* Capture target — full size, rendered off-screen so html2canvas sees real pixels */}
+                    {/* Capture target — in viewport at opacity 0 so browser paints it.
+                        position:fixed left:-9999 causes browsers to skip painting. */}
                     <div
                         ref={cardRef}
                         style={{
-                            position: 'fixed', left: -9999, top: 0,
+                            position: 'fixed', left: 0, top: 0,
                             width: 520, borderRadius: 24, overflow: 'hidden',
-                            pointerEvents: 'none',
+                            opacity: 0, pointerEvents: 'none', zIndex: -1,
                         }}
                     >
                         <ShareCardView data={data} />
