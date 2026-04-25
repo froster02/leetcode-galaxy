@@ -1,47 +1,61 @@
-# LeetCode Galaxy
+# LC Galaxy
 
-An interactive sci-fi visualization that transforms any LeetCode profile into a living, breathing cyberpunk city — complete with tiered neon buildings, car traffic, an aurora, and an Interstellar-inspired ambient soundtrack.
+> Transform any LeetCode profile into a bioluminescent neon mushroom biome — a living, breathing sci-fi visualization of your coding journey.
+
+**[Live Demo](https://froster02.github.io/leetcode-galaxy/)** · Built with React + Three.js · No login required
+
+---
+
+## What It Does
+
+Enter any LeetCode username. Watch your profile materialize as a glowing cyberpunk biome — mushroom field, stats panel, shareable card, and all.
 
 ---
 
 ## Features
 
-### 3-Phase Experience
-- **Phase 1 — Galaxy Landing**: animated star field, search bar, recently explored users
-- **Phase 2 — Hyperspace Transition**: cinematic overlay with synthesized warp sounds
-- **Phase 3 — City + Card**: full interactive 3D city or Fighter Card view
+### Galaxy Landing
+- Animated star field with orbit rings and glitch title
+- Live stats: Total Questions · Last Contest Participants · Max Daily Streak
+- Featured legendary coders (cpcs, votrubac, lee215…)
+- Press `/` to focus search from anywhere
 
-### 3D City
-- 10×10 procedural grid — each block represents a LeetCode user
-- Building height/color driven by Easy/Medium/Hard solve ratios
-- Tiered pyramid buildings — 1–3 stacked tiers based on height
-- Facade neon stripes — horizontal emissive bands
-- Rooftop spires with blinking beacon on tall buildings
-- 24 deterministic car lights moving through the street grid
-- Aurora — 3 additive overlay planes breathing above the city
-- User beacon — teal beam + crystal + pulsing ring marks the searched user
-- Night/Day toggle with smooth lighting lerp
+### Bioluminescent Mushroom Biome
+- 10×10 procedural grid — each patch represents a LeetCode user
+- **Cyan mushrooms** = Easy solves · **Amber** = Medium · **Magenta/Purple** = Hard
+- Giant animated centerpiece mushroom at your beacon spawn point
+- 90 ambient spore particles drifting upward across the biome
+- Orbiting mini-spores around the centerpiece
+- Cyan grid floor · Aurora overhead · Floating neon wisps
+- Bloom post-processing for full bioluminescent glow
 
 ### Side Panel
 - Power Level with animated counter + tier badge (Explorer → Hail Mary Hero)
 - Circular progress ring, difficulty breakdown bars, SVG radar chart
 - Tabbed view: Stats / Topics / Activity
 - Achievement badges (First Solve, 100 Club, Hard 10, Polyglot, Top 10K, Legend)
-- Quick search, view mode toggle, night toggle, share screenshot
+- Quick search · View mode toggle (City / Card) · Share Card
 
 ### Activity Overlay
-- **Submission Heatmap** — 12-week GitHub-style calendar from real `/calendar` API; intensity-colored cells
-- **Streak Tracker** — current + longest streak from API; 7-day bar chart
+- **Submission Heatmap** — 12-week GitHub-style calendar from real API data
+- **Streak Tracker** — current + longest streak + 7-day bar chart
 
 ### Fighter Card
-- Full-screen card with contest rating, rank, badges, power tier
-- Mini-games modal
+- Full-screen profile card: contest rating, global rank, badges, power tier
+- Power DNA breakdown (Easy ×1 · Medium ×3 · Hard ×10)
+- Battle Momentum, Recent Submissions, Specialties
+- Challenge any LeetCode user — live VS battle result modal
+- Direct link to LeetCode profile
 
-### Sound Design
-- **Stage 1**: deep D-organ drone (6-pipe Web Audio synthesis)
-- **Stage 2**: rising sawtooth sweep + crystalline arpeggio
-- **City reveal**: Dmaj7 swell with shimmer overtone
-- **City ambient**: continuous Interstellar pipe organ — bellows LFO on filter cutoff, comb-delay cathedral echo, fades in/out with city enter/exit. No external audio files.
+### Share Card
+- Premium glass card with hex rank badge, heatmap, contest stats, badges
+- Download as high-res PNG (2×)
+- Copy image to clipboard
+- Share directly to LinkedIn — auto-downloads PNG + opens post composer
+
+### Responsive
+- Full mobile support — bottom-sheet side panel, compressed HUD, scaled share modal
+- Adaptive layouts across all screen sizes
 
 ---
 
@@ -53,34 +67,32 @@ An interactive sci-fi visualization that transforms any LeetCode profile into a 
 | 3D | Three.js · `@react-three/fiber` · `@react-three/drei` |
 | Post-processing | `@react-three/postprocessing` (Bloom) |
 | Motion | Framer Motion |
-| Sound | Web Audio API (fully synthesized) |
+| Image Export | `html2canvas` |
 | Build | Vite 7 |
-| Lint | ESLint 9 (flat config) |
-| Data | Alfa LeetCode API |
+| Data | Alfa LeetCode API + LeetCode GraphQL |
 
 ---
 
 ## Project Structure
 
 ```
-leetcode-galaxy/
-├── src/
-│   ├── App.jsx                  # Phase manager, search, transitions, sound wiring
-│   ├── components/
-│   │   ├── LandingUI.jsx        # Galaxy landing + search
-│   │   ├── GalaxyScene.jsx      # Animated star background
-│   │   ├── TransitionOverlay.jsx
-│   │   ├── CityScene.jsx        # 3D city, buildings, cars, aurora, heatmap, streak
-│   │   ├── UserPanel.jsx        # Side stats panel
-│   │   ├── FighterCard.jsx      # Full-screen profile card
-│   │   └── GamesModal.jsx       # Mini-games
-│   ├── hooks/
-│   │   ├── useLeetCode.js       # API fetch + localStorage cache
-│   │   └── useSpaceSound.js     # Web Audio synthesized sounds
-│   └── utils/
-│       ├── dataMapper.js        # Raw API → app model
-│       └── gameData.js          # Power tiers, fighter classes
-└── package.json
+src/
+├── App.jsx                  # Phase manager, routing, transitions
+├── components/
+│   ├── LandingUI.jsx        # Galaxy landing, search, live stats
+│   ├── GalaxyScene.jsx      # Animated star field
+│   ├── TransitionOverlay.jsx
+│   ├── CityScene.jsx        # Mushroom biome, spores, aurora, heatmap
+│   ├── UserPanel.jsx        # Side stats panel + share trigger
+│   ├── FighterCard.jsx      # Full-screen profile card + VS modal
+│   ├── ShareCard.jsx        # Exportable PNG card + LinkedIn share
+│   └── Navbar.jsx
+├── hooks/
+│   └── useLeetCode.js       # API fetch + localStorage cache (30min TTL)
+└── utils/
+    ├── dataMapper.js        # Raw API → app model
+    ├── normalization.js     # Stats normalization + validation
+    └── gameData.js          # Power tiers, fighter classes, coders roster
 ```
 
 ---
@@ -100,13 +112,19 @@ npm run dev
 ```
 Search username
   → useLeetCode.fetchProfile()
-      → parallel: /userProfile  /skillStats  /contest  /badges  /calendar
-  → mapLeetCodeDataToCity()       # normalise into app model
-  → CityCanvas(data)              # build 10×10 roster, render city
-  → UserPanel(data)               # stats, heatmap, streak
+      → parallel: profile · skillStats · contest · badges · calendar
+  → mapLeetCodeDataToCity()     # normalize into app model
+  → CityCanvas(data)            # build 10×10 roster, render biome
+  → UserPanel(data)             # stats, heatmap, streak
+  → FighterCard(data)           # full card view on demand
 ```
 
-Cache: `localStorage` per username, 30-minute TTL. Entries missing `calendar` are auto-invalidated.
+**Cache:** `localStorage` per username, 30-minute TTL. Stale or malformed entries are auto-purged.
+
+**Landing stats (live):**
+- Total Questions → LeetCode GraphQL `allQuestionsCount`
+- Last Contest Participants → `leetcode.com/contest/api/info/weekly-contest-N/` (slug computed from known anchor)
+- Max Daily Streak → computed from Daily Challenge launch date (2020-04-01), always accurate
 
 ---
 
@@ -121,9 +139,10 @@ Cache: `localStorage` per username, 30-minute TTL. Entries missing `calendar` ar
 
 ---
 
-## Contributing
+## Easter Eggs
 
-1. Fork the repo
-2. Create a branch
-3. Commit changes
-4. Open a pull request
+Try searching: `rocky` · `tars` · `murph` · `cooper` · `hail mary`
+
+---
+
+*Made by [Arush Naudiyal](https://github.com/froster02)*
