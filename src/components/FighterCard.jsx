@@ -1033,8 +1033,8 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                         {/* Recent Battles */}
                         <div style={{ ...panelSurface, padding: blockPad }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                                <span style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Recent Battles</span>
-                                {lastSubmit && <span style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.4)' }}>LAST · {lastSubmit}</span>}
+                                <span style={{ fontFamily: Fm, fontSize: 8.5, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Last 8 Submissions</span>
+                                {lastSubmit && <span style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.4)' }}>LATEST · {lastSubmit}</span>}
                             </div>
                             {recent.length === 0 ? (
                                 <div style={{ fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em' }}>$ no_submissions_yet...</div>
@@ -1048,7 +1048,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                             style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', borderBottom: i < 7 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
                                             <div style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0, background: ok ? C_EASY : C_HARD, boxShadow: `0 0 5px ${ok ? C_EASY : C_HARD}80` }} />
                                             <span style={{ flex: 1, fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.72)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</span>
-                                            {diffColor && <span style={{ fontFamily: Fm, fontSize: 8, color: diffColor, padding: '2px 5px', background: `${diffColor}14`, borderRadius: 3, flexShrink: 0, textTransform: 'uppercase' }}>{r.difficulty?.slice(0,1)}</span>}
+                                            {diffColor && <span style={{ fontFamily: Fm, fontSize: 8, color: diffColor, padding: '2px 5px', background: `${diffColor}14`, borderRadius: 3, flexShrink: 0, textTransform: 'uppercase' }}>{r.difficulty}</span>}
                                             {ts && <span style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.45)', flexShrink: 0 }}>{ts}</span>}
                                             <span style={{ fontFamily: Fm, fontSize: 9, color: ok ? C_EASY : C_HARD, flexShrink: 0, fontWeight: 700 }}>{ok ? 'AC' : 'WA'}</span>
                                         </motion.div>
