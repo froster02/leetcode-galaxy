@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { toPng } from 'html-to-image';
+import html2canvas from 'html2canvas';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Fs = '"Inter", "SF Pro Display", system-ui, sans-serif';
@@ -273,45 +273,80 @@ export function ShareCardView({ data }) {
     const { activeDays, maxStreak, totalSubmissions } = calendarStats(calendarRaw);
 
     return (
+        /* ── Border shell — single continuous conic-gradient path ──────────────
+           padding:1px exposes exactly 1px of the conic background as the border.
+           No separate strips. The gradient wraps the full perimeter in one shot.
+           Conic origin at 50% 50% (card center), starting from 270° (left edge).
+           Calibrated for ~520×900px card proportions:
+             270° = left center   → amber peak
+               0° = top center    → white highlight
+              90° = right center  → blue peak
+             180° = bottom center → near-transparent
+        ────────────────────────────────────────────────────────────────────── */
         <div style={{
             width: 520,
+            borderRadius: 26,
+            padding: 1,
+            background: `conic-gradient(
+                from 270deg at 50% 50%,
+                rgba(245,158,11,0.62)  0%,
+                rgba(245,158,11,0.38) 10%,
+                rgba(255,255,255,0.48) 20%,
+                rgba(255,255,255,0.60) 25%,
+                rgba(255,255,255,0.48) 30%,
+                rgba(59,130,246,0.38)  40%,
+                rgba(59,130,246,0.62)  50%,
+                rgba(59,130,246,0.20)  60%,
+                rgba(255,255,255,0.06) 68%,
+                rgba(255,255,255,0.04) 75%,
+                rgba(255,255,255,0.06) 82%,
+                rgba(245,158,11,0.20)  90%,
+                rgba(245,158,11,0.62) 100%
+            )`,
+            /* Outer shadow — controlled halo, sharp silhouette */
+            boxShadow: [
+                '0 0 0 0.5px rgba(255,255,255,0.04)',
+                '0 0 48px rgba(245,120,20,0.08)',
+                '0 0 72px rgba(59,130,246,0.06)',
+                '0 60px 100px rgba(0,0,0,0.95)',
+            ].join(', '),
+            flexShrink: 0,
+        }}>
+
+        {/* ── Card body — radius 1px less so border shell shows exactly 1px ── */}
+        <div style={{
+            borderRadius: 25,
             background: 'linear-gradient(160deg, #0a0c18 0%, #0d1020 45%, #080b1a 75%, #06080f 100%)',
-            borderRadius: 24,
-            border: '1.5px solid rgba(255,255,255,0.1)',
             overflow: 'hidden',
             position: 'relative',
             transform: 'translateZ(0)',
             WebkitTransform: 'translateZ(0)',
             color: '#f8fafc',
             fontFamily: Fs,
-            boxShadow: [
-                `0 0 0 1px rgba(245,158,11,0.2)`,
-                `0 0 80px rgba(245,120,20,0.12)`,
-                `0 0 120px rgba(59,130,246,0.08)`,
-                `0 60px 100px rgba(0,0,0,0.95)`,
-            ].join(', '),
+            /* Inner glass highlight — follows exact inner radius as inset ring */
+            boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.055)',
         }}>
-            {/* ── Ambient glows ── */}
+
+            {/* ── Ambient glows (interior only, clipped by inner radius) ── */}
             <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-                {/* Orange top-left corner glow */}
-                <div style={{ position: 'absolute', left: 0, top: 0, width: 280, height: 200, background: 'radial-gradient(ellipse at 0% 0%, rgba(245,110,15,0.45) 0%, rgba(245,110,15,0.15) 40%, transparent 70%)', filter: 'blur(16px)', borderRadius: '24px 0 0 0' }} />
-                {/* Blue top-right corner glow */}
-                <div style={{ position: 'absolute', right: 0, top: 0, width: 260, height: 190, background: 'radial-gradient(ellipse at 100% 0%, rgba(59,130,246,0.4) 0%, rgba(59,130,246,0.12) 40%, transparent 70%)', filter: 'blur(16px)', borderRadius: '0 24px 0 0' }} />
+                {/* Orange top-left — soft, well back from edges */}
+                <div style={{
+                    position: 'absolute', left: 0, top: 0, width: 220, height: 160,
+                    background: 'radial-gradient(ellipse at 15% 15%, rgba(245,110,15,0.28) 0%, rgba(245,110,15,0.08) 50%, transparent 75%)',
+                    filter: 'blur(14px)',
+                }} />
+                {/* Blue top-right — symmetric */}
+                <div style={{
+                    position: 'absolute', right: 0, top: 0, width: 220, height: 160,
+                    background: 'radial-gradient(ellipse at 85% 15%, rgba(59,130,246,0.24) 0%, rgba(59,130,246,0.07) 50%, transparent 75%)',
+                    filter: 'blur(14px)',
+                }} />
                 {/* Bottom vignette */}
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 200, background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)' }} />
             </div>
 
-            {/* ── Top neon rim ── */}
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, zIndex: 2,
-                background: 'linear-gradient(90deg, #f59e0b 0%, rgba(251,191,36,0.6) 25%, rgba(59,130,246,0.5) 75%, #3b82f6 100%)' }} />
-            {/* ── Left orange edge ── */}
-            <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 3, zIndex: 2,
-                background: 'linear-gradient(180deg, #f59e0b 0%, rgba(245,158,11,0.4) 40%, transparent 80%)' }} />
-            {/* ── Right blue edge ── */}
-            <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 3, zIndex: 2,
-                background: 'linear-gradient(180deg, #3b82f6 0%, rgba(59,130,246,0.4) 40%, transparent 80%)' }} />
-
-            <div style={{ position: 'relative', zIndex: 1, padding: '20px 22px 22px' }}>
+            {/* ── Content ── */}
+            <div style={{ position: 'relative', zIndex: 1, padding: '36px 36px 22px' }}>
 
                 {/* ══ HEADER ══ */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
@@ -319,15 +354,10 @@ export function ShareCardView({ data }) {
                         <img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/leetcode-dark.png" alt="LeetCode" width="28" height="28" style={{ objectFit: 'contain' }} crossOrigin="anonymous" />
                         <span style={{ fontFamily: Fs, fontSize: 17, fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>LeetCode</span>
                     </div>
-                    {/* Username + elite badge */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontFamily: Fs, fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: '-0.01em' }}>{username}</span>
-                        {rank.elite && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 20, background: `${rank.color}18`, border: `1px solid ${rank.color}55`, boxShadow: `0 0 10px ${rank.color}20` }}>
-                                <span style={{ fontSize: 10 }}>{rank.name === 'Guardian' ? '⚡' : '🛡️'}</span>
-                                <span style={{ fontFamily: Fs, fontSize: 10, fontWeight: 700, color: rank.color }}>{rank.name}</span>
-                            </div>
-                        )}
+                    {/* User : <username> — right-aligned, clear of corner safe zone */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <span style={{ fontFamily: Fs, fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.72)', letterSpacing: '0.01em' }}>User :</span>
+                        <span style={{ fontFamily: Fs, fontSize: 13, fontWeight: 700, color: '#ffffff', letterSpacing: '-0.01em' }}>{username}</span>
                     </div>
                 </div>
 
@@ -490,6 +520,7 @@ export function ShareCardView({ data }) {
                 </div>
             </div>
         </div>
+        </div>
     );
 }
 
@@ -518,31 +549,84 @@ export default function ShareModal({ data, onClose }) {
         if (scale < 1) setPreviewScale(Math.max(0.35, scale));
     }, [data]);
 
-    const capture = useCallback(() => {
+    const capture = useCallback(async () => {
         if (!cardRef.current) return Promise.reject(new Error('card not mounted'));
-        return toPng(cardRef.current, {
-            pixelRatio: 2,
-            backgroundColor: '#0a0c18',
-            skipFonts: false,
-            fetchRequestInit: { mode: 'cors' },
-        });
+
+        /* 1. Pre-convert every external <img> to a data URL.
+              LeetCode badge URLs and CDN images block CORS — leaving them
+              cross-origin taints the canvas and makes toDataURL() throw. */
+        const imgs     = Array.from(cardRef.current.querySelectorAll('img[src]'));
+        const origSrcs = imgs.map(i => i.getAttribute('src'));
+        const origDisp = imgs.map(i => i.style.display);
+
+        await Promise.allSettled(imgs.map(async (img) => {
+            if (img.src.startsWith('data:')) return;
+            try {
+                const res  = await fetch(img.src, { cache: 'force-cache' });
+                const blob = await res.blob();
+                img.src = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload  = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            } catch {
+                /* Can't fetch → hide so it doesn't cause taint */
+                img.style.display = 'none';
+            }
+        }));
+
+        try {
+            /* 2. html2canvas — useCORS:false because all images are now data URLs.
+                  onclone: set opacity→1 (element is opacity:0 in DOM) and strip
+                  backdrop-filter which html2canvas v1 cannot render. */
+            const canvas = await html2canvas(cardRef.current, {
+                backgroundColor: '#0a0c18',
+                scale: 2,
+                useCORS: false,
+                allowTaint: false,
+                logging: false,
+                onclone: (_doc, el) => {
+                    el.style.opacity = '1';
+                    el.querySelectorAll('*').forEach(node => {
+                        if (!node.style) return;
+                        node.style.backdropFilter       = '';
+                        node.style.webkitBackdropFilter = '';
+                    });
+                },
+            });
+
+            return canvas.toDataURL('image/png');
+        } finally {
+            /* 3. Always restore original srcs and display */
+            imgs.forEach((img, i) => {
+                img.style.display = origDisp[i];
+                if (origSrcs[i]) img.setAttribute('src', origSrcs[i]);
+            });
+        }
     }, []);
 
-    /* 'idle' | 'download' | 'copy' | 'done-download' | 'done-copy' | 'error-download' | 'error-copy' */
+    /* 'idle' | 'download' | 'copy' | 'linkedin'
+       | 'done-download' | 'done-copy' | 'done-linkedin'
+       | 'error-download' | 'error-copy' | 'error-linkedin' */
     const [actionState, setActionState] = useState('idle');
-    const busy = actionState === 'download' || actionState === 'copy';
+    const busy = actionState === 'download' || actionState === 'copy' || actionState === 'linkedin';
+
+    const triggerDownload = (dataUrl, filename) => {
+        const a = document.createElement('a');
+        a.download = filename;
+        a.href = dataUrl;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
 
     const handleDownload = useCallback(async () => {
         if (busy) return;
         setActionState('download');
         try {
             const dataUrl = await capture();
-            const a = document.createElement('a');
-            a.download = `leetcode-${data?.username || 'card'}.png`;
-            a.href = dataUrl;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            triggerDownload(dataUrl, `leetcode-${data?.username || 'card'}.png`);
             setActionState('done-download');
         } catch (err) {
             console.error('[ShareCard] Download failed:', err);
@@ -569,14 +653,40 @@ export default function ShareModal({ data, onClose }) {
         }
     }, [capture, busy]);
 
-    const dlLabel   = actionState === 'download'       ? '⏳ RENDERING…'
-                    : actionState === 'done-download'   ? '✓  DOWNLOADED'
-                    : actionState === 'error-download'  ? '✕  FAILED'
-                    : '⬇  DOWNLOAD PNG';
-    const cpLabel   = actionState === 'copy'            ? '⏳ RENDERING…'
-                    : actionState === 'done-copy'        ? '✓  COPIED'
-                    : actionState === 'error-copy'       ? '✕  FAILED'
-                    : '⎘  COPY IMAGE';
+    const handleLinkedIn = useCallback(async () => {
+        if (busy) return;
+        setActionState('linkedin');
+        try {
+            const dataUrl = await capture();
+            /* Download the image first — LinkedIn can't receive images via URL,
+               so we hand it to the user and open the post composer. */
+            triggerDownload(dataUrl, `leetcode-${data?.username || 'card'}.png`);
+            /* Small delay so the download dialog appears before the new tab */
+            await new Promise(r => setTimeout(r, 300));
+            window.open('https://www.linkedin.com/feed/?shareActive=true', '_blank', 'noopener,noreferrer');
+            setActionState('done-linkedin');
+        } catch (err) {
+            console.error('[ShareCard] LinkedIn share failed:', err);
+            setActionState('error-linkedin');
+        } finally {
+            setTimeout(() => setActionState('idle'), 3000);
+        }
+    }, [capture, data, busy]);
+
+    const dlLabel = actionState === 'download'      ? '⏳ RENDERING…'
+                  : actionState === 'done-download'  ? '✓  DOWNLOADED'
+                  : actionState === 'error-download' ? '✕  FAILED'
+                  : '⬇  DOWNLOAD PNG';
+
+    const cpLabel = actionState === 'copy'           ? '⏳ RENDERING…'
+                  : actionState === 'done-copy'       ? '✓  COPIED'
+                  : actionState === 'error-copy'      ? '✕  FAILED'
+                  : '⎘  COPY IMAGE';
+
+    const liLabel = actionState === 'linkedin'       ? '⏳ RENDERING…'
+                  : actionState === 'done-linkedin'   ? '✓  OPENING…'
+                  : actionState === 'error-linkedin'  ? '✕  FAILED'
+                  : 'in  LINKEDIN';
 
     return createPortal(
         <AnimatePresence>
@@ -596,13 +706,14 @@ export default function ShareModal({ data, onClose }) {
                         <div style={{ fontFamily: Fm, fontSize: 8.5, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.14em' }}>EXPORT AS HIGH-RES PNG · PERFECT FOR LINKEDIN</div>
                     </div>
 
-                    {/* Capture target — full size, rendered off-screen so html2canvas sees real pixels */}
+                    {/* Capture target — in viewport at opacity 0 so browser paints it.
+                        position:fixed left:-9999 causes browsers to skip painting. */}
                     <div
                         ref={cardRef}
                         style={{
-                            position: 'fixed', left: -9999, top: 0,
+                            position: 'fixed', left: 0, top: 0,
                             width: 520, borderRadius: 24, overflow: 'hidden',
-                            pointerEvents: 'none',
+                            opacity: 0, pointerEvents: 'none', zIndex: -1,
                         }}
                     >
                         <ShareCardView data={data} />
@@ -632,23 +743,42 @@ export default function ShareModal({ data, onClose }) {
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 8, width: '100%', maxWidth: 520 }}>
-                        {/* Download */}
-                        <motion.button onClick={handleDownload} disabled={busy}
-                            whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
-                            style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(34,211,238,0.1)', border: '1px solid rgba(34,211,238,0.5)', color: '#22d3ee', boxShadow: '0 0 20px rgba(34,211,238,0.1)' }}>
-                            {dlLabel}
-                        </motion.button>
-                        {/* Copy */}
-                        <motion.button onClick={handleCopy} disabled={busy}
-                            whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
-                            style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.5)', color: '#a78bfa', boxShadow: '0 0 20px rgba(167,139,250,0.1)' }}>
-                            {cpLabel}
-                        </motion.button>
-                        {/* Close */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 520 }}>
+                        {/* Row 1 — action buttons */}
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            {/* Download */}
+                            <motion.button onClick={handleDownload} disabled={busy}
+                                whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
+                                style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(34,211,238,0.1)', border: '1px solid rgba(34,211,238,0.5)', color: '#22d3ee', boxShadow: '0 0 20px rgba(34,211,238,0.1)' }}>
+                                {dlLabel}
+                            </motion.button>
+                            {/* Copy */}
+                            <motion.button onClick={handleCopy} disabled={busy}
+                                whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
+                                style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.5)', color: '#a78bfa', boxShadow: '0 0 20px rgba(167,139,250,0.1)' }}>
+                                {cpLabel}
+                            </motion.button>
+                            {/* LinkedIn */}
+                            <motion.button onClick={handleLinkedIn} disabled={busy}
+                                whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
+                                style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(10,102,194,0.15)', border: '1px solid rgba(10,102,194,0.6)', color: '#4fa3e0', boxShadow: '0 0 20px rgba(10,102,194,0.12)' }}>
+                                {liLabel}
+                            </motion.button>
+                        </div>
+
+                        {/* LinkedIn hint — shown after LinkedIn action */}
+                        {actionState === 'done-linkedin' && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                                style={{ textAlign: 'center', fontFamily: Fm, fontSize: 8.5, color: '#4fa3e0', letterSpacing: '0.08em', padding: '6px 0' }}>
+                                Image downloaded ↑ · Attach it to your LinkedIn post
+                            </motion.div>
+                        )}
+
+                        {/* Row 2 — close */}
                         <motion.button onClick={onClose} disabled={busy}
-                            whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
-                            style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', opacity: busy ? 0.4 : 1, transition: 'all 0.18s', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }}>
+                            whileHover={{ scale: busy ? 1 : 1.02 }} whileTap={{ scale: 0.98 }}
+                            style={{ width: '100%', padding: '9px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', opacity: busy ? 0.4 : 1, transition: 'all 0.18s', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }}>
                             ✕  CLOSE
                         </motion.button>
                     </div>
