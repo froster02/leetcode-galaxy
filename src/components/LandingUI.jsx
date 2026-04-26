@@ -312,6 +312,7 @@ function LandingUI({ onSearch, errorMessage = '' }) {
     const [focused, setFocused] = useState(false);
     const [searchHovered, setSearchHovered] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [mobileDismissed, setMobileDismissed] = useState(false);
     const inputRef = useRef();
     const totalQuestions       = useTotalQuestionsCount();
     const contestParticipants  = useLastContestParticipants();
@@ -365,6 +366,54 @@ function LandingUI({ onSearch, errorMessage = '' }) {
                 background: 'radial-gradient(ellipse 620px 560px at 50% 50%, rgba(3,5,8,0.82) 0%, rgba(3,5,8,0.62) 40%, rgba(3,5,8,0.28) 70%, transparent 100%)',
             }} />
             <GridBackground />
+
+            {/* ── Mobile warning popup ── */}
+            {isMobile && !mobileDismissed && (
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.4 }}
+                    style={{
+                        position: 'fixed', top: 16, left: 16, right: 16, zIndex: 9999,
+                        background: 'rgba(20,4,4,0.97)',
+                        border: '1px solid rgba(239,68,68,0.7)',
+                        borderRadius: 10,
+                        padding: '12px 14px',
+                        boxShadow: '0 0 24px rgba(239,68,68,0.3), 0 4px 16px rgba(0,0,0,0.6)',
+                        pointerEvents: 'auto',
+                        display: 'flex', alignItems: 'flex-start', gap: 10,
+                    }}
+                >
+                    <span style={{ fontSize: 18, lineHeight: 1.2 }}>⚠️</span>
+                    <div style={{ flex: 1 }}>
+                        <p style={{
+                            fontFamily: FONT_MONO, fontSize: 11, color: '#f87171',
+                            letterSpacing: '0.08em', margin: 0, marginBottom: 3,
+                            fontWeight: 700, textTransform: 'uppercase',
+                        }}>
+                            Desktop recommended
+                        </p>
+                        <p style={{
+                            fontFamily: FONT_MONO, fontSize: 10, color: 'rgba(248,113,113,0.7)',
+                            letterSpacing: '0.05em', margin: 0, lineHeight: 1.5,
+                        }}>
+                            This experience is optimized for desktop. Some features may not work as expected on mobile.
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => setMobileDismissed(true)}
+                        style={{
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            color: 'rgba(248,113,113,0.6)', fontSize: 18, lineHeight: 1,
+                            padding: '0 2px', flexShrink: 0,
+                        }}
+                        aria-label="Dismiss"
+                    >
+                        ×
+                    </button>
+                </motion.div>
+            )}
 
             <motion.div
                 initial={{ opacity: 0 }}
@@ -443,12 +492,25 @@ function LandingUI({ onSearch, errorMessage = '' }) {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.6 }}
                     style={{
-                        color: '#9aa3b2', marginBottom: 28, fontFamily: FONT_MONO,
+                        color: '#9aa3b2', marginBottom: 12, fontFamily: FONT_MONO,
                         fontSize: 13, textAlign: 'center', letterSpacing: '0.18em', height: 24,
                         textShadow: '0 0 6px rgba(3,5,8,0.9), 0 0 12px rgba(3,5,8,0.7)',
                     }}
                 >
                     <TypeWriter text="LC // CODE FROM EVERYWHERE" delay={35} />
+                </motion.p>
+
+                {/* ── Desktop recommendation note ── */}
+                <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.0 }}
+                    style={{
+                        color: 'rgba(167,139,250,0.45)', marginBottom: 20, fontFamily: FONT_MONO,
+                        fontSize: 10, textAlign: 'center', letterSpacing: '0.14em',
+                    }}
+                >
+                    ✦ recommended to open on desktop ✦
                 </motion.p>
 
                 {/* ── Stats row ── */}
