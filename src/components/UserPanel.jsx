@@ -358,7 +358,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                     onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,245,212,0.07)'}
                 >
                     <ArrowLeft size={15} strokeWidth={2.5} />
-                    {!isMobile && <span>GALAXY</span>}
+                    <span>GALAXY</span>
                 </motion.button>
 
                 {/* ── Divider ── */}

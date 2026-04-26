@@ -746,10 +746,10 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                             <motion.button onClick={onBack}
                                 whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                                 title="Back to City"
-                                style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0 : 7, padding: isMobile ? '7px 10px' : '7px 13px', borderRadius: 12, background: 'rgba(0,245,212,0.07)', border: '1px solid rgba(0,245,212,0.2)', color: C_TEAL, cursor: 'pointer', fontFamily: Fm, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', transition: 'background 0.18s' }}
+                                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: isMobile ? '7px 10px' : '7px 13px', borderRadius: 12, background: 'rgba(0,245,212,0.07)', border: '1px solid rgba(0,245,212,0.2)', color: C_TEAL, cursor: 'pointer', fontFamily: Fm, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', transition: 'background 0.18s' }}
                                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,245,212,0.16)'}
                                 onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,245,212,0.07)'}>
-                                ←{!isMobile && ' CITY'}
+                                ← CITY
                             </motion.button>
 
                             {/* Divider */}
@@ -762,7 +762,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                 title="Share Card"
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: 8,
-                                    padding: isMobile ? '7px 10px' : '7px 20px', borderRadius: 12, cursor: 'pointer',
+                                    padding: '7px 14px', borderRadius: 12, cursor: 'pointer',
                                     fontFamily: Fm, fontSize: 12, fontWeight: 700, letterSpacing: '0.14em',
                                     color: '#e9d5ff',
                                     background: 'linear-gradient(135deg, rgba(139,92,246,0.3) 0%, rgba(109,40,217,0.22) 100%)',
@@ -771,7 +771,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                     transition: 'all 0.18s',
                                 }}>
                                 <span style={{ fontSize: 13, color: '#a78bfa' }}>✦</span>
-                                {!isMobile && <>SHARE CARD<span style={{ fontSize: 13, color: '#a78bfa' }}>✦</span></>}
+                                SHARE CARD
                             </motion.button>
 
                             {/* Divider */}
