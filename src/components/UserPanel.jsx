@@ -315,13 +315,22 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
         </h4>
     );
 
+    // In card mode on mobile, we only show the bottom sheet (no top nav pill).
+    // The outer div uses position:fixed + high zIndex so it floats above FighterCard.
+    const cardMobilePanelOnly = viewMode === 'card' && isMobile;
+
     return (
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10, color: '#fff' }}>
+        <div style={{
+            position: cardMobilePanelOnly ? 'fixed' : 'absolute',
+            inset: 0, pointerEvents: 'none',
+            zIndex: cardMobilePanelOnly ? 30 : 10,
+            color: '#fff',
+        }}>
 
             {/* ══════════════════════════════════════════════
-                TOP HUD — floating island nav
+                TOP HUD — floating island nav (hidden in card mode)
             ══════════════════════════════════════════════ */}
-            <div style={{
+            {viewMode !== 'card' && <div style={{
                 position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
                 display: 'flex', alignItems: 'center', gap: 6,
                 background: 'rgba(4,7,18,0.82)', backdropFilter: 'blur(20px)',
@@ -441,10 +450,10 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                 >
                     {showSearch ? <X size={16} strokeWidth={2.5} /> : <Search size={16} strokeWidth={2.5} />}
                 </motion.button>
-            </div>
+            </div>}
 
             {/* Quick search — drops below HUD */}
-            <AnimatePresence>
+            {viewMode !== 'card' && <AnimatePresence>
                 {showSearch && (
                     <motion.form onSubmit={handleQuickSearch}
                         initial={{ opacity: 0, y: -8, scale: 0.96 }}
@@ -476,11 +485,11 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                         }}>GO</button>
                     </motion.form>
                 )}
-            </AnimatePresence>
+            </AnimatePresence>}
 
 
-            {/* ── Side panel ── */}
-            <motion.div
+            {/* ── Side panel (hidden on desktop when in card mode) ── */}
+            {(isMobile || viewMode !== 'card') && <motion.div
                 initial={isMobile ? { y: 300, opacity: 0 } : { x: -420, opacity: 0 }}
                 animate={isMobile ? { y: 0, opacity: 1 } : { x: 0, opacity: 1 }}
                 transition={{ delay: 0.3, duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
@@ -516,14 +525,22 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                     <div
                         onClick={() => setPanelExpanded(e => !e)}
                         style={{
-                            display: 'flex', justifyContent: 'center', padding: '8px 0 4px',
-                            cursor: 'pointer', flexShrink: 0,
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 0 4px',
+                            cursor: 'pointer', flexShrink: 0, gap: 4,
                         }}
                     >
                         <div style={{
                             width: 36, height: 4, borderRadius: 2,
                             background: 'rgba(255,255,255,0.2)',
                         }} />
+                        {viewMode === 'card' && (
+                            <span style={{
+                                fontFamily: FONT_MONO, fontSize: 8, letterSpacing: '0.16em',
+                                color: 'rgba(0,245,212,0.6)', textTransform: 'uppercase',
+                            }}>
+                                {panelExpanded ? '▼ stats' : '▲ stats'}
+                            </span>
+                        )}
                     </div>
                 )}
                 {/* ── Profile Header ── */}
@@ -790,7 +807,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                         v2.0
                     </span>
                 </div>
-            </motion.div>
+            </motion.div>}
 
             {showShare && <ShareModal data={data} onClose={() => setShowShare(false)} />}
         </div>

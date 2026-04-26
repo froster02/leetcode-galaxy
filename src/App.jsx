@@ -439,7 +439,7 @@ function App() {
       {/* UI Overlays */}
       {phase === 1 && <LandingUI onSearch={handleSearch} errorMessage={searchError} />}
       <TransitionOverlay stage={transitionStage} message={transitionMsg} />
-      {phase === 3 && viewMode !== 'card' && (
+      {phase === 3 && (
         <UserPanel
           data={mappedData}
           onBack={handleBack}
