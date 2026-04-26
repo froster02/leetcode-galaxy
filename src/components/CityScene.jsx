@@ -598,7 +598,8 @@ function useActivityData(data) {
         const calMap = {}; // 'YYYY-MM-DD' → count
         if (calRaw) {
             try {
-                const parsed = JSON.parse(calRaw);
+                // calRaw may be a JS object (from userProfile) or a JSON string (from /calendar)
+                const parsed = typeof calRaw === 'string' ? JSON.parse(calRaw) : calRaw;
                 Object.entries(parsed).forEach(([ts, count]) => {
                     const d = new Date(parseInt(ts, 10) * 1000);
                     calMap[toKey(d)] = (calMap[toKey(d)] || 0) + count;
