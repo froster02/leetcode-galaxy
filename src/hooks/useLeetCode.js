@@ -87,17 +87,25 @@ export function useLeetCode() {
             };
 
             const encodedUser = encodeURIComponent(username);
-            const [profileData, statsData, contestData, badgesData, calendarData] = await Promise.all([
+
+            // Fetch core profile first; skill stats in parallel but non-blocking
+            const [profileData, contestData, badgesData, calendarData] = await Promise.all([
                 safeFetch(`${API}/userProfile/${encodedUser}`),
-                safeFetch(`${API}/skillStats/${encodedUser}`),
                 safeFetch(`${API}/${encodedUser}/contest`),
                 safeFetch(`${API}/${encodedUser}/badges`),
                 safeFetch(`${API}/${encodedUser}/calendar`),
             ]);
 
+            // skillStats fetched separately so a slow cold-start doesn't blank topic strength
+            const statsDataPromise = safeFetch(`${API}/skillStats/${encodedUser}`);
+            // Kick it off; we'll await later but won't block on it
+
             if (profileData.errors || Object.keys(profileData).length === 0) {
                 throw new Error('No user found');
             }
+
+            // Await skills now (may already be resolved if fast, or still in flight)
+            const statsData = await statsDataPromise;
 
             const rawTotalQuestions = profileData.totalQuestions;
             const totalQuestionsShape = typeof rawTotalQuestions === 'object' && rawTotalQuestions !== null;
@@ -148,7 +156,11 @@ export function useLeetCode() {
                 },
                 contest: contestData,
                 badges: badgesData,
-                calendar: calendarData,
+                // Merge: /calendar gives streak metadata; userProfile has the actual heatmap dict
+                calendar: {
+                    ...calendarData,
+                    submissionCalendar: profileData.submissionCalendar || calendarData.submissionCalendar || {},
+                },
                 // Pre-calculated normalized values for easy access
                 _normalized: {
                     hardRatio: hardRatio,
