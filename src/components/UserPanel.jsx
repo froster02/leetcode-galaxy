@@ -368,7 +368,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                             whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                             title={label}
                             style={{
-                                display: 'flex', alignItems: 'center', gap: isMobile ? 0 : 7,
+                                display: 'flex', alignItems: 'center', gap: 7,
                                 padding: isMobile ? '7px 10px' : '7px 14px', borderRadius: 12,
                                 fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
                                 cursor: 'pointer', transition: 'all 0.18s ease',
@@ -379,7 +379,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                             }}
                         >
                             <Icon size={15} strokeWidth={active ? 2.5 : 2} />
-                            {!isMobile && <span>{label}</span>}
+                            <span>{label}</span>
                             {!isMobile && (
                                 <AnimatePresence>
                                     {active && (
@@ -420,7 +420,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                     }}
                 >
                     <span style={{ fontSize: 12, color: '#a78bfa' }}>✦</span>
-                    {!isMobile && <span>SHARE CARD</span>}
+                    <span>SHARE CARD</span>
                     {!isMobile && <span style={{ fontSize: 12, color: '#a78bfa' }}>✦</span>}
                 </motion.button>
 
