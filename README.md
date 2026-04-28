@@ -146,3 +146,10 @@ Try searching: `rocky` · `tars` · `murph` · `cooper` · `hail mary`
 ---
 
 *Made by [Arush Naudiyal](https://github.com/froster02)*
+
+---
+
+## 🤖 AI Contributors
+
+- [Claude](https://claude.ai) (Anthropic) — AI coding assistant
+- [Gemini](https://gemini.google.com) (Google) — AI coding assistant
