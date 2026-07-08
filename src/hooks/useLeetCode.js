@@ -7,9 +7,19 @@ const CACHE_VERSION = 2;
 const FETCH_TIMEOUT = 12000; // 12s per request — free Render tier cold-starts in ~10s
 export const API = 'https://alfa-leetcode-api.onrender.com';
 
+/* AbortSignal.timeout is missing on Safari < 16 — fall back to a manual controller */
+export function timeoutSignal(ms) {
+    if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) return AbortSignal.timeout(ms);
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), ms);
+    return controller.signal;
+}
+
 /* Fire-and-forget ping so Render wakes before user searches */
 export function prewarmApi() {
-    fetch(`${API}/`, { signal: AbortSignal.timeout(8000) }).catch(() => {});
+    try {
+        fetch(`${API}/`, { signal: timeoutSignal(8000) }).catch(() => {});
+    } catch { /* ignore */ }
 }
 
 function getCached(username) {
@@ -47,7 +57,7 @@ export function useLeetCode() {
 
     const fetchWithRetry = async (url, retries = 1, retryDelay = 300) => {
         try {
-            const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT) });
+            const res = await fetch(url, { signal: timeoutSignal(FETCH_TIMEOUT) });
             if (!res.ok) {
                 if ((res.status === 429 || res.status >= 500) && retries > 0) throw new Error('Server error');
                 return res;

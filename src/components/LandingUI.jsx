@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Zap, Star, Users, ChevronRight, Rocket, Sparkles, Globe, Terminal } from 'lucide-react';
-import { API } from '../hooks/useLeetCode';
+import { API, timeoutSignal } from '../hooks/useLeetCode';
+import useIsMobile from '../hooks/useIsMobile';
 
 const FEATURED = ['cpcs', 'votrubac', '1337c0d3r', 'Ma_Lin', 'leetgoat_dot_io'];
 const FONT_ORBIT = 'Orbitron, sans-serif';
@@ -37,7 +38,7 @@ function useTotalQuestionsCount() {
                 // leetcode.com/graphql blocks cross-origin requests, so we go
                 // through the same Alfa API the profile search uses.
                 const res = await fetch(`${API}/problems?limit=1`, {
-                    signal: AbortSignal.timeout(12000),
+                    signal: timeoutSignal(12000),
                 });
 
                 if (!res.ok) throw new Error('Failed to fetch total questions');
@@ -277,19 +278,12 @@ function LandingUI({ onSearch, errorMessage = '' }) {
     const [username, setUsername] = useState('');
     const [focused, setFocused] = useState(false);
     const [searchHovered, setSearchHovered] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
+    const isMobile = useIsMobile();
     const [mobileDismissed, setMobileDismissed] = useState(false);
     const inputRef = useRef();
     const totalQuestions       = useTotalQuestionsCount();
     const contestParticipants  = useLastContestParticipants();
     const longestStreak        = useLongestStreak();
-
-    useEffect(() => {
-        const check = () => setIsMobile(window.innerWidth <= 768);
-        check();
-        window.addEventListener('resize', check);
-        return () => window.removeEventListener('resize', check);
-    }, []);
 
     const [eggType, setEggType] = useState(null);
 

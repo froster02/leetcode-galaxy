@@ -11,6 +11,7 @@ import TransitionOverlay from './components/TransitionOverlay';
 import CityCanvas from './components/CityScene';
 import FighterCard from './components/FighterCard';
 import { useLeetCode, prewarmApi } from './hooks/useLeetCode';
+import useIsMobile from './hooks/useIsMobile';
 import { mapLeetCodeDataToCity } from './utils/dataMapper';
 
 const MAX_RECENT = 12;
@@ -192,12 +193,7 @@ function App() {
   const [phase, setPhase] = useState(1);
   const [viewMode, setViewMode] = useState('city');
   const [isNight] = useState(true);
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth <= 768);
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
+  const isMobile = useIsMobile();
   const [searchError, setSearchError] = useState('');
   const [transitionStage, setTransitionStage] = useState(0);
   const [transitionMsg, setTransitionMsg] = useState('');
@@ -260,7 +256,8 @@ function App() {
       clearTimeout(transitionTimerRef.current);
       setPhase(1);
       setTransitionStage(0);
-      if (pushUrl) window.history.pushState({}, '', `${BASE_PATH}/`);
+      // replace (not push) so the dead /u/<user> entry doesn't pollute history
+      if (pushUrl) window.history.replaceState({}, '', `${BASE_PATH}/`);
     }
   }, [fetchProfile, addToRecent]);
 

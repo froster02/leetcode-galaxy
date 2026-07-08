@@ -2,40 +2,30 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Search, X, Target, Zap, Star, Trophy, Code2, Flame, Shield, Swords, Crown, Sparkles, Building2 } from 'lucide-react';
 import ShareModal from './ShareCard';
+import { calcPower, getPowerTier } from '../utils/gameData';
+import useIsMobile from '../hooks/useIsMobile';
 
 const PLANET_COLORS = ['#00f5d4', '#8b5cf6', '#f5a623', '#3b82f6', '#ef4444', '#ec4899', '#10b981', '#f59e0b'];
 const FONT_ORBIT = 'Orbitron, sans-serif';
 const FONT_MONO = '"Share Tech Mono", monospace';
 
-/* ── Power Level Calculator ──────────────────────────── */
-function calculatePowerLevel(stats, districts) {
-    const totalSolved = stats.find(s => s.difficulty === 'All')?.count || 0;
-    const easySolved = stats.find(s => s.difficulty === 'Easy')?.count || 0;
-    const medSolved = stats.find(s => s.difficulty === 'Medium')?.count || 0;
-    const hardSolved = stats.find(s => s.difficulty === 'Hard')?.count || 0;
-    const topicDiversity = districts?.length || 0;
-
-    return Math.floor(
-        easySolved * 1 +
-        medSolved * 3 +
-        hardSolved * 8 +
-        topicDiversity * 10 +
-        totalSolved * 0.5
-    );
-}
-
-function getPowerTier(level) {
-    if (level >= 5000) return { name: 'HAIL MARY HERO', color: '#fbbf24', icon: Crown };
-    if (level >= 3000) return { name: 'ENDURANCE CAPTAIN', color: '#a78bfa', icon: Sparkles };
-    if (level >= 1500) return { name: 'RANGER PILOT', color: '#00f5d4', icon: Swords };
-    if (level >= 800) return { name: 'LAZARUS CREW', color: '#3b82f6', icon: Shield };
-    if (level >= 300) return { name: 'SPACE CADET', color: '#f5a623', icon: Star };
-    return { name: 'EXPLORER', color: '#8a94a3', icon: Target };
-}
+/* ── Tier icons — shared tier table lives in utils/gameData; icons are UI-only ── */
+const TIER_ICONS = {
+    'HAIL MARY HERO':    Crown,
+    'ENDURANCE CAPTAIN': Sparkles,
+    'RANGER PILOT':      Swords,
+    'LAZARUS CREW':      Shield,
+    'SPACE CADET':       Star,
+    'EXPLORER':          Target,
+};
+const tierWithIcon = (power) => {
+    const tier = getPowerTier(power);
+    return { ...tier, icon: TIER_ICONS[tier.name] || Target };
+};
 
 /* ── Animated Power Level Display ────────────────────── */
 function PowerLevelDisplay({ level }) {
-    const tier = getPowerTier(level);
+    const tier = tierWithIcon(level);
     const TierIcon = tier.icon;
     const [displayed, setDisplayed] = useState(0);
 
@@ -257,14 +247,8 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
     const [showSearch, setShowSearch] = useState(false);
     const [showShare, setShowShare] = useState(false);
     const [activeTab, setActiveTab] = useState('stats');
-    const [isMobile, setIsMobile] = useState(false);
+    const isMobile = useIsMobile();
     const [panelExpanded, setPanelExpanded] = useState(false);
-    React.useEffect(() => {
-        const check = () => setIsMobile(window.innerWidth <= 768);
-        check();
-        window.addEventListener('resize', check);
-        return () => window.removeEventListener('resize', check);
-    }, []);
 
     if (!data) return null;
     const { profile, stats, recent, districts, username, totalQuestions } = data;
@@ -275,8 +259,11 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
     const totalAvailable = totalQuestions?.all || 0;
     const ranking = profile?.ranking || 0;
 
-    const powerLevel = useMemo(() => calculatePowerLevel(stats, districts), [stats, districts]);
-    const powerTier = getPowerTier(powerLevel);
+    const powerLevel = useMemo(
+        () => calcPower(easySolved, medSolved, hardSolved),
+        [easySolved, medSolved, hardSolved]
+    );
+    const powerTier = tierWithIcon(powerLevel);
 
     const achievements = useMemo(() => [
         { icon: Zap, label: 'FIRST SOLVE', color: '#23d18b', unlocked: totalSolved >= 1 },

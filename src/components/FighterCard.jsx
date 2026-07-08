@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { calcPower, getFighterClass } from '../utils/gameData';
+import { calcPower, getFighterClass, getPowerTier } from '../utils/gameData';
 import { mapLeetCodeDataToCity } from '../utils/dataMapper';
 import ShareModal from './ShareCard';
 
@@ -69,16 +69,6 @@ function elasticOut(t) {
 const C_EASY = '#23d18b';
 const C_MED  = '#f5a623';
 const C_HARD = '#ff3860';
-
-/* ── Tier system ─────────────────────────────────────────── */
-function getTier(power) {
-    if (power >= 5000) return { name: 'HAIL MARY HERO',    color: '#fbbf24', min: 5000, max: 8000 };
-    if (power >= 3000) return { name: 'ENDURANCE CAPTAIN', color: '#a78bfa', min: 3000, max: 5000 };
-    if (power >= 1500) return { name: 'RANGER PILOT',      color: '#00f5d4', min: 1500, max: 3000 };
-    if (power >= 800)  return { name: 'LAZARUS CREW',      color: '#60a5fa', min: 800,  max: 1500 };
-    if (power >= 300)  return { name: 'SPACE CADET',       color: '#fb923c', min: 300,  max: 800  };
-    return               { name: 'EXPLORER',               color: '#94a3b8', min: 0,    max: 300  };
-}
 
 function tierProgress(power, tier) {
     return Math.min(((power - tier.min) / (tier.max - tier.min)) * 100, 100);
@@ -323,14 +313,6 @@ function MiniRing({ pct, size, color, stroke = 5, children }) {
 /* ══════════════════════════════════════════════════════════
    VS Modal
 ══════════════════════════════════════════════════════════ */
-const LEGENDS_SHORT = [
-    { u: 'tourist',  easy: 800, med: 1700, hard: 800 },
-    { u: 'neal_wu',  easy: 720, med: 1400, hard: 620 },
-    { u: 'lee215',   easy: 680, med: 1350, hard: 580 },
-    { u: 'votrubac', easy: 660, med: 1200, hard: 540 },
-    { u: 'neetcode', easy: 460, med:  780, hard: 220 },
-];
-
 function FighterCol({ cls, name, pow, isMe, won }) {
     return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
@@ -592,11 +574,11 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
     const power   = calcPower(easy, med, hard);
     const cls     = getFighterClass(hard);
-    const tier    = getTier(power);
+    const tier    = getPowerTier(power);
     const tierPct = tierProgress(power, tier);
 
     /* Next tier */
-    const nextTier    = tier.max < 8000 ? getTier(tier.max) : null;
+    const nextTier    = tier.max < 8000 ? getPowerTier(tier.max) : null;
     const toNextTier  = Math.max(0, tier.max - power);
 
     const accepted = recent.filter(r => r.statusDisplay === 'Accepted').length;
@@ -832,11 +814,11 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                             </div>
                         </div>
                         <div style={{ textAlign: 'center', paddingLeft: compactLaptop ? 14 : 24 }}>
-                            <div style={{ fontFamily: Fm, fontSize: compactLaptop ? 8 : 8.5, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase', marginBottom: 8 }}>Acceptance Rate</div>
+                            <div style={{ fontFamily: Fm, fontSize: compactLaptop ? 8 : 8.5, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase', marginBottom: 8 }} title="AC rate over the most recent submissions, not lifetime">Recent AC Rate</div>
                             <MiniRing pct={winRate} size={compactLaptop ? 68 : 76} color={winColor} stroke={5}>
                                 <div style={{ textAlign: 'center' }}>
                                     <div style={{ fontFamily: Fd, fontSize: compactLaptop ? 14 : 16, fontWeight: 900, color: winColor, lineHeight: 1 }}>{winRate}%</div>
-                                    <div style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.06em', marginTop: 1 }}>AC RATE</div>
+                                    <div style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.06em', marginTop: 1 }}>LAST {'≤'}20 SUBS</div>
                                 </div>
                             </MiniRing>
                         </div>
