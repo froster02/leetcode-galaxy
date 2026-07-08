@@ -35,3 +35,4 @@ skills-lock.json
 .github/copilot-instructions.md
 everything-claude-code
 lint_output.txt
+worker/.wrangler/

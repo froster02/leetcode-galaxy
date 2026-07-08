@@ -16,27 +16,7 @@ function getRank(hard, rating) {
     return                                    { name: 'Coder',    top: 'Keep climbing.',                   sub: 'Every problem counts.',   color: '#94a3b8', glow: '#64748b', badge: '#cbd5e1', elite: false };
 }
 
-/* ── Calendar ── */
-function parseCalendar(cal) {
-    if (!cal?.submissionCalendar) return {};
-    let raw = cal.submissionCalendar;
-    if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch { return {}; } }
-    return raw;
-}
-
-function calendarStats(rawMap) {
-    const activeDays = Object.keys(rawMap).length;
-    const timestamps = Object.keys(rawMap).map(Number).sort();
-    let maxStreak = 0, cur = 0, prev = null;
-    for (const ts of timestamps) {
-        const day = Math.floor(ts / 86400);
-        cur = (prev !== null && day - prev === 1) ? cur + 1 : 1;
-        maxStreak = Math.max(maxStreak, cur);
-        prev = day;
-    }
-    const totalSubmissions = Object.values(rawMap).reduce((s, v) => s + Number(v), 0);
-    return { activeDays, maxStreak, totalSubmissions };
-}
+import { parseCalendar, calendarStats } from '../utils/calendar';
 
 /* ── Premium 3D Hex Badge ── */
 function HexBadge({ rank, size = 170 }) {

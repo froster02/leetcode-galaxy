@@ -1,15 +1,22 @@
 # 🌌 LeetCode Galaxy — Deployment Guide
 
+> **⚠️ How the app actually fetches data:** the frontend calls the public
+> [Alfa LeetCode API](https://alfa-leetcode-api.onrender.com) directly
+> (`src/hooks/useLeetCode.js`). The Cloudflare Worker below is an **optional,
+> currently unwired** proxy to `leetcode.com/graphql` — the app does not read
+> `VITE_WORKER_URL`. You can deploy the frontend alone (Step 2) and skip the
+> worker entirely.
+
 ## Stack
 
-- **Frontend**: Vercel (React/Vite static site)
-- **Backend**: Cloudflare Workers (LeetCode GraphQL proxy with edge cache)
+- **Frontend**: Vercel (React/Vite static site) — GitHub Pages is also set up via `.github/workflows/deploy.yml`
+- **Backend**: none required (public Alfa LeetCode API). Optional: Cloudflare Worker (LeetCode GraphQL proxy with edge cache, not wired into the app)
 
 ---
 
-## Step 1 — Deploy the Cloudflare Worker
+## Step 1 — (Optional) Deploy the Cloudflare Worker
 
-The worker is your API proxy. Deploy it first so you have the URL for the frontend.
+Not required — the app currently uses the Alfa API. Deploy this only if you plan to wire the worker into `src/hooks/useLeetCode.js` yourself.
 
 ```bash
 # Install Wrangler CLI (if not already installed)
@@ -63,9 +70,9 @@ When prompted:
 
 ---
 
-## Step 3 — Set Environment Variable in Vercel
+## Step 3 — (Optional) Set Environment Variable in Vercel
 
-After deploying, go to **Vercel Dashboard → Your Project → Settings → Environment Variables** and add:
+Only relevant if you wired the worker in (the shipped code ignores this variable):
 
 | Name | Value |
 |------|-------|
@@ -94,7 +101,10 @@ Then **re-deploy** (Vercel Dashboard → Deployments → Redeploy) to pick up th
 After all steps, open your Vercel URL and search for a LeetCode username (e.g. `neal_wu`).
 
 The chain:  
-`Browser → Vercel CDN → Cloudflare Worker → (1hr edge cache) → LeetCode API`
+`Browser → Vercel CDN (static site) → Alfa LeetCode API (onrender.com)`
+
+(With the optional worker wired in it would be:
+`Browser → Cloudflare Worker → (1hr edge cache) → leetcode.com/graphql`)
 
 ---
 

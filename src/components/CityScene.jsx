@@ -5,6 +5,7 @@ import { OrbitControls, Html } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 
 import { CODERS } from '../utils/gameData';
+import { parseCalendar, calendarStats } from '../utils/calendar';
 
 /* ─────────────────── City Grid Constants ─────────────────── */
 const BLOCK_SIZE = 14;
@@ -60,7 +61,7 @@ function generateProceduralUser(index) {
         hard = Math.floor(rng() * 15);         rank = 5000 + Math.floor(rng() * 20000);
     }
     const name = PROC_NAMES[index % PROC_NAMES.length] + (index >= PROC_NAMES.length ? `_${index}` : '');
-    return { u: name, easy, med, hard, rank };
+    return { u: name, easy, med, hard, rank, sim: true };
 }
 
 /* ─────────────────── Build roster ─────────────────── */
@@ -325,6 +326,21 @@ function CityBlock({ user, gridRow, gridCol, globalMax, isNight, onSelect, showB
                             <span style={{ color: '#23d18b' }}>E:{user.easy}</span>
                             <span style={{ color: '#f5a623' }}>M:{user.med}</span>
                             <span style={{ color: '#ff3860' }}>H:{user.hard}</span>
+                            {user.sim && (
+                                <span
+                                    title="Simulated stats — not this user's real data"
+                                    style={{
+                                        color: 'rgba(255,255,255,0.45)',
+                                        border: '1px solid rgba(255,255,255,0.25)',
+                                        borderRadius: 3,
+                                        padding: '0 3px',
+                                        fontSize: 7,
+                                        letterSpacing: '0.08em',
+                                    }}
+                                >
+                                    SIM
+                                </span>
+                            )}
                         </div>
                     </div>
                 </Html>
@@ -594,18 +610,12 @@ function useActivityData(data) {
     return useMemo(() => {
         const toKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
-        const calRaw = data?.calendar?.submissionCalendar;
+        const rawMap = parseCalendar(data?.calendar);
         const calMap = {}; // 'YYYY-MM-DD' → count
-        if (calRaw) {
-            try {
-                // calRaw may be a JS object (from userProfile) or a JSON string (from /calendar)
-                const parsed = typeof calRaw === 'string' ? JSON.parse(calRaw) : calRaw;
-                Object.entries(parsed).forEach(([ts, count]) => {
-                    const d = new Date(parseInt(ts, 10) * 1000);
-                    calMap[toKey(d)] = (calMap[toKey(d)] || 0) + count;
-                });
-            } catch { /* malformed */ }
-        }
+        Object.entries(rawMap).forEach(([ts, count]) => {
+            const d = new Date(parseInt(ts, 10) * 1000);
+            calMap[toKey(d)] = (calMap[toKey(d)] || 0) + count;
+        });
 
         const today = new Date(); today.setHours(0,0,0,0);
         const startDay = new Date(today);
@@ -619,9 +629,10 @@ function useActivityData(data) {
             cells.push({ key, count: calMap[key] || 0 });
         }
 
-        // Use API-provided streak values when available
+        // Current streak from the API; longest computed from the actual
+        // submission calendar (totalActiveDays is NOT a streak)
         const currentStreak = data?.calendar?.streak ?? 0;
-        const longestStreak = data?.calendar?.totalActiveDays ?? 0;
+        const longestStreak = calendarStats(rawMap).maxStreak;
 
         const last7 = Array.from({ length: 7 }, (_, i) => {
             const d = new Date(today); d.setDate(today.getDate() - (6 - i));
