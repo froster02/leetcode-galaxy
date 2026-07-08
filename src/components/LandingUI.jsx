@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Zap, Star, Users, ChevronRight, Rocket, Sparkles, Globe, Terminal } from 'lucide-react';
+import { API } from '../hooks/useLeetCode';
 
 const FEATURED = ['cpcs', 'votrubac', '1337c0d3r', 'Ma_Lin', 'leetgoat_dot_io'];
 const FONT_ORBIT = 'Orbitron, sans-serif';
@@ -33,20 +34,17 @@ function useTotalQuestionsCount() {
 
         const load = async () => {
             try {
-                const res = await fetch('https://leetcode.com/graphql', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        query: `query questionStats { allQuestionsCount { difficulty count } }`,
-                    }),
+                // leetcode.com/graphql blocks cross-origin requests, so we go
+                // through the same Alfa API the profile search uses.
+                const res = await fetch(`${API}/problems?limit=1`, {
+                    signal: AbortSignal.timeout(12000),
                 });
 
                 if (!res.ok) throw new Error('Failed to fetch total questions');
 
                 const json = await res.json();
-                const counts = Array.isArray(json?.data?.allQuestionsCount) ? json.data.allQuestionsCount : [];
-                const total = counts.reduce((sum, item) => sum + (Number(item?.count) || 0), 0);
-                if (!cancelled && total > 0) setTotalQuestions(total);
+                const total = Number(json?.totalQuestions);
+                if (!cancelled && Number.isFinite(total) && total > 0) setTotalQuestions(total);
             } catch {
                 if (!cancelled) setTotalQuestions(3907);
             }
@@ -60,44 +58,12 @@ function useTotalQuestionsCount() {
 }
 
 /* ── Last weekly contest participant count ───────────────
-   Anchored at Weekly Contest 431 = 2025-01-12 (known).
-   Computes current slug dynamically, tries ±2 around it,
-   falls back to 28,400 if LeetCode API unreachable.
+   leetcode.com/contest/api is CORS-blocked from the browser and there is
+   no Alfa API equivalent, so this is a typical-participation estimate,
+   not a live number.
 ────────────────────────────────────────────────────────── */
 function useLastContestParticipants() {
-    const [count, setCount] = useState(28400);
-
-    useEffect(() => {
-        let cancelled = false;
-
-        const load = async () => {
-            try {
-                const ANCHOR_N    = 431;
-                const ANCHOR_DATE = new Date('2025-01-12T02:30:00Z').getTime();
-                const weeksSince  = Math.floor((Date.now() - ANCHOR_DATE) / (7 * 24 * 60 * 60 * 1000));
-                const base        = ANCHOR_N + weeksSince;
-
-                for (const n of [base, base - 1, base - 2, base + 1]) {
-                    const slug = `weekly-contest-${n}`;
-                    const res  = await fetch(`https://leetcode.com/contest/api/info/${slug}/`, {
-                        signal: AbortSignal.timeout(5000),
-                    });
-                    if (!res.ok) continue;
-                    const json = await res.json();
-                    const num  = json?.contest?.user_num;
-                    if (num && num > 1000 && !cancelled) {
-                        setCount(num);
-                        return;
-                    }
-                }
-            } catch { /* use fallback */ }
-        };
-
-        load();
-        return () => { cancelled = true; };
-    }, []);
-
-    return count;
+    return 28400;
 }
 
 /* ── Longest possible streak — days since daily challenge launched ────

@@ -5,7 +5,7 @@ import { normalizeStats, validateTotalQuestions, fixPercentages } from '../utils
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 const CACHE_VERSION = 2;
 const FETCH_TIMEOUT = 12000; // 12s per request — free Render tier cold-starts in ~10s
-const API = 'https://alfa-leetcode-api.onrender.com';
+export const API = 'https://alfa-leetcode-api.onrender.com';
 
 /* Fire-and-forget ping so Render wakes before user searches */
 export function prewarmApi() {
@@ -75,37 +75,50 @@ export function useLeetCode() {
 
         try {
 
-            // Safe JSON parser block that won't blow up Promise.all if a sub-endpoint timeouts
+            // Secondary endpoints: null on failure so callers can tell
+            // "endpoint failed" apart from "endpoint returned empty data"
             const safeFetch = async (url) => {
                 try {
                     const res = await fetchWithRetry(url);
-                    if (!res.ok) return {};
-                    return await res.json().catch(() => ({}));
+                    if (!res.ok) return null;
+                    return await res.json().catch(() => null);
                 } catch {
-                    return {};
+                    return null;
                 }
+            };
+
+            // Core profile is strict: a timeout / network drop / 5xx must NOT
+            // be reported as "No user found"
+            const fetchProfileStrict = async (url) => {
+                let res;
+                try {
+                    res = await fetchWithRetry(url);
+                } catch {
+                    throw new Error('Network error');
+                }
+                if (!res.ok) {
+                    if (res.status === 404 || res.status === 400) throw new Error('No user found');
+                    throw new Error('Network error');
+                }
+                const json = await res.json().catch(() => null);
+                if (!json || json.errors || Object.keys(json).length === 0) {
+                    throw new Error('No user found');
+                }
+                return json;
             };
 
             const encodedUser = encodeURIComponent(username);
 
             // Fetch core profile first; skill stats in parallel but non-blocking
             const [profileData, contestData, badgesData, calendarData] = await Promise.all([
-                safeFetch(`${API}/userProfile/${encodedUser}`),
+                fetchProfileStrict(`${API}/userProfile/${encodedUser}`),
                 safeFetch(`${API}/${encodedUser}/contest`),
                 safeFetch(`${API}/${encodedUser}/badges`),
                 safeFetch(`${API}/${encodedUser}/calendar`),
             ]);
 
             // skillStats fetched separately so a slow cold-start doesn't blank topic strength
-            const statsDataPromise = safeFetch(`${API}/skillStats/${encodedUser}`);
-            // Kick it off; we'll await later but won't block on it
-
-            if (profileData.errors || Object.keys(profileData).length === 0) {
-                throw new Error('No user found');
-            }
-
-            // Await skills now (may already be resolved if fast, or still in flight)
-            const statsData = await statsDataPromise;
+            const statsData = await safeFetch(`${API}/skillStats/${encodedUser}`);
 
             const rawTotalQuestions = profileData.totalQuestions;
             const totalQuestionsShape = typeof rawTotalQuestions === 'object' && rawTotalQuestions !== null;
@@ -150,16 +163,16 @@ export function useLeetCode() {
                     }
                 },
                 totalQuestions: validatedTotalQuestions,
-                tags: statsData,
+                tags: statsData ?? {},
                 recent: {
                     recentSubmissionList: profileData.recentSubmissions || []
                 },
-                contest: contestData,
-                badges: badgesData,
+                contest: contestData ?? {},
+                badges: badgesData ?? {},
                 // Merge: /calendar gives streak metadata; userProfile has the actual heatmap dict
                 calendar: {
-                    ...calendarData,
-                    submissionCalendar: profileData.submissionCalendar || calendarData.submissionCalendar || {},
+                    ...(calendarData ?? {}),
+                    submissionCalendar: profileData.submissionCalendar || calendarData?.submissionCalendar || {},
                 },
                 // Pre-calculated normalized values for easy access
                 _normalized: {
@@ -170,7 +183,11 @@ export function useLeetCode() {
             };
 
             setData(json);
-            setCache(username, json);
+            // Cache only complete payloads — a timed-out secondary endpoint
+            // would otherwise pin empty contest/badges/heatmap data for 30 min
+            const complete = [contestData, badgesData, calendarData, statsData]
+                .every(part => part !== null);
+            if (complete) setCache(username, json);
             return json;
         } catch (err) {
             setError(err.message);

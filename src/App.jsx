@@ -203,6 +203,9 @@ function App() {
   const [transitionMsg, setTransitionMsg] = useState('');
   const [mappedData, setMappedData] = useState(null);
   const transitionTimerRef = useRef(null);
+  // Monotonic id per search; stale responses (an older search resolving after
+  // a newer one started) are ignored so they can't overwrite the latest view
+  const searchSeqRef = useRef(0);
   const [recentlyExplored, setRecentlyExplored] = useState(() => {
     try { return JSON.parse(localStorage.getItem('recentExplorers') || '[]'); }
     catch { return []; }
@@ -221,6 +224,7 @@ function App() {
   }, []);
 
   const handleSearch = useCallback(async (username, pushUrl = true, targetView = 'city') => {
+    const seq = ++searchSeqRef.current;
     setSearchError('');
     setPhase(2);
     setViewMode('city');
@@ -236,6 +240,7 @@ function App() {
       setTransitionMsg(pick(TRANSITION_LINES.map));
 
       const rawData = await fetchProfile(username);
+      if (seq !== searchSeqRef.current) return; // a newer search superseded this one
       const structuredData = mapLeetCodeDataToCity(rawData);
       setMappedData(structuredData);
       addToRecent(username);
@@ -250,6 +255,7 @@ function App() {
       }, 600);
 
     } catch (err) {
+      if (seq !== searchSeqRef.current) return;
       setSearchError(err?.message === 'No user found' ? 'No user found' : 'Unable to load profile');
       clearTimeout(transitionTimerRef.current);
       setPhase(1);
@@ -260,12 +266,14 @@ function App() {
 
   // Clickable blocks within the City Scene
   const handleQuickInspect = useCallback(async (username) => {
+    const seq = ++searchSeqRef.current;
     setSearchError('');
     setTransitionStage(1);
     setTransitionMsg(`FETCHING: ${username.toUpperCase()}`);
 
     try {
       const rawData = await fetchProfile(username);
+      if (seq !== searchSeqRef.current) return; // a newer search superseded this one
       const structuredData = mapLeetCodeDataToCity(rawData);
       setMappedData(structuredData);
       addToRecent(username);
@@ -273,6 +281,7 @@ function App() {
       setViewMode('card');
       window.history.pushState({}, '', `${BASE_PATH}/u/${encodeURIComponent(username)}?view=card`);
     } catch (err) {
+      if (seq !== searchSeqRef.current) return;
       setSearchError(err?.message === 'No user found' ? 'No user found' : 'Unable to load profile');
       setTransitionStage(0);
     }
