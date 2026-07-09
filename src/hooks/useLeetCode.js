@@ -108,6 +108,7 @@ export function useLeetCode() {
                 }
                 if (!res.ok) {
                     if (res.status === 404 || res.status === 400) throw new Error('No user found');
+                    if (res.status === 429) throw new Error('Rate limited');
                     throw new Error('Network error');
                 }
                 const json = await res.json().catch(() => null);

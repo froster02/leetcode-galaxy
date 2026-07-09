@@ -252,7 +252,8 @@ function App() {
 
     } catch (err) {
       if (seq !== searchSeqRef.current) return;
-      setSearchError(err?.message === 'No user found' ? 'No user found' : 'Unable to load profile');
+      const msg = err?.message;
+      setSearchError(msg === 'No user found' ? 'No user found' : msg === 'Rate limited' ? 'API rate limited — try again in a moment' : 'Unable to load profile');
       clearTimeout(transitionTimerRef.current);
       setPhase(1);
       setTransitionStage(0);
@@ -279,7 +280,8 @@ function App() {
       window.history.pushState({}, '', `${BASE_PATH}/u/${encodeURIComponent(username)}?view=card`);
     } catch (err) {
       if (seq !== searchSeqRef.current) return;
-      setSearchError(err?.message === 'No user found' ? 'No user found' : 'Unable to load profile');
+      const msg = err?.message;
+      setSearchError(msg === 'No user found' ? 'No user found' : msg === 'Rate limited' ? 'API rate limited — try again in a moment' : 'Unable to load profile');
       setTransitionStage(0);
     }
   }, [fetchProfile, addToRecent]);

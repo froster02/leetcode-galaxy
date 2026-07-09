@@ -43,6 +43,16 @@ The Cloudflare Worker in `worker/index.js` (CORS proxy to `leetcode.com/graphql`
 - **Active CI:** `.github/workflows/deploy.yml` builds and deploys `dist/` to GitHub Pages on push to `main`. `vite.config.js` takes its `base` path from the `GITHUB_PAGES_BASE_PATH` env var set by the workflow.
 - `vercel.json` exists as an alternative target (SPA rewrite, security headers).
 
+## After Every Code Change
+
+Run `scripts/run-tests.sh` (build + lint), then verify the relevant manual cases in [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md).
+
+Key manual cases to always hit:
+- **M5** — Legendary Explorers load (or show rate-limit message, never "Unable to load profile")
+- **M7/M8** — Bad username shows "No user found" and Back button is clean
+- **M11** — Biome renders after any data/3D change
+- **M30** — Zero console errors
+
 ## Conventions
 
 - ESLint allows unused vars matching `^[A-Z_]` (constants/components) — relevant when adding uppercase-named constants.
