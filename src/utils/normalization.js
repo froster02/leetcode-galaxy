@@ -32,7 +32,7 @@ export function normalizeStats(stats = [], totalQuestions = { all: 0, easy: 0, m
 
     for (const stat of stats) {
         const difficulty = stat?.difficulty;
-        if (!counts.hasOwnProperty(difficulty)) continue;
+        if (!Object.prototype.hasOwnProperty.call(counts, difficulty)) continue;
         counts[difficulty] += toNonNegativeInt(stat?.count);
     }
 

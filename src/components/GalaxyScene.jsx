@@ -8,6 +8,7 @@ import { COLORS } from '../utils/colors';
 function ShootingStar({ onComplete }) {
     const ref = useRef();
     const progress = useRef(0);
+    /* eslint-disable react-hooks/purity */
     const start = useRef(new THREE.Vector3(
         (Math.random() - 0.5) * 200,
         (Math.random() - 0.5) * 40,
@@ -18,6 +19,7 @@ function ShootingStar({ onComplete }) {
         -Math.random() * 0.1,
         (Math.random() - 0.5) * 0.5
     ).normalize());
+    /* eslint-enable react-hooks/purity */
 
     useFrame((_, delta) => {
         progress.current += delta * 0.6;
@@ -48,6 +50,7 @@ function FloatingBeacon({ position, username, onSelect }) {
     const ref = useRef();
     const ringRef = useRef();
     const [hovered, setHovered] = React.useState(false);
+    // eslint-disable-next-line react-hooks/purity
     const time = useRef(Math.random() * Math.PI * 2);
 
     useFrame((_, delta) => {
@@ -146,7 +149,7 @@ const FEATURED_USERS = [
 
 function GalaxyScene({ isTransitioning, onSelectUser }) {
     const groupRef = useRef();
-    const { camera } = useThree();
+    useThree();
     const mouseRef = useRef({ x: 0, y: 0 });
     const transitionTarget = useRef(new THREE.Vector3(0, 5, 20));
     const [shootingStars, setShootingStars] = React.useState([]);
@@ -178,6 +181,7 @@ function GalaxyScene({ isTransitioning, onSelectUser }) {
 
     const particleCount = 8000;
 
+    /* eslint-disable react-hooks/purity */
     const [positions, colors, sizes] = useMemo(() => {
         const pos = new Float32Array(particleCount * 3);
         const col = new Float32Array(particleCount * 3);
@@ -216,6 +220,7 @@ function GalaxyScene({ isTransitioning, onSelectUser }) {
         }
         return [pos, col, sz];
     }, []);
+    /* eslint-enable react-hooks/purity */
 
     useFrame((state, delta) => {
         if (groupRef.current) {

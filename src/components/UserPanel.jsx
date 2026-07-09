@@ -250,8 +250,13 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
     const isMobile = useIsMobile();
     const [panelExpanded, setPanelExpanded] = useState(false);
 
-    if (!data) return null;
-    const { profile, stats, recent, districts, username, totalQuestions } = data;
+    const stats = data?.stats ?? [];
+    const profile = data?.profile;
+    const recent = data?.recent;
+    const districts = data?.districts;
+    const username = data?.username;
+    const totalQuestions = data?.totalQuestions;
+
     const totalSolved = stats.find(s => s.difficulty === 'All')?.count || 0;
     const easySolved = stats.find(s => s.difficulty === 'Easy')?.count || 0;
     const medSolved = stats.find(s => s.difficulty === 'Medium')?.count || 0;
@@ -273,6 +278,8 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
         { icon: Trophy, label: 'TOP 10K', color: '#fbbf24', unlocked: ranking > 0 && ranking <= 10000 },
         { icon: Crown, label: 'LEGEND', color: '#00f5d4', unlocked: ranking > 0 && ranking <= 1000 },
     ], [totalSolved, hardSolved, districts, ranking]);
+
+    if (!data) return null;
 
 
     const handleQuickSearch = (e) => {

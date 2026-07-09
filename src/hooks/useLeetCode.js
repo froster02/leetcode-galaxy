@@ -206,7 +206,7 @@ export function useLeetCode() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps -- fetchWithRetry is defined inside the hook, stable
 
     return { data, loading, error, fetchProfile };
 }
