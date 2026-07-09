@@ -1,7 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Search, X, Target, Zap, Star, Trophy, Code2, Flame, Shield, Swords, Crown, Sparkles, Building2 } from 'lucide-react';
-import ShareModal from './ShareCard';
+
+// Lazy-loaded: pulls html2canvas/html-to-image out of the main bundle
+const ShareModal = lazy(() => import('./ShareCard'));
 import { calcPower, getPowerTier } from '../utils/gameData';
 import useIsMobile from '../hooks/useIsMobile';
 
@@ -803,7 +805,11 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                 </div>
             </motion.div>}
 
-            {showShare && <ShareModal data={data} onClose={() => setShowShare(false)} />}
+            {showShare && (
+                <Suspense fallback={null}>
+                    <ShareModal data={data} onClose={() => setShowShare(false)} />
+                </Suspense>
+            )}
         </div>
     );
 }

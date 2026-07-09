@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { calcPower, getFighterClass, getPowerTier } from '../utils/gameData';
 import { mapLeetCodeDataToCity } from '../utils/dataMapper';
-import ShareModal from './ShareCard';
+
+// Lazy-loaded: pulls html2canvas/html-to-image out of the main bundle
+const ShareModal = lazy(() => import('./ShareCard'));
 
 /* ── Canvas star field — drawn once, zero ongoing CPU cost ── */
 function StarCanvas() {
@@ -1089,7 +1091,11 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
             </div>
 
             {/* Share Modal */}
-            {showShare && <ShareModal data={data} onClose={() => setShowShare(false)} />}
+            {showShare && (
+                <Suspense fallback={null}>
+                    <ShareModal data={data} onClose={() => setShowShare(false)} />
+                </Suspense>
+            )}
 
             {/* VS Modal */}
             {createPortal(
