@@ -9,4 +9,20 @@ export default defineConfig({
   base: process.env.GITHUB_PAGES_BASE_PATH
     ? `${process.env.GITHUB_PAGES_BASE_PATH}/`
     : '/',
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'three-vendor': [
+            'three',
+            '@react-three/fiber',
+            '@react-three/drei',
+            '@react-three/postprocessing',
+            'postprocessing',
+          ],
+          motion: ['framer-motion'],
+        },
+      },
+    },
+  },
 })

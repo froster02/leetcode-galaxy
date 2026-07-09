@@ -1,9 +1,33 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { calcPower, getFighterClass, getPowerTier } from '../utils/gameData';
 import { mapLeetCodeDataToCity } from '../utils/dataMapper';
-import ShareModal from './ShareCard';
+
+// Lazy-loaded: pulls html2canvas/html-to-image out of the main bundle
+const ShareModal = lazy(() => import('./ShareCard'));
+
+/* ── Contest rating sparkline — inline SVG, oldest → newest ── */
+function RatingSparkline({ history, color = '#00f5d4', width = 200, height = 36 }) {
+    if (!Array.isArray(history) || history.length < 2) return null;
+    const min = Math.min(...history);
+    const max = Math.max(...history);
+    const span = max - min || 1;
+    const pad = 3;
+    const pts = history.map((r, i) => {
+        const x = pad + (i / (history.length - 1)) * (width - pad * 2);
+        const y = pad + (1 - (r - min) / span) * (height - pad * 2);
+        return [x, y];
+    });
+    const line = pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+    const [lastX, lastY] = pts[pts.length - 1];
+    return (
+        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ display: 'block', overflow: 'visible' }} aria-label="Contest rating history">
+            <polyline points={line} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" opacity="0.9" />
+            <circle cx={lastX} cy={lastY} r="2.5" fill={color} />
+        </svg>
+    );
+}
 
 /* ── Canvas star field — drawn once, zero ongoing CPU cost ── */
 function StarCanvas() {
@@ -588,6 +612,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
     const topRating = contestInfo?.topRating ? Math.round(contestInfo.topRating) : null;
     const attended  = contestInfo?.attended  ?? null;
     const topPct    = contestInfo?.topPercentage ?? null;
+    const ratingHistory = Array.isArray(contestInfo?.history) ? contestInfo.history : [];
     const badges    = badgesInfo?.total ?? 0;
     const badgesList = Array.isArray(badgesInfo?.badges) ? badgesInfo.badges : [];
 
@@ -921,6 +946,17 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                 </motion.div>
                             ))}
                         </div>
+                        {ratingHistory.length >= 2 && (
+                            <div style={{ marginTop: 10, padding: '8px 10px', borderRadius: 10, background: 'rgba(0,245,212,0.04)', border: '1px solid rgba(0,245,212,0.12)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                                    <span style={{ fontFamily: Fm, fontSize: 7.5, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Rating History</span>
+                                    <span style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.06em' }}>
+                                        {ratingHistory.length} contests · {Math.round(ratingHistory[0])} → {Math.round(ratingHistory[ratingHistory.length - 1])}
+                                    </span>
+                                </div>
+                                <RatingSparkline history={ratingHistory} width={isMobile ? 240 : 320} />
+                            </div>
+                        )}
                         {badgesList.length > 0 && (
                             <div style={{ display: 'flex', gap: 5, marginTop: 8, flexWrap: 'wrap' }}>
                                 {badgesList.slice(0, 8).map((b, i) => (
@@ -1089,7 +1125,11 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
             </div>
 
             {/* Share Modal */}
-            {showShare && <ShareModal data={data} onClose={() => setShowShare(false)} />}
+            {showShare && (
+                <Suspense fallback={null}>
+                    <ShareModal data={data} onClose={() => setShowShare(false)} />
+                </Suspense>
+            )}
 
             {/* VS Modal */}
             {createPortal(

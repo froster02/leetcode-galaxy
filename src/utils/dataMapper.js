@@ -60,6 +60,10 @@ export function mapLeetCodeDataToCity(data) {
             ranking:       contest.contestGlobalRanking || null,
             attended:      contest.contestAttend        || 0,
             topPercentage: contest.contestTopPercentage || null,
+            // Rating per attended contest, oldest → newest (for the sparkline)
+            history: (Array.isArray(contest.contestParticipation) ? contest.contestParticipation : [])
+                .map(p => Number(p?.rating))
+                .filter(Number.isFinite),
         },
         badgesInfo: {
             total:  badges.badgesCount || 0,

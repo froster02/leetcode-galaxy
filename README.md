@@ -136,9 +136,10 @@ Search username
 | `npm run build` | Production build |
 | `npm run preview` | Preview build |
 | `npm run lint` | ESLint |
-| `bash scripts/run-tests.sh` | Build + lint (run after every change) |
+| `npm test` | Unit tests (Vitest) |
+| `bash scripts/run-tests.sh` | Build + lint + unit tests (run after every change) |
 
-See [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md) for the full manual test checklist (M1–M31).
+See [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md) for the full manual test checklist (M1–M32).
 
 ---
 

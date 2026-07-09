@@ -6,8 +6,13 @@ const CORS_HEADERS = {
 
 const LEETCODE_API = 'https://leetcode.com/graphql';
 
-const QUERY_PROFILE = `
-  query getProfile($username: String!) {
+// Single combined query — everything the frontend's canonical payload needs.
+const QUERY_FULL = `
+  query getFull($username: String!) {
+    allQuestionsCount {
+      difficulty
+      count
+    }
     matchedUser(username: $username) {
       username
       submitStats {
@@ -21,25 +26,33 @@ const QUERY_PROFILE = `
         reputation
         starRating
       }
-    }
-  }
-`;
-
-const QUERY_TAGS = `
-  query getTags($username: String!) {
-    matchedUser(username: $username) {
+      userCalendar {
+        streak
+        totalActiveDays
+        submissionCalendar
+      }
+      badges {
+        id
+        displayName
+        icon
+      }
       tagProblemCounts {
         advanced { tagName tagSlug problemsSolved }
         intermediate { tagName tagSlug problemsSolved }
         fundamental { tagName tagSlug problemsSolved }
       }
     }
-  }
-`;
-
-const QUERY_RECENT = `
-  query getRecent($username: String!) {
-    recentSubmissionList(username: $username, limit: 10) {
+    userContestRanking(username: $username) {
+      attendedContestsCount
+      rating
+      globalRanking
+      topPercentage
+    }
+    userContestRankingHistory(username: $username) {
+      attended
+      rating
+    }
+    recentSubmissionList(username: $username, limit: 20) {
       title
       titleSlug
       timestamp
@@ -60,6 +73,53 @@ async function fetchLeetcode(query, variables) {
         body: JSON.stringify({ query, variables })
     });
     return response.json();
+}
+
+/* Reshape raw GraphQL data into the flat payload the frontend fallback expects
+   (mirrors the Alfa API field names where they exist). */
+function buildPayload(data) {
+    const user = data.matchedUser;
+    const questionCounts = {};
+    for (const q of data.allQuestionsCount || []) {
+        questionCounts[String(q.difficulty).toLowerCase()] = q.count;
+    }
+
+    const ranking = data.userContestRanking;
+    const history = (data.userContestRankingHistory || []).filter(h => h && h.attended);
+    const topRating = history.length
+        ? Math.max(...history.map(h => Number(h.rating) || 0))
+        : (ranking?.rating ?? null);
+
+    return {
+        username: user.username,
+        profile: user.profile || {},
+        acSubmissionNum: user.submitStats?.acSubmissionNum || [],
+        tagProblemCounts: user.tagProblemCounts || {},
+        recentSubmissions: data.recentSubmissionList || [],
+        totalQuestions: {
+            all: questionCounts.all ?? 0,
+            easy: questionCounts.easy ?? 0,
+            medium: questionCounts.medium ?? 0,
+            hard: questionCounts.hard ?? 0,
+        },
+        calendar: {
+            submissionCalendar: user.userCalendar?.submissionCalendar || '{}',
+            streak: user.userCalendar?.streak ?? 0,
+            totalActiveDays: user.userCalendar?.totalActiveDays ?? 0,
+        },
+        contest: ranking ? {
+            contestRating: ranking.rating ?? null,
+            contestTopRating: topRating,
+            contestGlobalRanking: ranking.globalRanking ?? null,
+            contestAttend: ranking.attendedContestsCount ?? 0,
+            contestTopPercentage: ranking.topPercentage ?? null,
+            contestParticipation: history.map(h => ({ rating: h.rating })),
+        } : {},
+        badges: {
+            badgesCount: (user.badges || []).length,
+            badges: user.badges || [],
+        },
+    };
 }
 
 export default {
@@ -91,27 +151,16 @@ export default {
 
         if (!response) {
             try {
-                const variables = { username };
-                const [profile, tags, recent] = await Promise.all([
-                    fetchLeetcode(QUERY_PROFILE, variables),
-                    fetchLeetcode(QUERY_TAGS, variables),
-                    fetchLeetcode(QUERY_RECENT, variables)
-                ]);
+                const result = await fetchLeetcode(QUERY_FULL, { username });
 
-                if (profile.errors || !profile.data?.matchedUser) {
+                if (result.errors || !result.data?.matchedUser) {
                     return new Response(JSON.stringify({ error: 'User not found or API error' }), {
                         status: 404,
                         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
                     });
                 }
 
-                const responseData = {
-                    profile: profile.data,
-                    tags: tags.data,
-                    recent: recent.data
-                };
-
-                response = new Response(JSON.stringify(responseData), {
+                response = new Response(JSON.stringify(buildPayload(result.data)), {
                     headers: {
                         ...CORS_HEADERS,
                         'Content-Type': 'application/json',

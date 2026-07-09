@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,8 +8,9 @@ import GalaxyScene from './components/GalaxyScene';
 import LandingUI from './components/LandingUI';
 import UserPanel from './components/UserPanel';
 import TransitionOverlay from './components/TransitionOverlay';
-import CityCanvas from './components/CityScene';
-import FighterCard from './components/FighterCard';
+// Lazy-loaded: biome + card code stays out of the landing bundle
+const CityCanvas = lazy(() => import('./components/CityScene'));
+const FighterCard = lazy(() => import('./components/FighterCard'));
 import { useLeetCode, prewarmApi } from './hooks/useLeetCode';
 import useIsMobile from './hooks/useIsMobile';
 import { mapLeetCodeDataToCity } from './utils/dataMapper';
@@ -380,14 +381,16 @@ function App() {
 
       {/* 3D Canvas */}
       {phase === 3 ? (
-        <CityCanvas
-          data={mappedData}
-          isNight={isNight}
-          onSelectUser={handleQuickInspect}
-          recentlyExplored={recentlyExplored}
-          showActivityOverlay={viewMode !== 'card'}
-          showBlockLabels={viewMode !== 'card'}
-        />
+        <Suspense fallback={null}>
+          <CityCanvas
+            data={mappedData}
+            isNight={isNight}
+            onSelectUser={handleQuickInspect}
+            recentlyExplored={recentlyExplored}
+            showActivityOverlay={viewMode !== 'card'}
+            showBlockLabels={viewMode !== 'card'}
+          />
+        </Suspense>
       ) : (
         <Canvas
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
@@ -431,16 +434,18 @@ function App() {
                 transition: 'background 0.3s ease',
               }}
             >
-              <FighterCard
-                data={mappedData}
-                username={mappedData?.username}
-                onBack={() => {
-                  setViewMode('city');
-                  const u = mappedData?.username;
-                  if (u) window.history.pushState({}, '', `${BASE_PATH}/u/${encodeURIComponent(u)}`);
-                }}
-                fetchProfile={fetchProfile}
-              />
+              <Suspense fallback={null}>
+                <FighterCard
+                  data={mappedData}
+                  username={mappedData?.username}
+                  onBack={() => {
+                    setViewMode('city');
+                    const u = mappedData?.username;
+                    if (u) window.history.pushState({}, '', `${BASE_PATH}/u/${encodeURIComponent(u)}`);
+                  }}
+                  fetchProfile={fetchProfile}
+                />
+              </Suspense>
             </motion.div>
           )}
         </AnimatePresence>

@@ -1,22 +1,23 @@
 # 🌌 LeetCode Galaxy — Deployment Guide
 
-> **⚠️ How the app actually fetches data:** the frontend calls the public
+> **⚠️ How the app fetches data:** the frontend calls the public
 > [Alfa LeetCode API](https://alfa-leetcode-api.onrender.com) directly
-> (`src/hooks/useLeetCode.js`). The Cloudflare Worker below is an **optional,
-> currently unwired** proxy to `leetcode.com/graphql` — the app does not read
-> `VITE_WORKER_URL`. You can deploy the frontend alone (Step 2) and skip the
-> worker entirely.
+> (`src/hooks/useLeetCode.js`). The Cloudflare Worker below is an **optional
+> fallback** proxy to `leetcode.com/graphql`: when `VITE_WORKER_URL` is set at
+> build time, the app retries via the worker whenever Alfa rate-limits (429) or
+> is unreachable. Unset, the app behaves as Alfa-only. You can deploy the
+> frontend alone (Step 2) and skip the worker entirely.
 
 ## Stack
 
 - **Frontend**: Vercel (React/Vite static site) — GitHub Pages is also set up via `.github/workflows/deploy.yml`
-- **Backend**: none required (public Alfa LeetCode API). Optional: Cloudflare Worker (LeetCode GraphQL proxy with edge cache, not wired into the app)
+- **Backend**: none required (public Alfa LeetCode API). Optional: Cloudflare Worker (LeetCode GraphQL proxy with 1hr edge cache, used as automatic fallback when `VITE_WORKER_URL` is set)
 
 ---
 
 ## Step 1 — (Optional) Deploy the Cloudflare Worker
 
-Not required — the app currently uses the Alfa API. Deploy this only if you plan to wire the worker into `src/hooks/useLeetCode.js` yourself.
+Not required — without it the app is Alfa-only. Deploy it to enable the automatic 429/network-error fallback (recommended: the Alfa API runs on Render's free tier and rate-limits under load).
 
 ```bash
 # Install Wrangler CLI (if not already installed)
@@ -72,7 +73,7 @@ When prompted:
 
 ## Step 3 — (Optional) Set Environment Variable in Vercel
 
-Only relevant if you wired the worker in (the shipped code ignores this variable):
+Enables the worker fallback (skip if you skipped Step 1):
 
 | Name | Value |
 |------|-------|
@@ -103,7 +104,7 @@ After all steps, open your Vercel URL and search for a LeetCode username (e.g. `
 The chain:  
 `Browser → Vercel CDN (static site) → Alfa LeetCode API (onrender.com)`
 
-(With the optional worker wired in it would be:
+(With `VITE_WORKER_URL` set, Alfa 429s/network errors automatically fall back to:
 `Browser → Cloudflare Worker → (1hr edge cache) → leetcode.com/graphql`)
 
 ---
