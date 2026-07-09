@@ -37,7 +37,7 @@ Client-side-only React 19 + Vite SPA, plain `.jsx` (no TypeScript). Renders a Le
 
 The runtime fetches from a **hardcoded third-party API** in `src/hooks/useLeetCode.js`: `https://alfa-leetcode-api.onrender.com` (Render free tier — the hook fires a `prewarmApi()` ping to wake it, uses a 12s per-request timeout, and caches in localStorage under `lc_<username>` with a 30-min TTL and a `CACHE_VERSION` constant that invalidates old caches when bumped).
 
-The Cloudflare Worker in `worker/index.js` (CORS proxy to `leetcode.com/graphql`) and the `VITE_WORKER_URL` env var described in `DEPLOY.md`/`.env.example` are **not wired into the hook** — the deploy docs are out of sync with what the code actually calls.
+The Cloudflare Worker in `worker/index.js` (CORS proxy to `leetcode.com/graphql`, 1hr edge cache) is an **optional fallback**: when `VITE_WORKER_URL` is set at build time, the hook retries via the worker whenever the Alfa API throws `Rate limited` or `Network error` (never on `No user found`). Unset (the default) = Alfa-only. The worker's flat payload is mapped to the canonical shape by the exported pure `mapWorkerResponse` in `useLeetCode.js`.
 
 ## Deployment
 

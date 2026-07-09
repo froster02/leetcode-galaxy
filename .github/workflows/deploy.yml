@@ -42,6 +42,9 @@ jobs:
         run: npm run build
         env:
           GITHUB_PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          # Optional Cloudflare Worker fallback — set the VITE_WORKER_URL
+          # repository variable to enable it; empty = Alfa-only (no fallback)
+          VITE_WORKER_URL: ${{ vars.VITE_WORKER_URL }}
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

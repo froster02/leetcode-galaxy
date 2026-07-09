@@ -6,6 +6,9 @@ const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 const CACHE_VERSION = 2;
 const FETCH_TIMEOUT = 12000; // 12s per request — free Render tier cold-starts in ~10s
 export const API = 'https://alfa-leetcode-api.onrender.com';
+// Optional Cloudflare Worker fallback (worker/index.js) — used when Alfa
+// rate-limits or is unreachable. Unset = no fallback (previous behavior).
+export const WORKER_URL = (import.meta.env.VITE_WORKER_URL || '').replace(/\/+$/, '');
 
 /* AbortSignal.timeout is missing on Safari < 16 — fall back to a manual controller */
 export function timeoutSignal(ms) {
@@ -20,6 +23,71 @@ export function prewarmApi() {
     try {
         fetch(`${API}/`, { signal: timeoutSignal(8000) }).catch(() => {});
     } catch { /* ignore */ }
+}
+
+/* Maps the worker's flat payload (see worker/index.js buildPayload) into the
+   same canonical shape fetchProfile builds from the Alfa API. Pure — exported
+   for unit tests. */
+export function mapWorkerResponse(username, w) {
+    const validatedTotalQuestions = validateTotalQuestions(w?.totalQuestions || {});
+    const normalizedStats = normalizeStats(w?.acSubmissionNum || [], validatedTotalQuestions);
+
+    if (validatedTotalQuestions.all === 0) {
+        throw new Error('No user found');
+    }
+
+    const percentages = fixPercentages(normalizedStats, validatedTotalQuestions);
+    const hardRatio = normalizedStats.hard > 0 && validatedTotalQuestions.all > 0
+        ? ((normalizedStats.hard / validatedTotalQuestions.all) * 100).toFixed(1)
+        : '0.0';
+
+    return {
+        profile: {
+            matchedUser: {
+                username: username,
+                submitStats: {
+                    acSubmissionNum: [
+                        { difficulty: 'Easy', count: normalizedStats.easy },
+                        { difficulty: 'Medium', count: normalizedStats.medium },
+                        { difficulty: 'Hard', count: normalizedStats.hard },
+                        { difficulty: 'All', count: normalizedStats.all }
+                    ]
+                },
+                profile: {
+                    ranking: w?.profile?.ranking || 0,
+                    reputation: w?.profile?.reputation || 0,
+                    starRating: 0,
+                }
+            }
+        },
+        totalQuestions: validatedTotalQuestions,
+        tags: { matchedUser: { tagProblemCounts: w?.tagProblemCounts || {} } },
+        recent: { recentSubmissionList: w?.recentSubmissions || [] },
+        contest: w?.contest ?? {},
+        badges: w?.badges ?? {},
+        calendar: {
+            ...(w?.calendar ?? {}),
+            submissionCalendar: w?.calendar?.submissionCalendar || {},
+        },
+        _normalized: {
+            hardRatio: hardRatio,
+            totalSolved: normalizedStats.all,
+            percentages,
+        }
+    };
+}
+
+async function fetchFromWorker(username) {
+    const res = await fetch(`${WORKER_URL}/?username=${encodeURIComponent(username)}`, {
+        signal: timeoutSignal(FETCH_TIMEOUT),
+    });
+    if (!res.ok) {
+        if (res.status === 404 || res.status === 400) throw new Error('No user found');
+        throw new Error('Network error');
+    }
+    const json = await res.json().catch(() => null);
+    if (!json) throw new Error('Network error');
+    return mapWorkerResponse(username, json);
 }
 
 function getCached(username) {
@@ -201,7 +269,18 @@ export function useLeetCode() {
             if (complete) setCache(username, json);
             return json;
         } catch (err) {
-            setError(err.message);
+            // Alfa rate-limited or unreachable → try the worker fallback if configured.
+            // A definitive 'No user found' is never retried against the worker.
+            const msg = err?.message;
+            if (WORKER_URL && (msg === 'Rate limited' || msg === 'Network error')) {
+                try {
+                    const json = await fetchFromWorker(username);
+                    setData(json);
+                    setCache(username, json);
+                    return json;
+                } catch { /* fall through to the original error */ }
+            }
+            setError(msg);
             throw err;
         } finally {
             setLoading(false);
