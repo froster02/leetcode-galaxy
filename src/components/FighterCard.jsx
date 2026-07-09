@@ -642,7 +642,6 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
     const recentHardCount = recent.slice(0, 10).filter(r => r.difficulty === 'Hard').length;
     const lastSubmit      = recent[0]?.timestamp ? timeAgo(recent[0].timestamp) : null;
-    const estHours        = Math.round(total * 0.75);
 
     const motiv = hard >= 300 ? 'Among the rarest. You solve what others abandon.' :
                   hard >= 150 ? 'Elite solver. Hard problems are your domain.' :

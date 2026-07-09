@@ -121,7 +121,7 @@ export default {
 
                 // Store in cache
                 ctx.waitUntil(cache.put(cacheKey, response.clone()));
-            } catch (error) {
+            } catch {
                 return new Response(JSON.stringify({ error: 'Failed to fetch' }), {
                     status: 500,
                     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }

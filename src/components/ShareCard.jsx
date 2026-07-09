@@ -232,7 +232,7 @@ function SectionLabel({ icon, children, right }) {
 ══════════════════════════════════════════════ */
 export function ShareCardView({ data }) {
     if (!data) return null;
-    const { username, profile, stats, badgesInfo, contestInfo, calendar, totalQuestions } = data;
+    const { username, stats, badgesInfo, contestInfo, calendar } = data;
 
     const easy  = stats?.find(s => s.difficulty === 'Easy')?.count   || 0;
     const med   = stats?.find(s => s.difficulty === 'Medium')?.count  || 0;

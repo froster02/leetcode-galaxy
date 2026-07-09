@@ -65,7 +65,7 @@ const TarsHud = React.memo(function TarsHud() {
 
   const cycle = (key) => {
     setSettings(s => ({ ...s, [key]: s[key] >= 100 ? 0 : s[key] + 25 }));
-    setQuip(quips[Math.floor(Math.random() * quips.length)]);
+    setQuip(quips[Math.floor(Math.random() * quips.length)]); // eslint-disable-line react-hooks/purity
     setOpenQuote(true);
     clearTimeout(quoteTimerRef.current);
     quoteTimerRef.current = setTimeout(() => setOpenQuote(false), 2800);
@@ -329,7 +329,7 @@ function App() {
     const match = appPath.match(/^\/u\/(.+)$/);
     if (match) {
       const view = new URLSearchParams(window.location.search).get('view') || 'city';
-      handleSearch(decodeURIComponent(match[1]), false, view);
+      handleSearch(decodeURIComponent(match[1]), false, view); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [handleSearch]);
 

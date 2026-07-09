@@ -13,6 +13,7 @@ const LOADING_MESSAGES = [
 ];
 
 function HyperspaceStreaks({ count = 60 }) {
+    /* eslint-disable react-hooks/purity */
     const streaks = useMemo(() => Array.from({ length: count }, (_, i) => {
         const angle = (i / count) * 360;
         return {
@@ -24,6 +25,7 @@ function HyperspaceStreaks({ count = 60 }) {
             width: Math.random() > 0.5 ? 2 : 1,
         };
     }), [count]);
+    /* eslint-enable react-hooks/purity */
 
     return (
         <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
