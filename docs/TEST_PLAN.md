@@ -10,6 +10,7 @@ Run `scripts/run-tests.sh` after every code change. Automated checks run first; 
 |---|-------|---------|
 | A1 | Build succeeds | `npm run build` |
 | A2 | No ESLint errors | `npm run lint` |
+| A3 | Unit tests pass (pure utils: normalization, gameData, dataMapper, calendar) | `npm test` |
 
 ---
 
@@ -59,6 +60,7 @@ Run `scripts/run-tests.sh` after every code change. Automated checks run first; 
 | M19 | Power tier badge | Matches expected tier for the power number |
 | M20 | Click **Challenge** on another user | VS modal opens; battle result renders |
 | M21 | Click **↗ LeetCode** link | Opens correct LeetCode profile URL in new tab |
+| M32 | Contest section for a contest-active user (e.g. `votrubac`) | Rating sparkline renders when history has ≥ 2 points; hidden otherwise — layout intact either way |
 
 ---
 

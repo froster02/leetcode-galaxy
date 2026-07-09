@@ -9,9 +9,10 @@ npm run dev       # Vite dev server at http://localhost:5173
 npm run build     # Production build to dist/
 npm run preview   # Preview the built site
 npm run lint      # ESLint (flat config)
+npm test          # Unit tests (Vitest) — pure utils only, test files in tests/
 ```
 
-There are **no tests** — no test framework is installed and no test script exists.
+No component/E2E tests — UI verification is manual via `docs/TEST_PLAN.md`.
 
 Docker alternative: `docker-compose up` runs the frontend (Vite, :5173) and the Cloudflare Worker via wrangler dev (:8787).
 
@@ -45,7 +46,7 @@ The Cloudflare Worker in `worker/index.js` (CORS proxy to `leetcode.com/graphql`
 
 ## After Every Code Change
 
-Run `scripts/run-tests.sh` (build + lint), then verify the relevant manual cases in [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md).
+Run `scripts/run-tests.sh` (build + lint + unit tests), then verify the relevant manual cases in [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md).
 
 Key manual cases to always hit:
 - **M5** — Legendary Explorers load (or show rate-limit message, never "Unable to load profile")
