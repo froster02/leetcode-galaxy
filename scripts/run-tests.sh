@@ -41,7 +41,7 @@ fi
 
 echo ""
 echo "=== Build: PASS | Lint: $([ $LINT_EXIT -eq 0 ] && echo PASS || echo ISSUES) | Tests: $([ $TEST_EXIT -eq 0 ] && echo PASS || echo FAIL) ==="
-echo "Run manual checks in docs/TEST_PLAN.md (M1–M31)."
+echo "Run manual checks in docs/TEST_PLAN.md (M1–M32)."
 
 [ $LINT_EXIT -ne 0 ] && exit $LINT_EXIT
 exit $TEST_EXIT
