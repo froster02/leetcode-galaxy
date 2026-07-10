@@ -274,13 +274,14 @@ function CommandHint() {
 }
 
 /* ── Main component ──────────────────────────────────── */
-function LandingUI({ onSearch, errorMessage = '' }) {
+function LandingUI({ onSearch }) {
     const [username, setUsername] = useState('');
     const [focused, setFocused] = useState(false);
     const [searchHovered, setSearchHovered] = useState(false);
     const isMobile = useIsMobile();
     const [mobileDismissed, setMobileDismissed] = useState(false);
     const inputRef = useRef();
+    const chipRowRef = useRef();
     const totalQuestions       = useTotalQuestionsCount();
     const contestParticipants  = useLastContestParticipants();
     const longestStreak        = useLongestStreak();
@@ -299,6 +300,20 @@ function LandingUI({ onSearch, errorMessage = '' }) {
             return;
         }
         onSearch(val);
+    };
+
+    /* Arrow-key nav across the Legendary Explorers chip row */
+    const handleChipRowKeyDown = (e) => {
+        if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return;
+        const buttons = Array.from(chipRowRef.current?.querySelectorAll('button') || []);
+        const idx = buttons.indexOf(document.activeElement);
+        if (idx === -1) return;
+        e.preventDefault();
+        const next = e.key === 'ArrowRight' ? (idx + 1) % buttons.length
+                   : e.key === 'ArrowLeft'  ? (idx - 1 + buttons.length) % buttons.length
+                   : e.key === 'Home'       ? 0
+                   : buttons.length - 1;
+        buttons[next]?.focus();
     };
 
     useEffect(() => {
@@ -622,28 +637,6 @@ function LandingUI({ onSearch, errorMessage = '' }) {
                     )}
                 </motion.form>
 
-                {errorMessage && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        style={{
-                            marginTop: 2,
-                            marginBottom: 6,
-                            padding: '7px 12px',
-                            borderRadius: 10,
-                            background: 'rgba(255,56,96,0.08)',
-                            border: '1px solid rgba(255,56,96,0.25)',
-                            color: '#ff7d95',
-                            fontFamily: FONT_MONO,
-                            fontSize: 10,
-                            letterSpacing: '0.08em',
-                            textTransform: 'uppercase',
-                        }}
-                    >
-                        {errorMessage}
-                    </motion.div>
-                )}
-
                 {/* ── Featured explorers ── */}
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -667,7 +660,7 @@ function LandingUI({ onSearch, errorMessage = '' }) {
                         <Star size={10} style={{ color: 'var(--amber)' }} />
                         <span style={{ height: 1, width: 40, background: 'linear-gradient(90deg, rgba(148,163,184,0.35), transparent)' }} />
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: isMobile ? 6 : 8 }}>
+                    <div ref={chipRowRef} onKeyDown={handleChipRowKeyDown} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: isMobile ? 6 : 8 }}>
                         {FEATURED.slice(0, isMobile ? 4 : FEATURED.length).map((user, i) => (
                             <FeaturedCard key={user} user={user} index={i} onSelect={onSearch} />
                         ))}

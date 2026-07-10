@@ -4,8 +4,10 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 
-import { CODERS } from '../utils/gameData';
+import { CODERS, calcPower, getFighterClass, getPowerTier } from '../utils/gameData';
 import { parseCalendar, calendarStats } from '../utils/calendar';
+import { getSeasonPalette } from '../utils/season';
+import useReducedMotion from '../hooks/useReducedMotion';
 
 /* ─────────────────── City Grid Constants ─────────────────── */
 const BLOCK_SIZE = 14;
@@ -145,6 +147,26 @@ function generateBlockBuildings(easy, med, hard, globalMax, seed) {
     return buildings;
 }
 
+/* ─────────────────── Topic-mastery buildings (current user only) ─── */
+const TOPIC_COLORS = ['#00f5d4', '#a78bfa', '#f5a623', '#ff3860', '#3b82f6', '#23d18b', '#fb923c', '#ec4899'];
+
+function generateTopicBuildings(districts, seed) {
+    const rng = seededRand(seed);
+    const slots = [
+        [-3.5, -3.5], [0, -3.5], [3.5, -3.5],
+        [-3.5, 0],               [3.5, 0],
+        [-3.5, 3.5],  [0, 3.5],  [3.5, 3.5],
+    ];
+
+    return districts.slice(0, slots.length).map((d, i) => {
+        const [x, z] = slots[i];
+        const variation = 0.85 + rng() * 0.3;
+        const h = Math.max(0.6, (0.6 + d.normalizedScore * (MAX_BUILDING_HEIGHT - 0.6)) * variation);
+        const w = 1.2 + rng() * 0.8;
+        return { x, z, height: h, width: w, color: TOPIC_COLORS[i % TOPIC_COLORS.length] };
+    });
+}
+
 /* ─────────────────── City Building ─────────────────── */
 // No per-building useFrame — static emissive + bloom handles glow.
 // Saves ~500 frame callbacks (100 blocks × ~5 buildings each).
@@ -223,7 +245,7 @@ function CityBuilding({ height, width, color, position }) {
 }
 
 /* ─────────────────── Single City Block (township) ─────────────── */
-function CityBlock({ user, gridRow, gridCol, globalMax, isNight, onSelect, showBlockLabels }) {
+function CityBlock({ user, gridRow, gridCol, globalMax, isNight, onSelect, showBlockLabels, topicDistricts }) {
     const [hovered, setHovered] = useState(false);
     const isCurrent = user?.isCurrent;
 
@@ -232,8 +254,10 @@ function CityBlock({ user, gridRow, gridCol, globalMax, isNight, onSelect, showB
 
     const buildings = useMemo(() => {
         if (!user) return [];
-        return generateBlockBuildings(user.easy, user.med, user.hard, globalMax, gridRow * 100 + gridCol);
-    }, [user, globalMax, gridRow, gridCol]);
+        const seed = gridRow * 100 + gridCol;
+        if (isCurrent && topicDistricts?.length) return generateTopicBuildings(topicDistricts, seed);
+        return generateBlockBuildings(user.easy, user.med, user.hard, globalMax, seed);
+    }, [user, globalMax, gridRow, gridCol, isCurrent, topicDistricts]);
 
     const accentColor = isCurrent ? '#00f5d4' : '#3b82f6';
 
@@ -314,6 +338,22 @@ function CityBlock({ user, gridRow, gridCol, globalMax, isNight, onSelect, showB
                         }}>
                             {user.u}
                         </div>
+                        {(() => {
+                            const power = calcPower(user.easy, user.med, user.hard);
+                            const fighterClass = getFighterClass(user.hard);
+                            const tier = getPowerTier(power);
+                            return (
+                                <div style={{
+                                    fontFamily: '"Share Tech Mono", monospace',
+                                    fontSize: 7.5,
+                                    color: tier.color,
+                                    marginTop: 1,
+                                    letterSpacing: '0.06em',
+                                }}>
+                                    {fighterClass.label} · {power.toLocaleString()} PWR
+                                </div>
+                            );
+                        })()}
                         <div style={{
                             fontFamily: '"Share Tech Mono", monospace',
                             fontSize: 8,
@@ -517,14 +557,14 @@ function CityCamera() {
 }
 
 /* ─────────────────── Smooth Scene Lighting & Fog ─────────────────── */
-function SceneLighting({ isNight, totalWidth }) {
+function SceneLighting({ isNight, totalWidth, palette }) {
     const { scene } = useThree();
     const ambRef = useRef();
     const dirRef1 = useRef();
     const dirRef2 = useRef();
     const ptRef = useRef();
-    const bgTarget = useMemo(() => new THREE.Color(isNight ? '#020308' : '#05060a'), [isNight]);
-    const ambTargetColor = useMemo(() => new THREE.Color(isNight ? '#1111aa' : '#2020ff'), [isNight]);
+    const bgTarget = useMemo(() => new THREE.Color(palette.bg).multiplyScalar(isNight ? 1 : 1.6), [isNight, palette]);
+    const ambTargetColor = useMemo(() => new THREE.Color(palette.ambient).multiplyScalar(isNight ? 0.6 : 1), [isNight, palette]);
 
     useFrame((_, delta) => {
         const d = Math.min(delta * 2, 1);
@@ -542,8 +582,8 @@ function SceneLighting({ isNight, totalWidth }) {
 
     return (
         <group>
-            <fog attach="fog" args={['#020308', 30, totalWidth * 0.7]} />
-            <ambientLight ref={ambRef} intensity={0.15} color="#2020ff" />
+            <fog attach="fog" args={[palette.bg, 30, totalWidth * 0.7]} />
+            <ambientLight ref={ambRef} intensity={0.15} color={palette.ambient} />
             <directionalLight ref={dirRef1} position={[30, 40, 30]} intensity={0.4} color="#ffffff" />
             <directionalLight ref={dirRef2} position={[-20, 30, -20]} intensity={0.2} color="#8080ff" />
             <pointLight ref={ptRef} position={[0, 10, 0]} intensity={0.6} color="#00f5d4" distance={60} />
@@ -736,9 +776,11 @@ function ActivityOverlay({ data }) {
 }
 
 /* ─────────────────── Aurora ─────────────────── */
-function Aurora() {
+function Aurora({ colors }) {
     const refs = useRef([null, null, null]);
+    const reducedMotion = useReducedMotion();
     useFrame((state) => {
+        if (reducedMotion) return;
         const t = state.clock.elapsedTime * 0.15;
         refs.current.forEach((mesh, i) => {
             if (!mesh) return;
@@ -749,9 +791,9 @@ function Aurora() {
     return (
         <group>
             {[
-                { color: '#00f5d4', position: [-15, 28, -70], rotX: 1.45, rotY:  0.25 },
-                { color: '#7c3aed', position: [ 25, 32, -90], rotX: 1.50, rotY: -0.15 },
-                { color: '#3b82f6', position: [-35, 24, -55], rotX: 1.40, rotY:  0.40 },
+                { color: colors[0], position: [-15, 28, -70], rotX: 1.45, rotY:  0.25 },
+                { color: colors[1], position: [ 25, 32, -90], rotX: 1.50, rotY: -0.15 },
+                { color: colors[2], position: [-35, 24, -55], rotX: 1.40, rotY:  0.40 },
             ].map((a, i) => (
                 <mesh key={i} ref={el => refs.current[i] = el}
                     position={a.position} rotation={[a.rotX, a.rotY, 0]}
@@ -770,7 +812,8 @@ function Aurora() {
 }
 
 /* ─────────────────── City Scene Inner ─────────────────── */
-function CitySceneInner({ roster, onSelectUser, showBlockLabels }) {
+function CitySceneInner({ roster, onSelectUser, showBlockLabels, isNight, palette, districts }) {
+    const reducedMotion = useReducedMotion();
     const globalMax = useMemo(() => {
         let m = 1;
         for (const user of roster) {
@@ -782,9 +825,9 @@ function CitySceneInner({ roster, onSelectUser, showBlockLabels }) {
 
     return (
         <>
-            <Aurora />
-            <StreetGrid isNight={true} />
-            <CarLights />
+            <Aurora colors={palette.aurora} />
+            <StreetGrid isNight={isNight} />
+            {!reducedMotion && <CarLights />}
 
             {roster.map((user, i) => {
                 if (!user) return null;
@@ -797,9 +840,10 @@ function CitySceneInner({ roster, onSelectUser, showBlockLabels }) {
                         gridRow={row}
                         gridCol={col}
                         globalMax={globalMax}
-                        isNight={true}
+                        isNight={isNight}
                         onSelect={onSelectUser}
                         showBlockLabels={showBlockLabels}
+                        topicDistricts={user.isCurrent ? districts : undefined}
                     />
                 );
             })}
@@ -821,6 +865,12 @@ function CitySceneInner({ roster, onSelectUser, showBlockLabels }) {
 function CityCanvas({ data, onSelectUser, showActivityOverlay = true, showBlockLabels = true }) {
     const totalWidth = GRID_COLS * CELL_SIZE;
     const roster = useMemo(() => buildRoster(data), [data]);
+    // Viewer's local time — computed once at mount, not a live clock.
+    const isNight = useMemo(() => {
+        const h = new Date().getHours();
+        return h < 6 || h >= 19;
+    }, []);
+    const palette = useMemo(() => getSeasonPalette(), []);
 
     return (
         <div style={{ position: 'absolute', inset: 0 }}>
@@ -830,7 +880,7 @@ function CityCanvas({ data, onSelectUser, showActivityOverlay = true, showBlockL
                 gl={{ antialias: false, alpha: false, preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
                 dpr={Math.min(window.devicePixelRatio, 1.5)}
             >
-                <SceneLighting isNight={true} totalWidth={totalWidth} />
+                <SceneLighting isNight={isNight} totalWidth={totalWidth} palette={palette} />
                 <CityCamera />
                 <OrbitControls
                     target={[0, 1, 0]}
@@ -844,7 +894,7 @@ function CityCanvas({ data, onSelectUser, showActivityOverlay = true, showBlockL
                     panSpeed={0.8}
                     rotateSpeed={0.5}
                 />
-                {data && <CitySceneInner roster={roster} onSelectUser={onSelectUser} showBlockLabels={showBlockLabels} />}
+                {data && <CitySceneInner roster={roster} onSelectUser={onSelectUser} showBlockLabels={showBlockLabels} isNight={isNight} palette={palette} districts={data.districts} />}
             </Canvas>
             {data && showActivityOverlay && <ActivityOverlay data={data} />}
         </div>

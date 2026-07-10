@@ -17,6 +17,8 @@ function getRank(hard, rating) {
 }
 
 import { parseCalendar, calendarStats } from '../utils/calendar';
+import { Heatmap } from './Heatmap';
+import { generateRoast } from '../utils/roast';
 
 /* ── Premium 3D Hex Badge ── */
 function HexBadge({ rank, size = 170 }) {
@@ -104,94 +106,6 @@ function HexBadge({ rank, size = 170 }) {
     );
 }
 
-/* ── Month-block heatmap — 6 independent month grids side-by-side ── */
-function Heatmap({ rawMap }) {
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
-
-    /* Build submission count map keyed by "YYYY-M-D" */
-    const countMap = {};
-    Object.entries(rawMap).forEach(([ts, count]) => {
-        const d = new Date(Number(ts) * 1000);
-        const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-        countMap[k] = (countMap[k] || 0) + Number(count);
-    });
-    const maxCount = Math.max(...Object.values(countMap), 1);
-
-    function cellColor(count) {
-        if (!count) return '#1e2433';
-        const t = count / maxCount;
-        if (t < 0.2)  return '#14532d';
-        if (t < 0.4)  return '#166534';
-        if (t < 0.6)  return '#16a34a';
-        if (t < 0.8)  return '#22c55e';
-        return '#4ade80';
-    }
-
-    /* Current month + 5 previous — always dynamic */
-    const months = Array.from({ length: 6 }, (_, i) => {
-        const d = new Date(today.getFullYear(), today.getMonth() - (5 - i), 1);
-        return { year: d.getFullYear(), month: d.getMonth() };
-    });
-
-    /* Build calendar grid for a month.
-       Returns array of weeks; each week = 7 slots (null = outside month) */
-    function buildGrid(year, month) {
-        const firstDow = (new Date(year, month, 1).getDay() + 6) % 7; // 0=Mon…6=Sun
-        const lastDay  = new Date(year, month + 1, 0).getDate();
-        const numWeeks = Math.ceil((firstDow + lastDay) / 7);
-
-        return Array.from({ length: numWeeks }, (_, w) =>
-            Array.from({ length: 7 }, (_, d) => {
-                const dayNum = w * 7 + d - firstDow + 1;
-                if (dayNum < 1 || dayNum > lastDay) return null;
-                const k = `${year}-${month}-${dayNum}`;
-                const isToday = k === todayStr;
-                return { dayNum, count: countMap[k] || 0, isToday };
-            })
-        );
-    }
-
-    const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const S = 11, G = 2; /* cell size & inner gap */
-
-    return (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            {months.map(({ year, month }) => {
-                const grid = buildGrid(year, month);
-                return (
-                    <div key={`${year}-${month}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                        {/* 7 rows (Mon–Sun), each row spans all weeks of this month */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: G }}>
-                            {Array.from({ length: 7 }, (_, dow) => (
-                                <div key={dow} style={{ display: 'flex', gap: G }}>
-                                    {grid.map((week, wi) => {
-                                        const cell = week[dow];
-                                        return (
-                                            <div key={wi} style={{
-                                                width: S, height: S, borderRadius: 3,
-                                                background: cell ? cellColor(cell.count) : 'transparent',
-                                                outline: cell?.isToday ? '1.5px solid #22d3ee' : 'none',
-                                                outlineOffset: 1,
-                                                boxShadow: cell?.isToday ? '0 0 6px #22d3ee80' : 'none',
-                                            }} />
-                                        );
-                                    })}
-                                </div>
-                            ))}
-                        </div>
-                        {/* Month label centered below block */}
-                        <span style={{
-                            fontFamily: Fs, fontSize: 10, fontWeight: 600,
-                            color: 'rgba(255,255,255,0.5)', letterSpacing: '0.02em',
-                        }}>{MN[month]}</span>
-                    </div>
-                );
-            })}
-        </div>
-    );
-}
-
 /* ── Glass panel ── */
 function Panel({ children, style, accent }) {
     return (
@@ -230,9 +144,9 @@ function SectionLabel({ icon, children, right }) {
 /* ══════════════════════════════════════════════
    CARD
 ══════════════════════════════════════════════ */
-export function ShareCardView({ data }) {
+export function ShareCardView({ data, roast = false }) {
     if (!data) return null;
-    const { username, stats, badgesInfo, contestInfo, calendar } = data;
+    const { username, stats, badgesInfo, contestInfo, calendar, recent } = data;
 
     const easy  = stats?.find(s => s.difficulty === 'Easy')?.count   || 0;
     const med   = stats?.find(s => s.difficulty === 'Medium')?.count  || 0;
@@ -251,6 +165,14 @@ export function ShareCardView({ data }) {
     const rank = getRank(hard, rating || 0);
     const calendarRaw = parseCalendar(calendar);
     const { activeDays, maxStreak, totalSubmissions } = calendarStats(calendarRaw);
+
+    const recentList = Array.isArray(recent) ? recent : [];
+    const winRate = recentList.length > 0
+        ? Math.round((recentList.filter(r => r.statusDisplay === 'Accepted').length / recentList.length) * 100)
+        : 0;
+    const roastLine = roast
+        ? generateRoast({ easy, med, hard, total, winRate, streak: maxStreak, badgesCount, attended })
+        : null;
 
     return (
         /* ONE div. overflow:hidden clips every child — glow, content, everything —
@@ -458,12 +380,18 @@ export function ShareCardView({ data }) {
 
                 {/* ══ FOOTER ══ */}
                 <div style={{ textAlign: 'center', paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-                    <span style={{ fontFamily: Fs, fontSize: 12.5, fontWeight: 600, letterSpacing: '0.04em' }}>
-                        <span style={{ color: 'rgba(255,255,255,0.3)', marginRight: 8 }}>{'</>'}</span>
-                        <span style={{ color: '#f59e0b' }}>Consistency. </span>
-                        <span style={{ color: '#22d3ee' }}>Precision. </span>
-                        <span style={{ color: '#818cf8' }}>Excellence.</span>
-                    </span>
+                    {roastLine ? (
+                        <span style={{ fontFamily: Fs, fontSize: 12.5, fontWeight: 600, letterSpacing: '0.02em', color: '#fb923c', fontStyle: 'italic' }}>
+                            <span style={{ marginRight: 8 }}>🔥</span>{roastLine}
+                        </span>
+                    ) : (
+                        <span style={{ fontFamily: Fs, fontSize: 12.5, fontWeight: 600, letterSpacing: '0.04em' }}>
+                            <span style={{ color: 'rgba(255,255,255,0.3)', marginRight: 8 }}>{'</>'}</span>
+                            <span style={{ color: '#f59e0b' }}>Consistency. </span>
+                            <span style={{ color: '#22d3ee' }}>Precision. </span>
+                            <span style={{ color: '#818cf8' }}>Excellence.</span>
+                        </span>
+                    )}
                 </div>
             </div>
         </div>
@@ -478,6 +406,7 @@ export default function ShareModal({ data, onClose }) {
     const measureRef = useRef(null);
     const [previewScale, setPreviewScale] = useState(1);
     const [cardNaturalH, setCardNaturalH] = useState(null);
+    const [roastMode, setRoastMode] = useState(false);
 
     /* After first paint, measure off-screen cardRef (no transforms) for accurate natural height. */
     useLayoutEffect(() => {
@@ -662,7 +591,7 @@ export default function ShareModal({ data, onClose }) {
                             opacity: 0, pointerEvents: 'none', zIndex: -1,
                         }}
                     >
-                        <ShareCardView data={data} />
+                        <ShareCardView data={data} roast={roastMode} />
                     </div>
 
                     {/* Scaled visual preview — overflow:hidden clips to scaled height */}
@@ -685,13 +614,24 @@ export default function ShareModal({ data, onClose }) {
                                 pointerEvents: 'none',
                             }}
                         >
-                            <ShareCardView data={data} />
+                            <ShareCardView data={data} roast={roastMode} />
                         </div>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 520 }}>
                         {/* Row 1 — action buttons */}
                         <div style={{ display: 'flex', gap: 8 }}>
+                            {/* Roast toggle */}
+                            <motion.button onClick={() => setRoastMode(m => !m)}
+                                whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                                title="Swap the footer tagline for a snarky one-liner"
+                                style={{ flex: 1, padding: '11px 0', cursor: 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', transition: 'all 0.18s',
+                                    background: roastMode ? 'rgba(251,146,60,0.22)' : 'rgba(251,146,60,0.08)',
+                                    border: `1px solid rgba(251,146,60,${roastMode ? 0.7 : 0.35})`,
+                                    color: '#fb923c',
+                                    boxShadow: roastMode ? '0 0 20px rgba(251,146,60,0.25)' : 'none' }}>
+                                🔥 ROAST {roastMode ? 'ON' : 'OFF'}
+                            </motion.button>
                             {/* Download */}
                             <motion.button onClick={handleDownload} disabled={busy}
                                 whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}

@@ -431,4 +431,14 @@ body,
   transition: border-color 0.2s;
 }
 
+/* Freezes every CSS @keyframes-driven animation (tars-idle, energy-pulse, etc.)
+   for users who requested reduced motion. Framer-motion animations are gated
+   separately per-component via useReducedMotion(). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
 

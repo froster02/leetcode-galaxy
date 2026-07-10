@@ -8,6 +8,7 @@ import GalaxyScene from './components/GalaxyScene';
 import LandingUI from './components/LandingUI';
 import UserPanel from './components/UserPanel';
 import TransitionOverlay from './components/TransitionOverlay';
+import ErrorToast from './components/ErrorToast';
 // Lazy-loaded: biome + card code stays out of the landing bundle
 const CityCanvas = lazy(() => import('./components/CityScene'));
 const FighterCard = lazy(() => import('./components/FighterCard'));
@@ -203,6 +204,9 @@ function App() {
   // Monotonic id per search; stale responses (an older search resolving after
   // a newer one started) are ignored so they can't overwrite the latest view
   const searchSeqRef = useRef(0);
+  // Which search flow + args last ran — set right before each fetch attempt so
+  // ErrorToast's Retry button can re-run the right one (see handleRetry below)
+  const lastAttemptRef = useRef(null);
   const [recentlyExplored, setRecentlyExplored] = useState(() => {
     try { return JSON.parse(localStorage.getItem('recentExplorers') || '[]'); }
     catch { return []; }
@@ -227,6 +231,7 @@ function App() {
     setViewMode('city');
     setTransitionStage(1);
     setTransitionMsg(pick(TRANSITION_LINES.lock));
+    lastAttemptRef.current = { fn: 'search', args: [username, pushUrl, targetView] };
 
     if (pushUrl) {
       const qs = targetView === 'card' ? '?view=card' : '';
@@ -269,6 +274,7 @@ function App() {
     setSearchError('');
     setTransitionStage(1);
     setTransitionMsg(`FETCHING: ${username.toUpperCase()}`);
+    lastAttemptRef.current = { fn: 'quickInspect', args: [username] };
 
     try {
       const rawData = await fetchProfile(username);
@@ -286,6 +292,16 @@ function App() {
       setTransitionStage(0);
     }
   }, [fetchProfile, addToRecent]);
+
+  const handleRetry = useCallback(() => {
+    const attempt = lastAttemptRef.current;
+    if (!attempt) return;
+    setSearchError('');
+    if (attempt.fn === 'search') handleSearch(...attempt.args);
+    else handleQuickInspect(...attempt.args);
+  }, [handleSearch, handleQuickInspect]);
+
+  const dismissError = useCallback(() => setSearchError(''), []);
 
   const handleBack = useCallback((pushUrl = true) => {
     clearTimeout(transitionTimerRef.current);
@@ -452,8 +468,13 @@ function App() {
       </div>
 
       {/* UI Overlays */}
-      {phase === 1 && <LandingUI onSearch={handleSearch} errorMessage={searchError} />}
+      {phase === 1 && <LandingUI onSearch={handleSearch} />}
       <TransitionOverlay stage={transitionStage} message={transitionMsg} />
+      <ErrorToast
+        message={searchError}
+        onRetry={handleRetry}
+        onClose={dismissError}
+      />
       {phase === 3 && (
         <UserPanel
           data={mappedData}

@@ -484,6 +484,19 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
             </AnimatePresence>}
 
 
+            {/* Backdrop — dims content behind the expanded mobile stats sheet, tap to collapse */}
+            {isMobile && panelExpanded && (
+                <motion.div
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    onClick={() => setPanelExpanded(false)}
+                    style={{
+                        position: 'fixed', inset: 0,
+                        background: 'rgba(0,0,0,0.5)',
+                        pointerEvents: 'auto',
+                    }}
+                />
+            )}
+
             {/* ── Side panel (hidden on desktop when in card mode) ── */}
             {(isMobile || viewMode !== 'card') && <motion.div
                 initial={isMobile ? { y: 300, opacity: 0 } : { x: -420, opacity: 0 }}

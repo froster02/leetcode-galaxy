@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 const FONT_ORBIT = 'Orbitron, sans-serif';
 const FONT_MONO = '"Share Tech Mono", monospace';
@@ -53,7 +53,7 @@ function HyperspaceStreaks({ count = 60 }) {
     );
 }
 
-function LoadingSequence({ message }) {
+function LoadingSequence({ message, reduced }) {
     const [subMsg, setSubMsg] = useState(LOADING_MESSAGES[0]);
     const [progress, setProgress] = useState(0);
 
@@ -87,35 +87,45 @@ function LoadingSequence({ message }) {
                 boxShadow: '0 0 80px rgba(0,245,212,0.08), inset 0 1px 0 rgba(255,255,255,0.03)',
             }}
         >
-            {/* Spinner */}
+            {/* Spinner — static ring when reduced motion is requested */}
             <div style={{ position: 'relative', width: 72, height: 72 }}>
-                <motion.div
-                    style={{
+                {reduced ? (
+                    <div style={{
                         position: 'absolute', inset: 0,
-                        border: '2px solid transparent', borderRadius: '50%',
-                        borderTopColor: '#00f5d4', borderRightColor: 'rgba(0,245,212,0.3)',
-                    }}
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 0.7, ease: 'linear' }}
-                />
-                <motion.div
-                    style={{
-                        position: 'absolute', inset: 6,
-                        border: '2px solid transparent', borderRadius: '50%',
-                        borderTopColor: '#8b5cf6', borderLeftColor: 'rgba(139,92,246,0.3)',
-                    }}
-                    animate={{ rotate: -360 }}
-                    transition={{ repeat: Infinity, duration: 1.1, ease: 'linear' }}
-                />
-                <motion.div
-                    style={{
-                        position: 'absolute', inset: 12,
-                        border: '1px solid transparent', borderRadius: '50%',
-                        borderTopColor: '#f5a623',
-                    }}
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
-                />
+                        border: '2px solid rgba(0,245,212,0.3)', borderRadius: '50%',
+                        borderTopColor: '#00f5d4',
+                    }} />
+                ) : (
+                    <>
+                        <motion.div
+                            style={{
+                                position: 'absolute', inset: 0,
+                                border: '2px solid transparent', borderRadius: '50%',
+                                borderTopColor: '#00f5d4', borderRightColor: 'rgba(0,245,212,0.3)',
+                            }}
+                            animate={{ rotate: 360 }}
+                            transition={{ repeat: Infinity, duration: 0.7, ease: 'linear' }}
+                        />
+                        <motion.div
+                            style={{
+                                position: 'absolute', inset: 6,
+                                border: '2px solid transparent', borderRadius: '50%',
+                                borderTopColor: '#8b5cf6', borderLeftColor: 'rgba(139,92,246,0.3)',
+                            }}
+                            animate={{ rotate: -360 }}
+                            transition={{ repeat: Infinity, duration: 1.1, ease: 'linear' }}
+                        />
+                        <motion.div
+                            style={{
+                                position: 'absolute', inset: 12,
+                                border: '1px solid transparent', borderRadius: '50%',
+                                borderTopColor: '#f5a623',
+                            }}
+                            animate={{ rotate: 360 }}
+                            transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
+                        />
+                    </>
+                )}
                 {/* Center dot */}
                 <div style={{
                     position: 'absolute', inset: 0, display: 'flex',
@@ -127,8 +137,8 @@ function LoadingSequence({ message }) {
                             background: '#00f5d4',
                             boxShadow: '0 0 16px #00f5d4, 0 0 32px rgba(0,245,212,0.4)',
                         }}
-                        animate={{ scale: [1, 1.5, 1] }}
-                        transition={{ repeat: Infinity, duration: 0.8 }}
+                        animate={reduced ? undefined : { scale: [1, 1.5, 1] }}
+                        transition={reduced ? undefined : { repeat: Infinity, duration: 0.8 }}
                     />
                 </div>
             </div>
@@ -140,8 +150,8 @@ function LoadingSequence({ message }) {
                     letterSpacing: '0.2em', color: '#00f5d4',
                     textShadow: '0 0 24px rgba(0,245,212,0.5)',
                 }}
-                animate={{ opacity: [1, 0.5, 1] }}
-                transition={{ repeat: Infinity, duration: 1.5 }}
+                animate={reduced ? undefined : { opacity: [1, 0.5, 1] }}
+                transition={reduced ? undefined : { repeat: Infinity, duration: 1.5 }}
             >
                 {message}
             </motion.h2>
@@ -186,9 +196,10 @@ function LoadingSequence({ message }) {
                         style={{
                             width: 4, height: 4, borderRadius: '50%',
                             background: '#00f5d4',
+                            opacity: reduced ? 0.6 : undefined,
                         }}
-                        animate={{ opacity: [0.15, 1, 0.15] }}
-                        transition={{ repeat: Infinity, duration: 1, delay: i * 0.2 }}
+                        animate={reduced ? undefined : { opacity: [0.15, 1, 0.15] }}
+                        transition={reduced ? undefined : { repeat: Infinity, duration: 1, delay: i * 0.2 }}
                     />
                 ))}
             </div>
@@ -197,6 +208,7 @@ function LoadingSequence({ message }) {
 }
 
 function TransitionOverlay({ stage, message }) {
+    const reduced = useReducedMotion();
     if (stage === 0) return null;
 
     return (
@@ -218,7 +230,7 @@ function TransitionOverlay({ stage, message }) {
                 }}
             >
                 {/* Hyperspace streaks */}
-                {stage === 2 && <HyperspaceStreaks />}
+                {stage === 2 && !reduced && <HyperspaceStreaks />}
 
                 {/* Vignette */}
                 <div style={{
@@ -227,7 +239,7 @@ function TransitionOverlay({ stage, message }) {
                     pointerEvents: 'none',
                 }} />
 
-                <LoadingSequence message={message} />
+                <LoadingSequence message={message} reduced={reduced} />
             </motion.div>
         </AnimatePresence>
     );
