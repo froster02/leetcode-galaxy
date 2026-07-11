@@ -567,7 +567,7 @@ export default function ShareModal({ data, onClose }) {
         <AnimatePresence>
             <motion.div key="share-bg"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                style={{ position: 'fixed', inset: 0, zIndex: 16777272, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px 32px', overflow: 'hidden' }}
+                style={{ position: 'fixed', inset: 0, zIndex: 16777272, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px 32px', paddingBottom: 'max(32px, env(safe-area-inset-bottom))', overflow: 'hidden' }}
                 onClick={onClose}>
 
                 <motion.div
@@ -625,7 +625,7 @@ export default function ShareModal({ data, onClose }) {
                             <motion.button onClick={() => setRoastMode(m => !m)}
                                 whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                                 title="Swap the footer tagline for a snarky one-liner"
-                                style={{ flex: 1, padding: '11px 0', cursor: 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', transition: 'all 0.18s',
+                                style={{ flex: 1, padding: '13px 0', cursor: 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', transition: 'all 0.18s',
                                     background: roastMode ? 'rgba(251,146,60,0.22)' : 'rgba(251,146,60,0.08)',
                                     border: `1px solid rgba(251,146,60,${roastMode ? 0.7 : 0.35})`,
                                     color: '#fb923c',
@@ -635,19 +635,19 @@ export default function ShareModal({ data, onClose }) {
                             {/* Download */}
                             <motion.button onClick={handleDownload} disabled={busy}
                                 whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
-                                style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(34,211,238,0.1)', border: '1px solid rgba(34,211,238,0.5)', color: '#22d3ee', boxShadow: '0 0 20px rgba(34,211,238,0.1)' }}>
+                                style={{ flex: 1, padding: '13px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(34,211,238,0.1)', border: '1px solid rgba(34,211,238,0.5)', color: '#22d3ee', boxShadow: '0 0 20px rgba(34,211,238,0.1)' }}>
                                 {dlLabel}
                             </motion.button>
                             {/* Copy */}
                             <motion.button onClick={handleCopy} disabled={busy}
                                 whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
-                                style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.5)', color: '#a78bfa', boxShadow: '0 0 20px rgba(167,139,250,0.1)' }}>
+                                style={{ flex: 1, padding: '13px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.5)', color: '#a78bfa', boxShadow: '0 0 20px rgba(167,139,250,0.1)' }}>
                                 {cpLabel}
                             </motion.button>
                             {/* LinkedIn */}
                             <motion.button onClick={handleLinkedIn} disabled={busy}
                                 whileHover={{ scale: busy ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
-                                style={{ flex: 1, padding: '11px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(10,102,194,0.15)', border: '1px solid rgba(10,102,194,0.6)', color: '#4fa3e0', boxShadow: '0 0 20px rgba(10,102,194,0.12)' }}>
+                                style={{ flex: 1, padding: '13px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', opacity: busy ? 0.55 : 1, transition: 'all 0.18s', background: 'rgba(10,102,194,0.15)', border: '1px solid rgba(10,102,194,0.6)', color: '#4fa3e0', boxShadow: '0 0 20px rgba(10,102,194,0.12)' }}>
                                 {liLabel}
                             </motion.button>
                         </div>
@@ -664,7 +664,7 @@ export default function ShareModal({ data, onClose }) {
                         {/* Row 2 — close */}
                         <motion.button onClick={onClose} disabled={busy}
                             whileHover={{ scale: busy ? 1 : 1.02 }} whileTap={{ scale: 0.98 }}
-                            style={{ width: '100%', padding: '9px 0', cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', opacity: busy ? 0.4 : 1, transition: 'all 0.18s', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }}>
+                            style={{ width: '100%', padding: '13px 0', minHeight: 44, cursor: busy ? 'not-allowed' : 'pointer', borderRadius: 12, fontFamily: Fm, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', opacity: busy ? 0.4 : 1, transition: 'all 0.18s', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }}>
                             ✕  CLOSE
                         </motion.button>
                     </div>

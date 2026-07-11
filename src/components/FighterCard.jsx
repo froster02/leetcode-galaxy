@@ -756,7 +756,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
     return (
         <>
             {/* ── Full-page galaxy canvas ── */}
-            <div style={{ position: 'relative', minHeight: '100vh', background: '#080c18', color: '#e8eaf0' }}>
+            <div className="page-viewport" style={{ position: 'relative', background: '#080c18', color: '#e8eaf0' }}>
 
                 {/* ── Base gradient ── */}
                 <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
@@ -812,6 +812,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                             position: 'sticky', top: 0, zIndex: 20,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             padding: compactLaptop ? '12px 18px' : '14px 24px',
+                            paddingTop: compactLaptop ? 'max(12px, env(safe-area-inset-top))' : 'max(14px, env(safe-area-inset-top))',
                             marginBottom: 8,
                             width: '100vw', marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)',
                         }}>
@@ -827,7 +828,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                             <motion.button onClick={onBack}
                                 whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                                 title="Back to City"
-                                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: isMobile ? '7px 10px' : '7px 13px', borderRadius: 12, background: 'rgba(0,245,212,0.07)', border: '1px solid rgba(0,245,212,0.2)', color: C_TEAL, cursor: 'pointer', fontFamily: Fm, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', transition: 'background 0.18s' }}
+                                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: isMobile ? '13px 12px' : '7px 13px', minHeight: isMobile ? 44 : undefined, borderRadius: 12, background: 'rgba(0,245,212,0.07)', border: '1px solid rgba(0,245,212,0.2)', color: C_TEAL, cursor: 'pointer', fontFamily: Fm, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', transition: 'background 0.18s' }}
                                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,245,212,0.16)'}
                                 onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,245,212,0.07)'}>
                                 ← CITY
@@ -843,7 +844,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                 title="Share Card"
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: 8,
-                                    padding: '7px 14px', borderRadius: 12, cursor: 'pointer',
+                                    padding: isMobile ? '13px 14px' : '7px 14px', minHeight: isMobile ? 44 : undefined, borderRadius: 12, cursor: 'pointer',
                                     fontFamily: Fm, fontSize: 12, fontWeight: 700, letterSpacing: '0.14em',
                                     color: '#e9d5ff',
                                     background: 'linear-gradient(135deg, rgba(139,92,246,0.3) 0%, rgba(109,40,217,0.22) 100%)',
@@ -1194,9 +1195,9 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                             </div>
                             <form onSubmit={handleChallengeSubmit} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                                 <input value={challengeName} onChange={(e) => setChallengeName(e.target.value)} placeholder="enter username..."
-                                    style={{ flex: 1, padding: '8px 12px', borderRadius: 9, border: '1px solid rgba(0,245,212,0.22)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.9)', fontFamily: Fm, fontSize: 10, letterSpacing: '0.06em', outline: 'none' }} />
+                                    style={{ flex: 1, padding: '8px 12px', borderRadius: 9, border: '1px solid rgba(0,245,212,0.22)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.9)', fontFamily: Fm, fontSize: isMobile ? 16 : 10, letterSpacing: '0.06em', outline: 'none' }} />
                                 <button type="submit"
-                                    style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#00f5d4', background: 'rgba(0,245,212,0.08)', border: '1px solid rgba(0,245,212,0.28)', borderRadius: 9, padding: '8px 14px', cursor: 'pointer', transition: 'all 0.18s', whiteSpace: 'nowrap' }}
+                                    style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#00f5d4', background: 'rgba(0,245,212,0.08)', border: '1px solid rgba(0,245,212,0.28)', borderRadius: 9, padding: isMobile ? '13px 16px' : '8px 14px', cursor: 'pointer', transition: 'all 0.18s', whiteSpace: 'nowrap' }}
                                     onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,245,212,0.5)'; e.currentTarget.style.background = 'rgba(0,245,212,0.14)'; }}
                                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,245,212,0.28)'; e.currentTarget.style.background = 'rgba(0,245,212,0.08)'; }}>
                                     CHALLENGE

@@ -327,7 +327,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                 TOP HUD — floating island nav (hidden in card mode)
             ══════════════════════════════════════════════ */}
             {viewMode !== 'card' && <div style={{
-                position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
+                position: 'absolute', top: 'max(16px, env(safe-area-inset-top))', left: '50%', transform: 'translateX(-50%)',
                 display: 'flex', alignItems: 'center', gap: 6,
                 background: 'rgba(4,7,18,0.82)', backdropFilter: 'blur(20px)',
                 border: '1px solid rgba(0,245,212,0.18)',
@@ -344,7 +344,8 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                     title="Back to Galaxy"
                     style={{
                         display: 'flex', alignItems: 'center', gap: isMobile ? 0 : 7,
-                        padding: isMobile ? '7px 10px' : '7px 13px', borderRadius: 12,
+                        padding: isMobile ? '13px 12px' : '7px 13px', borderRadius: 12,
+                        minHeight: isMobile ? 44 : undefined,
                         background: 'rgba(0,245,212,0.07)', border: '1px solid rgba(0,245,212,0.2)',
                         color: '#00f5d4', cursor: 'pointer',
                         fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
@@ -374,7 +375,8 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                             title={label}
                             style={{
                                 display: 'flex', alignItems: 'center', gap: 7,
-                                padding: isMobile ? '7px 10px' : '7px 14px', borderRadius: 12,
+                                padding: isMobile ? '13px 12px' : '7px 14px', borderRadius: 12,
+                                minHeight: isMobile ? 44 : undefined,
                                 fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
                                 cursor: 'pointer', transition: 'all 0.18s ease',
                                 background: active ? 'rgba(0,245,212,0.15)' : 'transparent',
@@ -415,7 +417,8 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                     title="Share your card"
                     style={{
                         display: 'flex', alignItems: 'center', gap: 7,
-                        padding: isMobile ? '7px 10px' : '7px 16px', borderRadius: 12,
+                        padding: isMobile ? '13px 12px' : '7px 16px', borderRadius: 12,
+                        minHeight: isMobile ? 44 : undefined,
                         background: 'linear-gradient(135deg, rgba(139,92,246,0.28) 0%, rgba(109,40,217,0.2) 100%)',
                         border: '1px solid rgba(167,139,250,0.5)',
                         color: '#e9d5ff', cursor: 'pointer',
@@ -436,7 +439,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                     title="Search username"
                     style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        width: 36, height: 36, borderRadius: 12, flexShrink: 0,
+                        width: isMobile ? 44 : 36, height: isMobile ? 44 : 36, borderRadius: 12, flexShrink: 0,
                         background: showSearch ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.08)',
                         border: showSearch ? '1px solid rgba(139,92,246,0.5)' : '1px solid rgba(139,92,246,0.2)',
                         color: showSearch ? '#c4b5fd' : '#a78bfa',
@@ -468,7 +471,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                             autoFocus value={quickSearch} onChange={e => setQuickSearch(e.target.value)}
                             placeholder="search user..."
                             style={{
-                                padding: '8px 14px', borderRadius: 9, fontFamily: FONT_MONO, fontSize: 12,
+                                padding: '8px 14px', borderRadius: 9, fontFamily: FONT_MONO, fontSize: isMobile ? 16 : 12,
                                 background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)',
                                 color: '#fff', width: isMobile ? 160 : 210, outline: 'none', letterSpacing: '0.04em',
                             }}
@@ -509,15 +512,16 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                         left: 0,
                         right: 0,
                         width: '100%',
-                        maxHeight: panelExpanded ? '85vh' : '45vh',
+                        maxHeight: panelExpanded ? '85dvh' : '45dvh',
                         transition: 'max-height 0.4s cubic-bezier(0.4,0,0.2,1)',
                         borderRadius: '20px 20px 0 0',
                         marginTop: 0,
+                        paddingBottom: 'env(safe-area-inset-bottom)',
                     } : {
                         marginTop: 56,
                         width: 360,
                         borderRadius: 20,
-                        maxHeight: 'calc(100vh - 80px)',
+                        maxHeight: 'calc(100dvh - 80px)',
                     }),
                     pointerEvents: 'auto',
                     display: 'flex', flexDirection: 'column',
@@ -534,7 +538,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                     <div
                         onClick={() => setPanelExpanded(e => !e)}
                         style={{
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 0 4px',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px 0 8px',
                             cursor: 'pointer', flexShrink: 0, gap: 4,
                         }}
                     >

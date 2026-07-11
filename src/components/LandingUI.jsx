@@ -213,7 +213,7 @@ function FeaturedCard({ user, index, onSelect }) {
             className="cyber-btn"
             style={{
                 display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 16px', borderRadius: 12, cursor: 'pointer',
+                padding: '10px 16px', borderRadius: 12, cursor: 'pointer', minHeight: 44,
                 fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.05em',
                 background: hovered ? `${color}12` : 'rgba(10,14,22,0.75)',
                 border: `1px solid ${hovered ? color + '40' : 'rgba(255,255,255,0.08)'}`,
@@ -279,7 +279,6 @@ function LandingUI({ onSearch }) {
     const [focused, setFocused] = useState(false);
     const [searchHovered, setSearchHovered] = useState(false);
     const isMobile = useIsMobile();
-    const [mobileDismissed, setMobileDismissed] = useState(false);
     const inputRef = useRef();
     const chipRowRef = useRef();
     const totalQuestions       = useTotalQuestionsCount();
@@ -387,53 +386,6 @@ function LandingUI({ onSearch }) {
             </div>
 
             {/* ── Mobile warning popup ── */}
-            {isMobile && !mobileDismissed && (
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.4 }}
-                    style={{
-                        position: 'fixed', top: 16, left: 16, right: 16, zIndex: 9999,
-                        background: 'rgba(20,4,4,0.97)',
-                        border: '1px solid rgba(239,68,68,0.7)',
-                        borderRadius: 10,
-                        padding: '12px 14px',
-                        boxShadow: '0 0 24px rgba(239,68,68,0.3), 0 4px 16px rgba(0,0,0,0.6)',
-                        pointerEvents: 'auto',
-                        display: 'flex', alignItems: 'flex-start', gap: 10,
-                    }}
-                >
-                    <span style={{ fontSize: 18, lineHeight: 1.2 }}>⚠️</span>
-                    <div style={{ flex: 1 }}>
-                        <p style={{
-                            fontFamily: FONT_MONO, fontSize: 11, color: '#f87171',
-                            letterSpacing: '0.08em', margin: 0, marginBottom: 3,
-                            fontWeight: 700, textTransform: 'uppercase',
-                        }}>
-                            Desktop recommended
-                        </p>
-                        <p style={{
-                            fontFamily: FONT_MONO, fontSize: 10, color: 'rgba(248,113,113,0.7)',
-                            letterSpacing: '0.05em', margin: 0, lineHeight: 1.5,
-                        }}>
-                            This experience is optimized for desktop. Some features may not work as expected on mobile.
-                        </p>
-                    </div>
-                    <button
-                        onClick={() => setMobileDismissed(true)}
-                        style={{
-                            background: 'none', border: 'none', cursor: 'pointer',
-                            color: 'rgba(248,113,113,0.6)', fontSize: 18, lineHeight: 1,
-                            padding: '0 2px', flexShrink: 0,
-                        }}
-                        aria-label="Dismiss"
-                    >
-                        ×
-                    </button>
-                </motion.div>
-            )}
-
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -519,19 +471,6 @@ function LandingUI({ onSearch }) {
                     <TypeWriter text="LC // CODE FROM EVERYWHERE" delay={35} />
                 </motion.p>
 
-                {/* ── Desktop recommendation note ── */}
-                <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.0 }}
-                    style={{
-                        color: 'rgba(167,139,250,0.45)', marginBottom: 20, fontFamily: FONT_MONO,
-                        fontSize: 10, textAlign: 'center', letterSpacing: '0.14em',
-                    }}
-                >
-                    ✦ recommended to open on desktop ✦
-                </motion.p>
-
                 {/* ── Stats row ── */}
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -593,7 +532,7 @@ function LandingUI({ onSearch }) {
                                 style={{
                                     flex: 1, background: 'transparent', color: 'var(--input-color)',
                                     border: 'none', padding: isMobile ? '14px 0' : '16px 0',
-                                    fontFamily: FONT_MONO, fontSize: isMobile ? 12 : 14, outline: 'none',
+                                    fontFamily: FONT_MONO, fontSize: isMobile ? 16 : 14, outline: 'none',
                                     letterSpacing: '0.05em',
                                     minWidth: 0,
                                 }}
@@ -603,7 +542,7 @@ function LandingUI({ onSearch }) {
                                 className="cyber-btn"
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: 8,
-                                    padding: '10px 20px', margin: 6, borderRadius: 12,
+                                    padding: '10px 20px', margin: 6, borderRadius: 12, minHeight: 44,
                                     border: 'none', cursor: 'pointer',
                                     fontFamily: FONT_ORBIT, fontSize: 11, fontWeight: 700,
                                     color: '#030508', letterSpacing: '0.08em',

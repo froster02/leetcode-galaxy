@@ -29,7 +29,7 @@ export default function ErrorToast({ message, onRetry, onClose }) {
                     exit={{ opacity: 0, y: -12 }}
                     transition={{ duration: 0.2 }}
                     style={{
-                        position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)',
+                        position: 'fixed', top: 'max(16px, env(safe-area-inset-top))', left: '50%', transform: 'translateX(-50%)',
                         zIndex: 500, display: 'flex', alignItems: 'center', gap: 10,
                         padding: '9px 10px 9px 14px', borderRadius: 10,
                         background: 'rgba(20,4,8,0.92)', backdropFilter: 'blur(14px)',
@@ -52,7 +52,7 @@ export default function ErrorToast({ message, onRetry, onClose }) {
                                 flexShrink: 0, fontFamily: FONT_MONO, fontSize: 9, fontWeight: 700,
                                 letterSpacing: '0.14em', color: '#ff7d95', background: 'rgba(255,56,96,0.12)',
                                 border: '1px solid rgba(255,56,96,0.35)', borderRadius: 6,
-                                padding: '4px 10px', cursor: 'pointer',
+                                padding: '10px 14px', cursor: 'pointer',
                             }}
                         >
                             RETRY
@@ -63,8 +63,9 @@ export default function ErrorToast({ message, onRetry, onClose }) {
                         aria-label="Dismiss"
                         style={{
                             flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            width: 18, height: 18, borderRadius: '50%', background: 'transparent',
-                            border: 'none', color: 'rgba(255,125,149,0.6)', cursor: 'pointer', fontSize: 13,
+                            width: 44, height: 44, margin: '-13px -13px -13px -8px',
+                            borderRadius: '50%', background: 'transparent',
+                            border: 'none', color: 'rgba(255,125,149,0.6)', cursor: 'pointer', fontSize: 16,
                             lineHeight: 1,
                         }}
                     >

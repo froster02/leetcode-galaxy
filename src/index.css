@@ -56,6 +56,28 @@ body,
   transition: background 0.3s ease;
 }
 
+/* Faster taps + no accidental double-tap zoom on controls (zoom stays enabled page-wide) */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+/* Full-viewport height that tracks the mobile URL bar; falls back to vh where dvh is unsupported */
+.app-viewport {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+}
+
+.page-viewport {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 4px;

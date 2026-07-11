@@ -368,8 +368,8 @@ function App() {
   }, [handleSearch, handleBack]);
 
   return (
-    <div style={{
-      width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden',
+    <div className="app-viewport" style={{
+      position: 'relative', overflow: 'hidden',
       background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: '"Share Tech Mono", monospace',
       transition: 'background 0.3s ease, color 0.3s ease',
     }}>
