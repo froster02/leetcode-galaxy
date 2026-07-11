@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useLayoutEffect } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
@@ -167,105 +167,231 @@ function generateTopicBuildings(districts, seed) {
     });
 }
 
-/* ─────────────────── City Building ─────────────────── */
-// No per-building useFrame — static emissive + bloom handles glow.
-// Saves ~500 frame callbacks (100 blocks × ~5 buildings each).
-function CityBuilding({ height, width, color, position }) {
-    const tiers = height > 6 ? 3 : height > 3.5 ? 2 : 1;
-    const tierHeights = tiers === 3
-        ? [height * 0.55, height * 0.28, height * 0.17]
-        : tiers === 2
-        ? [height * 0.65, height * 0.35]
-        : [height];
-    const tierWidths = tierHeights.map((_, i) => width * (1 - i * 0.22));
+/* ─────────────────── City Buildings — instanced ───────────────────
+   All buildings across the whole grid are pooled into a handful of
+   THREE.InstancedMesh draw calls instead of one <mesh> per tier/
+   stripe/window/beacon per building (previously ~700-900 draw calls
+   for a full 10x10 grid). Geometry/positions are static after mount
+   (roster only changes on a new search), so instance matrices are
+   written once via useLayoutEffect rather than per-frame.
+──────────────────────────────────────────────────────────────────── */
+const UNIT_BOX_GEOM = new THREE.BoxGeometry(1, 1, 1);
+const WINDOW_GEOM = new THREE.BoxGeometry(0.02, 0.12, 0.24);
+const MAST_GEOM = new THREE.CylinderGeometry(0.03, 0.06, 1.0, 5);
+const BEACON_SPHERE_GEOM = new THREE.SphereGeometry(0.09, 6, 6);
+const IDENTITY_SCALE = [1, 1, 1];
 
-    // Cap at 3 stripes — no refs, static emissive
-    const stripeCount = Math.min(Math.floor(height / 1.4), 3);
-    const stripePositions = Array.from({ length: stripeCount }, (_, i) =>
-        ((i + 1) / (stripeCount + 1)) * height
+// Buildings only ever use one of ~11 fixed hues (3 difficulty colors +
+// 8 topic colors), so instances are pooled per-color rather than via a
+// per-instance vertex-color material — same `color`/`emissive` material
+// formula as the original per-building mesh, just one draw call per hue
+// instead of one draw call per building.
+function groupByColor(instances) {
+    const buckets = new Map();
+    for (const inst of instances) {
+        if (!buckets.has(inst.color)) buckets.set(inst.color, []);
+        buckets.get(inst.color).push(inst);
+    }
+    return buckets;
+}
+
+// Mirrors the tier/stripe/window/beacon geometry that CityBuilding used to
+// derive per-mesh — kept identical so instancing doesn't change the look.
+function collectBuildingInstances(roster, globalMax, districts) {
+    const tierInstances = [];
+    const stripeInstances = [];
+    const windowInstances = [];
+    const beaconInstances = [];
+
+    for (let i = 0; i < roster.length; i++) {
+        const user = roster[i];
+        if (!user) continue;
+        const row = Math.floor(i / GRID_COLS);
+        const col = i % GRID_COLS;
+        const worldX = (col - USER_COL) * CELL_SIZE;
+        const worldZ = (row - USER_ROW) * CELL_SIZE;
+        const seed = row * 100 + col;
+        const buildings = (user.isCurrent && districts?.length)
+            ? generateTopicBuildings(districts, seed)
+            : generateBlockBuildings(user.easy, user.med, user.hard, globalMax, seed);
+
+        for (const b of buildings) {
+            const bx = worldX + b.x;
+            const bz = worldZ + b.z;
+            const { height, width, color } = b;
+
+            const tiers = height > 6 ? 3 : height > 3.5 ? 2 : 1;
+            const tierHeights = tiers === 3
+                ? [height * 0.55, height * 0.28, height * 0.17]
+                : tiers === 2
+                ? [height * 0.65, height * 0.35]
+                : [height];
+            const tierWidths = tierHeights.map((_, ti) => width * (1 - ti * 0.22));
+
+            let yOffset = 0;
+            tierHeights.forEach((th, ti) => {
+                const tw = tierWidths[ti];
+                const y = yOffset + th / 2;
+                yOffset += th;
+                tierInstances.push({ position: [bx, y, bz], scale: [tw, th, tw], color, blockIdx: i });
+            });
+
+            const stripeCount = Math.min(Math.floor(height / 1.4), 3);
+            for (let si = 0; si < stripeCount; si++) {
+                const sy = ((si + 1) / (stripeCount + 1)) * height;
+                stripeInstances.push({
+                    position: [bx, sy, bz + width / 2 + 0.01],
+                    scale: [width * 0.92, 0.045, 0.02],
+                    color,
+                });
+            }
+
+            if (height > 2.5) {
+                [0.35, 0.65].forEach((frac) => {
+                    windowInstances.push({ position: [bx + tierWidths[0] / 2 + 0.01, height * frac, bz] });
+                });
+            }
+
+            if (height > 5) {
+                beaconInstances.push({
+                    mast: [bx, height + 0.5, bz],
+                    sphere: [bx, height + 1.1, bz],
+                });
+            }
+        }
+    }
+
+    return { tierInstances, stripeInstances, windowInstances, beaconInstances };
+}
+
+// One InstancedMesh for a single (geometry, material-props, instance list)
+// combination. Handles its own one-time matrix write. `frustumCulled` is
+// always off since matrices are written post-mount (useLayoutEffect), after
+// the mesh's default/empty bounding sphere would otherwise get it culled.
+function InstancedBucket({ instances, geometry, materialType: Material, materialProps, onPointerOver, onPointerOut, onClick }) {
+    const ref = useRef();
+    const dummy = useMemo(() => new THREE.Object3D(), []);
+
+    useLayoutEffect(() => {
+        if (!ref.current) return;
+        instances.forEach((inst, i) => {
+            dummy.position.set(...inst.position);
+            dummy.scale.set(...(inst.scale || IDENTITY_SCALE));
+            dummy.rotation.set(0, 0, 0);
+            dummy.updateMatrix();
+            ref.current.setMatrixAt(i, dummy.matrix);
+        });
+        ref.current.instanceMatrix.needsUpdate = true;
+    }, [instances, dummy]);
+
+    if (instances.length === 0) return null;
+    return (
+        <instancedMesh
+            ref={ref}
+            args={[geometry, undefined, instances.length]}
+            frustumCulled={false}
+            onPointerOver={onPointerOver}
+            onPointerOut={onPointerOut}
+            onClick={onClick}
+        >
+            <Material {...materialProps} />
+        </instancedMesh>
     );
+}
 
-    let yOffset = 0;
-    const tierMeshes = tierHeights.map((th, ti) => {
-        const tw = tierWidths[ti];
-        const y = yOffset + th / 2;
-        yOffset += th;
-        return (
-            <mesh key={`tier-${ti}`} position={[0, y, 0]}>
-                <boxGeometry args={[tw, th, tw]} />
-                <meshStandardMaterial
-                    color={color}
-                    emissive={color}
-                    emissiveIntensity={0.3}
-                    metalness={0.55}
-                    roughness={0.35}
-                    transparent
-                    opacity={0.92}
-                />
-            </mesh>
-        );
+function InstancedBuildings({ roster, globalMax, districts, onSelectUser, onHoverBlock }) {
+    const { tierInstances, stripeInstances, windowInstances, beaconInstances } = useMemo(
+        () => collectBuildingInstances(roster, globalMax, districts),
+        [roster, globalMax, districts]
+    );
+    const tierBuckets = useMemo(() => groupByColor(tierInstances), [tierInstances]);
+    const stripeBuckets = useMemo(() => groupByColor(stripeInstances), [stripeInstances]);
+
+    // Hovering/clicking a building resolves to its owning block via the
+    // instanceId of the bucket it landed in, matching the old per-block
+    // pointer-event bubbling (buildings used to be children of the block's
+    // group; now they're pooled siblings at the scene level).
+    const makeHandlers = (bucketInstances) => ({
+        onPointerOver: (e) => {
+            e.stopPropagation();
+            const idx = bucketInstances[e.instanceId]?.blockIdx;
+            if (idx != null) { onHoverBlock(idx); document.body.style.cursor = 'pointer'; }
+        },
+        onPointerOut: (e) => {
+            e.stopPropagation();
+            onHoverBlock(null);
+            document.body.style.cursor = 'auto';
+        },
+        onClick: (e) => {
+            e.stopPropagation();
+            const idx = bucketInstances[e.instanceId]?.blockIdx;
+            const user = idx != null ? roster[idx] : null;
+            if (user && onSelectUser) onSelectUser(user.u);
+        },
     });
 
     return (
-        <group position={position}>
-            {tierMeshes}
-
-            {stripePositions.map((sy, i) => (
-                <mesh key={`stripe-${i}`} position={[0, sy, width / 2 + 0.01]}>
-                    <boxGeometry args={[width * 0.92, 0.045, 0.02]} />
-                    <meshBasicMaterial
-                        color={color}
-                        toneMapped={false}
-                    />
-                </mesh>
+        <>
+            {Array.from(tierBuckets.entries()).map(([color, bucketInstances]) => (
+                <InstancedBucket
+                    key={`tier-${color}`}
+                    instances={bucketInstances}
+                    geometry={UNIT_BOX_GEOM}
+                    materialType="meshStandardMaterial"
+                    materialProps={{ color, emissive: color, emissiveIntensity: 0.3, metalness: 0.55, roughness: 0.35, transparent: true, opacity: 0.92 }}
+                    {...makeHandlers(bucketInstances)}
+                />
             ))}
-
-            {height > 2.5 && [0.35, 0.65].map((frac, i) => (
-                <mesh key={`win-${i}`} position={[tierWidths[0] / 2 + 0.01, height * frac, 0]}>
-                    <boxGeometry args={[0.02, 0.12, 0.24]} />
-                    <meshBasicMaterial color="#88aaff" toneMapped={false} />
-                </mesh>
+            {Array.from(stripeBuckets.entries()).map(([color, bucketInstances]) => (
+                <InstancedBucket
+                    key={`stripe-${color}`}
+                    instances={bucketInstances}
+                    geometry={UNIT_BOX_GEOM}
+                    materialType="meshBasicMaterial"
+                    materialProps={{ color, toneMapped: false }}
+                />
             ))}
-
-            {height > 5 && (
-                <group position={[0, height, 0]}>
-                    <mesh position={[0, 0.5, 0]}>
-                        <cylinderGeometry args={[0.03, 0.06, 1.0, 5]} />
-                        <meshStandardMaterial color="#aaaacc" metalness={0.9} roughness={0.2} />
-                    </mesh>
-                    {/* Bloom on emissive beacon — no pointLight needed */}
-                    <mesh position={[0, 1.1, 0]}>
-                        <sphereGeometry args={[0.09, 6, 6]} />
-                        <meshBasicMaterial color="#ff2244" toneMapped={false} />
-                    </mesh>
-                </group>
-            )}
-        </group>
+            <InstancedBucket
+                instances={windowInstances}
+                geometry={WINDOW_GEOM}
+                materialType="meshBasicMaterial"
+                materialProps={{ color: '#88aaff', toneMapped: false }}
+            />
+            <InstancedBucket
+                instances={beaconInstances.map((b) => ({ position: b.mast }))}
+                geometry={MAST_GEOM}
+                materialType="meshStandardMaterial"
+                materialProps={{ color: '#aaaacc', metalness: 0.9, roughness: 0.2 }}
+            />
+            <InstancedBucket
+                instances={beaconInstances.map((b) => ({ position: b.sphere }))}
+                geometry={BEACON_SPHERE_GEOM}
+                materialType="meshBasicMaterial"
+                materialProps={{ color: '#ff2244', toneMapped: false }}
+            />
+        </>
     );
 }
 
 /* ─────────────────── Single City Block (township) ─────────────── */
-function CityBlock({ user, gridRow, gridCol, globalMax, isNight, onSelect, showBlockLabels, topicDistricts }) {
-    const [hovered, setHovered] = useState(false);
+function CityBlock({ user, gridIdx, gridRow, gridCol, isNight, onSelect, showBlockLabels, hoveredIdx }) {
+    const [hoveredLocal, setHoveredLocal] = useState(false);
     const isCurrent = user?.isCurrent;
+    // Buildings are rendered once, pooled, by <InstancedBuildings> at the
+    // scene level — this block only needs to know if it's hovered (either
+    // via its own ground plate, or via a building resolved by instanceId).
+    const hovered = hoveredLocal || hoveredIdx === gridIdx;
 
     const worldX = (gridCol - USER_COL) * CELL_SIZE;
     const worldZ = (gridRow - USER_ROW) * CELL_SIZE;
-
-    const buildings = useMemo(() => {
-        if (!user) return [];
-        const seed = gridRow * 100 + gridCol;
-        if (isCurrent && topicDistricts?.length) return generateTopicBuildings(topicDistricts, seed);
-        return generateBlockBuildings(user.easy, user.med, user.hard, globalMax, seed);
-    }, [user, globalMax, gridRow, gridCol, isCurrent, topicDistricts]);
 
     const accentColor = isCurrent ? '#00f5d4' : '#3b82f6';
 
     return (
         <group 
             position={[worldX, 0, worldZ]}
-            onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
-            onPointerOut={(e) => { e.stopPropagation(); setHovered(false); document.body.style.cursor = 'auto'; }}
+            onPointerOver={(e) => { e.stopPropagation(); setHoveredLocal(true); document.body.style.cursor = 'pointer'; }}
+            onPointerOut={(e) => { e.stopPropagation(); setHoveredLocal(false); document.body.style.cursor = 'auto'; }}
             onClick={(e) => { e.stopPropagation(); if (user && onSelect) onSelect(user.u); }}
         >
             {/* Block ground plate */}
@@ -296,17 +422,6 @@ function CityBlock({ user, gridRow, gridCol, globalMax, isNight, onSelect, showB
                     side={2}
                 />
             </mesh>
-
-            {/* Buildings */}
-            {buildings.map((b, i) => (
-                <CityBuilding
-                    key={i}
-                    height={b.height}
-                    width={b.width}
-                    color={b.color}
-                    position={[b.x, 0, b.z]}
-                />
-            ))}
 
             {/* Current user beacon */}
             {isCurrent && <UserBeacon />}
@@ -814,6 +929,7 @@ function Aurora({ colors }) {
 /* ─────────────────── City Scene Inner ─────────────────── */
 function CitySceneInner({ roster, onSelectUser, showBlockLabels, isNight, palette, districts }) {
     const reducedMotion = useReducedMotion();
+    const [hoveredIdx, setHoveredIdx] = useState(null);
     const globalMax = useMemo(() => {
         let m = 1;
         for (const user of roster) {
@@ -829,6 +945,14 @@ function CitySceneInner({ roster, onSelectUser, showBlockLabels, isNight, palett
             <StreetGrid isNight={isNight} />
             {!reducedMotion && <CarLights />}
 
+            <InstancedBuildings
+                roster={roster}
+                globalMax={globalMax}
+                districts={districts}
+                onSelectUser={onSelectUser}
+                onHoverBlock={setHoveredIdx}
+            />
+
             {roster.map((user, i) => {
                 if (!user) return null;
                 const row = Math.floor(i / GRID_COLS);
@@ -837,20 +961,22 @@ function CitySceneInner({ roster, onSelectUser, showBlockLabels, isNight, palett
                     <CityBlock
                         key={`${row}-${col}`}
                         user={user}
+                        gridIdx={i}
                         gridRow={row}
                         gridCol={col}
-                        globalMax={globalMax}
                         isNight={isNight}
                         onSelect={onSelectUser}
                         showBlockLabels={showBlockLabels}
-                        topicDistricts={user.isCurrent ? districts : undefined}
+                        hoveredIdx={hoveredIdx}
                     />
                 );
             })}
 
+            {/* mipmapBlur dropped — the instanced-mesh refactor already cut
+                draw calls ~150x; the extra multi-pass blur cost isn't worth
+                it for a marginal glow difference. */}
             <EffectComposer multisampling={0}>
                 <Bloom
-                    mipmapBlur
                     luminanceThreshold={0.5}
                     luminanceSmoothing={0.7}
                     intensity={1.4}

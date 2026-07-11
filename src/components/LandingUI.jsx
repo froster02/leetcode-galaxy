@@ -136,7 +136,7 @@ function OrbitRing({ size, duration, color, opacity = 0.08, delay = 0 }) {
 }
 
 /* ── Stat card with hover effect ─────────────────────── */
-function StatCard({ icon: Icon, value, label, color, delay }) {
+const StatCard = React.memo(function StatCard({ icon: Icon, value, label, color, delay }) {
     const [hovered, setHovered] = useState(false);
     return (
         <motion.div
@@ -176,10 +176,10 @@ function StatCard({ icon: Icon, value, label, color, delay }) {
             }}>{label}</div>
         </motion.div>
     );
-}
+});
 
 /* ── Featured user card with holographic effect ──────── */
-function FeaturedCard({ user, index, onSelect }) {
+const FeaturedCard = React.memo(function FeaturedCard({ user, index, onSelect }) {
     const [hovered, setHovered] = useState(false);
     const cardRef = useRef();
     const [tilt, setTilt] = useState({ x: 0, y: 0 });
@@ -247,7 +247,7 @@ function FeaturedCard({ user, index, onSelect }) {
             }} />
         </motion.button>
     );
-}
+});
 
 /* ── Command palette hint ────────────────────────────── */
 function CommandHint() {

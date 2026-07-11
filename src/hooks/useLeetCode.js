@@ -87,7 +87,11 @@ async function fetchFromWorker(username) {
     }
     const json = await res.json().catch(() => null);
     if (!json) throw new Error('Network error');
-    return mapWorkerResponse(username, json);
+    // Mirrors the Alfa path's completeness check: only cache-worthy if the
+    // secondary fields actually came back, not silently defaulted to {}/[].
+    const complete = [json.contest, json.badges, json.tagProblemCounts, json.calendar?.submissionCalendar]
+        .every(part => part !== undefined && part !== null);
+    return { mapped: mapWorkerResponse(username, json), complete };
 }
 
 function getCached(username) {
@@ -274,9 +278,9 @@ export function useLeetCode() {
             const msg = err?.message;
             if (WORKER_URL && (msg === 'Rate limited' || msg === 'Network error')) {
                 try {
-                    const json = await fetchFromWorker(username);
+                    const { mapped: json, complete } = await fetchFromWorker(username);
                     setData(json);
-                    setCache(username, json);
+                    if (complete) setCache(username, json);
                     return json;
                 } catch { /* fall through to the original error */ }
             }

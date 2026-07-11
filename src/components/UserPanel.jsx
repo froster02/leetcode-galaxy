@@ -26,7 +26,7 @@ const tierWithIcon = (power) => {
 };
 
 /* ── Animated Power Level Display ────────────────────── */
-function PowerLevelDisplay({ level }) {
+const PowerLevelDisplay = React.memo(function PowerLevelDisplay({ level }) {
     const tier = tierWithIcon(level);
     const TierIcon = tier.icon;
     const [displayed, setDisplayed] = useState(0);
@@ -82,10 +82,10 @@ function PowerLevelDisplay({ level }) {
             </div>
         </motion.div>
     );
-}
+});
 
 /* ── Circular Progress Ring ──────────────────────────── */
-function ProgressRing({ value, max, size = 100, color = '#00f5d4', label }) {
+const ProgressRing = React.memo(function ProgressRing({ value, max, size = 100, color = '#00f5d4', label }) {
     const strokeWidth = 6;
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
@@ -116,10 +116,10 @@ function ProgressRing({ value, max, size = 100, color = '#00f5d4', label }) {
             </div>
         </div>
     );
-}
+});
 
 /* ── SVG Radar Chart ─────────────────────────────────── */
-function RadarChart({ districts, size = 200 }) {
+const RadarChart = React.memo(function RadarChart({ districts, size = 200 }) {
     if (!districts || districts.length === 0) return null;
     const top = districts.slice(0, 6);
     const center = size / 2;
@@ -180,10 +180,10 @@ function RadarChart({ districts, size = 200 }) {
             ))}
         </svg>
     );
-}
+});
 
 /* ── Difficulty bar ──────────────────────────────────── */
-function DiffBar({ label, count, total, color, index }) {
+const DiffBar = React.memo(function DiffBar({ label, count, total, color, index }) {
     const pct = total > 0 ? (count / total) * 100 : 0;
     return (
         <motion.div
@@ -210,10 +210,10 @@ function DiffBar({ label, count, total, color, index }) {
             </div>
         </motion.div>
     );
-}
+});
 
 /* ── Achievement Badge ───────────────────────────────── */
-function AchievementBadge({ icon: Icon, label, color, unlocked, delay }) {
+const AchievementBadge = React.memo(function AchievementBadge({ icon: Icon, label, color, unlocked, delay }) {
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
@@ -241,7 +241,7 @@ function AchievementBadge({ icon: Icon, label, color, unlocked, delay }) {
             }}>{label}</span>
         </motion.div>
     );
-}
+});
 
 /* ── Main component ──────────────────────────────────── */
 function UserPanel({ data, onBack, viewMode, onViewModeChange }) {

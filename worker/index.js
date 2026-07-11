@@ -164,7 +164,9 @@ export default {
                     headers: {
                         ...CORS_HEADERS,
                         'Content-Type': 'application/json',
-                        'Cache-Control': 'public, max-age=3600'
+                        // Matches the client's CACHE_TTL (useLeetCode.js) so the edge
+                        // cache can't outlive the client cache and serve stale data.
+                        'Cache-Control': 'public, max-age=1800'
                     }
                 });
 

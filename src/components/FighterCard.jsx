@@ -10,7 +10,7 @@ import { Heatmap } from './Heatmap';
 const ShareModal = lazy(() => import('./ShareCard'));
 
 /* ── Contest rating sparkline — inline SVG, oldest → newest ── */
-function RatingSparkline({ history, color = '#00f5d4', width = 200, height = 36 }) {
+const RatingSparkline = React.memo(function RatingSparkline({ history, color = '#00f5d4', width = 200, height = 36 }) {
     if (!Array.isArray(history) || history.length < 2) return null;
     const min = Math.min(...history);
     const max = Math.max(...history);
@@ -29,10 +29,10 @@ function RatingSparkline({ history, color = '#00f5d4', width = 200, height = 36 
             <circle cx={lastX} cy={lastY} r="2.5" fill={color} />
         </svg>
     );
-}
+});
 
 /* ── Canvas star field — drawn once, zero ongoing CPU cost ── */
-function StarCanvas() {
+const StarCanvas = React.memo(function StarCanvas() {
     const canvasRef = React.useRef(null);
 
     const draw = React.useCallback(() => {
@@ -76,7 +76,7 @@ function StarCanvas() {
     }, [draw]);
 
     return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />;
-}
+});
 
 /* ── Fonts ───────────────────────────────────────────────── */
 const Fd = 'Orbitron, sans-serif';          // display — headings, numbers, power
@@ -115,7 +115,7 @@ function timeAgo(ts) {
     Phase 1: 0 → 100% (ignition sweep, ~1050ms)
     Phase 2: 100% → actual (elastic settle, ~1550ms)
 ══════════════════════════════════════════════════════════ */
-function CircularGauge({ count, total, color, label, size = 130, delay = 0 }) {
+const CircularGauge = React.memo(function CircularGauge({ count, total, color, label, size = 130, delay = 0 }) {
     const [displayPct, setDisplayPct] = useState(0);
     const actual = total > 0 ? Math.min((count / total) * 100, 100) : 0;
 
@@ -247,12 +247,12 @@ function CircularGauge({ count, total, color, label, size = 130, delay = 0 }) {
             </span>
         </div>
     );
-}
+});
 
 /* ══════════════════════════════════════════════════════════
    StatCard — glassmorphism info card
 ══════════════════════════════════════════════════════════ */
-function StatCard({ label, value, color, sub }) {
+const StatCard = React.memo(function StatCard({ label, value, color, sub }) {
     return (
         <motion.div
             whileHover={{ y: -2 }}
@@ -282,12 +282,12 @@ function StatCard({ label, value, color, sub }) {
             )}
         </motion.div>
     );
-}
+});
 
 /* ══════════════════════════════════════════════════════════
    PowerCounter — animated number
 ══════════════════════════════════════════════════════════ */
-function PowerCounter({ target, color }) {
+const PowerCounter = React.memo(function PowerCounter({ target, color }) {
     const [val, setVal] = useState(0);
     useEffect(() => {
         let cur = 0;
@@ -308,12 +308,12 @@ function PowerCounter({ target, color }) {
             {val.toLocaleString()}
         </span>
     );
-}
+});
 
 /* ══════════════════════════════════════════════════════════
    MiniRing — compact SVG ring (used for win-rate indicator)
 ══════════════════════════════════════════════════════════ */
-function MiniRing({ pct, size, color, stroke = 5, children }) {
+const MiniRing = React.memo(function MiniRing({ pct, size, color, stroke = 5, children }) {
     const [on, setOn] = useState(false);
     useEffect(() => { const t = setTimeout(() => setOn(true), 400); return () => clearTimeout(t); }, []);
     const r = (size - stroke) / 2;
@@ -334,12 +334,12 @@ function MiniRing({ pct, size, color, stroke = 5, children }) {
             </div>
         </div>
     );
-}
+});
 
 /* ══════════════════════════════════════════════════════════
    VS Modal
 ══════════════════════════════════════════════════════════ */
-function FighterCol({ cls, name, pow, isMe, won, reduced }) {
+const FighterCol = React.memo(function FighterCol({ cls, name, pow, isMe, won, reduced }) {
     return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
             padding: '24px 16px', borderRadius: 14,
@@ -375,7 +375,7 @@ function FighterCol({ cls, name, pow, isMe, won, reduced }) {
             </div>}
         </div>
     );
-}
+});
 
 function VSModal({ myData, opponent, onClose }) {
     const reduced = useReducedMotion();
