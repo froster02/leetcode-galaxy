@@ -212,16 +212,10 @@ const CircularGauge = React.memo(function CircularGauge({ count, total, color, l
                         strokeDasharray={`${fillLen} ${circ - fillLen}`}
                         strokeLinecap="round"
                         transform={`rotate(-210 ${cx} ${cy})`}
-                        style={{ filter: `drop-shadow(0 0 6px ${color}bb)` }}
                     />
-                    {/* Glowing tip dot — tracks the needle */}
+                    {/* Tip dot — tracks the needle */}
                     {fillLen > 4 && (
-                        <>
-                            <circle cx={tipX} cy={tipY} r={stroke / 2 + 3} fill={color} opacity={0.2} />
-                            <circle cx={tipX} cy={tipY} r={stroke / 2 + 1} fill={color}
-                                style={{ filter: `drop-shadow(0 0 8px ${color})` }}
-                            />
-                        </>
+                        <circle cx={tipX} cy={tipY} r={stroke / 2 + 1} fill={color} />
                     )}
                 </svg>
 
@@ -231,7 +225,7 @@ const CircularGauge = React.memo(function CircularGauge({ count, total, color, l
                     display: 'flex', flexDirection: 'column',
                     alignItems: 'center', justifyContent: 'center', gap: 2,
                 }}>
-                    <span style={{ fontFamily: Fd, fontSize: 17, fontWeight: 900, color, lineHeight: 1, textShadow: `0 0 12px ${color}70` }}>
+                    <span style={{ fontFamily: Fd, fontSize: 17, fontWeight: 900, color, lineHeight: 1 }}>
                         {count}
                     </span>
                     <span style={{ fontFamily: Fm, fontSize: 7, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.05em' }}>
@@ -254,25 +248,20 @@ const CircularGauge = React.memo(function CircularGauge({ count, total, color, l
 ══════════════════════════════════════════════════════════ */
 const StatCard = React.memo(function StatCard({ label, value, color, sub }) {
     return (
-        <motion.div
-            whileHover={{ y: -2 }}
+        <div
             style={{
                 flex: 1, minWidth: 0,
                 padding: '12px 14px',
-                background: `linear-gradient(160deg, ${color}0c 0%, rgba(255,255,255,0.04) 100%)`,
-                border: `1px solid ${color}35`,
+                background: 'rgba(255,255,255,0.03)',
+                border: `1px solid ${color}30`,
                 borderRadius: 10,
                 display: 'flex', flexDirection: 'column', gap: 4,
-                position: 'relative', overflow: 'hidden',
-                boxShadow: `0 0 20px ${color}0a`,
             }}
         >
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-                background: `linear-gradient(90deg, ${color}60, ${color}20, transparent)` }} />
             <span style={{ fontFamily: Fm, fontSize: 8, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase' }}>
                 {label}
             </span>
-            <span style={{ fontFamily: Fd, fontSize: 18, fontWeight: 900, color, lineHeight: 1.1, textShadow: `0 0 20px ${color}60` }}>
+            <span style={{ fontFamily: Fd, fontSize: 18, fontWeight: 900, color, lineHeight: 1.1 }}>
                 {value ?? '—'}
             </span>
             {sub && (
@@ -280,7 +269,7 @@ const StatCard = React.memo(function StatCard({ label, value, color, sub }) {
                     {sub}
                 </span>
             )}
-        </motion.div>
+        </div>
     );
 });
 
@@ -303,7 +292,6 @@ const PowerCounter = React.memo(function PowerCounter({ target, color }) {
         <span style={{
             fontFamily: Fd, fontSize: 'clamp(34px, 5vw, 50px)', fontWeight: 900,
             color, lineHeight: 1, letterSpacing: '-0.02em',
-            textShadow: `0 0 40px ${color}60`,
         }}>
             {val.toLocaleString()}
         </span>
@@ -326,7 +314,7 @@ const MiniRing = React.memo(function MiniRing({ pct, size, color, stroke = 5, ch
                 <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
                     strokeLinecap="round"
                     strokeDasharray={circ} strokeDashoffset={offset}
-                    style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.16,1,0.3,1)', filter: `drop-shadow(0 0 4px ${color}80)` }}
+                    style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.16,1,0.3,1)' }}
                 />
             </svg>
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -339,24 +327,18 @@ const MiniRing = React.memo(function MiniRing({ pct, size, color, stroke = 5, ch
 /* ══════════════════════════════════════════════════════════
    VS Modal
 ══════════════════════════════════════════════════════════ */
-const FighterCol = React.memo(function FighterCol({ cls, name, pow, isMe, won, reduced }) {
+const FighterCol = React.memo(function FighterCol({ cls, name, pow, isMe, won }) {
     return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
             padding: '24px 16px', borderRadius: 14,
-            background: won ? `linear-gradient(160deg, ${cls.color}18 0%, ${cls.color}06 100%)` : 'rgba(255,255,255,0.03)',
+            background: won ? `${cls.color}0c` : 'rgba(255,255,255,0.03)',
             border: `1px solid ${won ? cls.color + '40' : 'rgba(255,255,255,0.08)'}`,
-            boxShadow: won ? `0 0 32px ${cls.color}20` : 'none',
             position: 'relative', overflow: 'hidden' }}>
-            {won && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-                background: `linear-gradient(90deg, transparent, ${cls.color}, transparent)` }} />}
-            <motion.div animate={reduced ? undefined : { boxShadow: won ? [`0 0 0 2px ${cls.color}40`, `0 0 0 6px ${cls.color}60`, `0 0 0 2px ${cls.color}40`] : [`0 0 0 1px ${cls.color}20`] }}
-                transition={reduced ? undefined : { duration: 2.5, repeat: Infinity }}
-                style={{ width: 56, height: 56, borderRadius: 14, background: `radial-gradient(circle at 35% 35%, ${cls.color}30, ${cls.color}0a)`,
-                    boxShadow: reduced ? `0 0 0 2px ${cls.color}30` : undefined,
-                    border: `2px solid ${cls.color}55`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontFamily: Fd, fontSize: 22, fontWeight: 900, color: cls.color }}>
+            <div style={{ width: 56, height: 56, borderRadius: 14, background: `${cls.color}12`,
+                border: `2px solid ${cls.color}55`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: Fd, fontSize: 22, fontWeight: 900, color: cls.color }}>
                 {name[0].toUpperCase()}
-            </motion.div>
+            </div>
             {isMe && <div style={{ fontFamily: Fm, fontSize: 7.5, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.35)',
                 background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: 20, padding: '2px 8px', textTransform: 'uppercase' }}>YOU</div>}
@@ -364,7 +346,7 @@ const FighterCol = React.memo(function FighterCol({ cls, name, pow, isMe, won, r
             <div style={{ fontFamily: Fd, fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.9)', textAlign: 'center' }}>{name}</div>
             <div style={{ textAlign: 'center' }}>
                 <div style={{ fontFamily: Fd, fontSize: 32, fontWeight: 900, color: won ? cls.color : 'rgba(255,255,255,0.5)',
-                    textShadow: won ? `0 0 24px ${cls.color}80` : 'none', lineHeight: 1 }}>
+                    lineHeight: 1 }}>
                     {pow.toLocaleString()}
                 </div>
                 <div style={{ fontFamily: Fm, fontSize: 8, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.14em', marginTop: 4 }}>POWER</div>
@@ -401,26 +383,17 @@ function VSModal({ myData, opponent, onClose }) {
                 initial={{ scale: 0.92, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.92, y: 16 }}
                 transition={{ duration: 0.18, ease: [0.16,1,0.3,1] }}
                 onClick={e => e.stopPropagation()}
-                style={{ background: 'rgba(5,7,16,0.99)', backdropFilter: 'blur(6px)',
+                style={{ background: 'var(--bg-surface)',
                     border: `1px solid ${resultColor}30`, borderRadius: 20,
                     padding: '32px 28px', maxWidth: 580, width: '100%',
-                    boxShadow: `0 0 0 1px ${resultColor}15, 0 40px 80px rgba(0,0,0,0.9), 0 0 60px ${resultColor}10`,
                     position: 'relative', overflow: 'hidden' }}
             >
-                {/* top glow bar */}
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-                    background: `linear-gradient(90deg, transparent, ${resultColor}, transparent)` }} />
-                {/* ambient bg glow */}
-                <div style={{ position: 'absolute', top: '-40%', left: '50%', transform: 'translateX(-50%)',
-                    width: '80%', height: '60%', borderRadius: '50%', pointerEvents: 'none',
-                    background: `radial-gradient(ellipse, ${resultColor}12 0%, transparent 70%)`, filter: 'blur(20px)' }} />
-
                 {/* Result header */}
                 <div style={{ textAlign: 'center', marginBottom: 24, position: 'relative' }}>
                     <div style={{ fontFamily: Fm, fontSize: 8, letterSpacing: '0.35em', color: 'rgba(255,255,255,0.35)', marginBottom: 6 }}>BATTLE RESULT</div>
                     <motion.div initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1, duration: 0.35, ease: [0.16,1,0.3,1] }}
                         style={{ fontFamily: Fd, fontSize: 42, fontWeight: 900, color: resultColor,
-                            textShadow: `0 0 40px ${resultColor}80, 0 0 80px ${resultColor}30`, letterSpacing: '0.05em' }}>
+                            letterSpacing: '0.05em' }}>
                         {iWin ? 'VICTORY' : 'DEFEAT'}
                     </motion.div>
                     <div style={{ marginTop: 10, fontFamily: Fm, fontSize: 9, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' }}>
@@ -488,9 +461,8 @@ function ChallengeNoticeModal({ query, onClose }) {
                 initial={{ scale: 0.92, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.92, y: 16 }}
                 transition={{ duration: 0.18, ease: [0.16,1,0.3,1] }}
                 onClick={e => e.stopPropagation()}
-                style={{ background: 'rgba(5,7,16,0.99)', backdropFilter: 'blur(6px)', border: '1px solid rgba(245,166,35,0.35)', borderRadius: 20, padding: '28px 24px', maxWidth: 520, width: '100%', boxShadow: '0 0 0 1px rgba(245,166,35,0.12), 0 40px 80px rgba(0,0,0,0.9), 0 0 60px rgba(245,166,35,0.08)', position: 'relative', overflow: 'hidden' }}
+                style={{ background: 'var(--bg-surface)', border: '1px solid rgba(245,166,35,0.35)', borderRadius: 20, padding: '28px 24px', maxWidth: 520, width: '100%', position: 'relative', overflow: 'hidden' }}
             >
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, #f5a623, transparent)' }} />
                 <div style={{ textAlign: 'center', marginBottom: 18 }}>
                     <div style={{ fontFamily: Fm, fontSize: 8, letterSpacing: '0.35em', color: 'rgba(255,255,255,0.35)', marginBottom: 6 }}>BATTLE RESULT</div>
                     <div style={{ fontFamily: Fd, fontSize: 30, fontWeight: 900, color: '#f5a623', letterSpacing: '0.05em' }}>NO MATCH</div>
@@ -608,17 +580,14 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
     const blockPadWide = '10px 14px';
     const sectionGap = 5;
     const panelSurface = {
-        background: 'linear-gradient(165deg, rgba(12,18,34,0.86) 0%, rgba(8,12,24,0.76) 100%)',
-        backdropFilter: 'blur(10px)',
+        background: 'var(--bg-surface)',
         border: '1px solid rgba(0,245,212,0.22)',
         borderRadius: 12,
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05), 0 16px 40px rgba(0,0,0,0.34), 0 0 0 1px rgba(0,245,212,0.07)',
     };
     const tileSurface = {
-        background: 'linear-gradient(160deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.025) 100%)',
+        background: 'rgba(255,255,255,0.03)',
         border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: 11,
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
     };
 
     const shooters = useMemo(() => Array.from({length:3},(_,i) => ({ x:8+i*28, y:3+i*18, dur:8+i*5, del:i*5+2 })), []);
@@ -803,7 +772,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
                     {/* Top accent line */}
                     <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 1, ease: [0.16,1,0.3,1] }}
-                        style={{ height: 1, transformOrigin: 'left', background: `linear-gradient(90deg, ${C_TEAL}, ${C_TEAL}60, transparent)`, boxShadow: `0 0 12px ${C_TEAL}80` }} />
+                        style={{ height: 1, transformOrigin: 'left', background: C_TEAL }} />
 
                     {/* ── Nav ── */}
                     <motion.div
@@ -819,10 +788,9 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                         {/* Floating pill */}
                         <div style={{
                             display: 'flex', alignItems: 'center', gap: 6,
-                            background: 'rgba(4,7,18,0.82)', backdropFilter: 'blur(20px)',
-                            border: '1px solid rgba(0,245,212,0.18)', borderRadius: 18,
+                            background: 'var(--bg-surface)',
+                            border: '1px solid var(--border)', borderRadius: 18,
                             padding: '6px 8px',
-                            boxShadow: '0 0 0 1px rgba(0,245,212,0.06), 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
                         }}>
                             {/* ← CITY */}
                             <motion.button onClick={onBack}
@@ -839,20 +807,19 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
                             {/* ✦ SHARE CARD ✦ — highlighted */}
                             <motion.button onClick={() => setShowShare(true)}
-                                whileHover={{ scale: 1.05, boxShadow: '0 0 24px rgba(167,139,250,0.55)' }}
+                                whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.96 }}
                                 title="Share Card"
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: 8,
                                     padding: isMobile ? '13px 14px' : '7px 14px', minHeight: isMobile ? 44 : undefined, borderRadius: 12, cursor: 'pointer',
                                     fontFamily: Fm, fontSize: 12, fontWeight: 700, letterSpacing: '0.14em',
-                                    color: '#e9d5ff',
-                                    background: 'linear-gradient(135deg, rgba(139,92,246,0.3) 0%, rgba(109,40,217,0.22) 100%)',
-                                    border: '1px solid rgba(167,139,250,0.55)',
-                                    boxShadow: '0 0 18px rgba(139,92,246,0.3), inset 0 1px 0 rgba(255,255,255,0.1)',
-                                    transition: 'all 0.18s',
+                                    color: 'var(--accent)',
+                                    background: 'rgba(0,245,212,0.08)',
+                                    border: '1px solid rgba(0,245,212,0.25)',
+                                    transition: 'background 0.18s',
                                 }}>
-                                <span style={{ fontSize: 13, color: '#a78bfa' }}>✦</span>
+                                <span style={{ fontSize: 13 }}>✦</span>
                                 SHARE CARD
                             </motion.button>
 
@@ -894,10 +861,10 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                         style={{ ...panelSurface, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: isMobile ? 'wrap' : 'nowrap', gap: isMobile ? 12 : 0, padding: heroPad, marginBottom: sectionGap }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: compactLaptop ? 14 : 20, flex: 1, minWidth: 0 }}>
                             <div style={{ position: 'relative', flexShrink: 0 }}>
-                                <motion.div animate={reducedMotion ? undefined : { boxShadow: [`0 0 0 2px ${tier.color}30`, `0 0 0 5px ${tier.color}50`, `0 0 0 2px ${tier.color}30`] }} transition={reducedMotion ? undefined : { duration: 3, repeat: Infinity }}
-                                    style={{ width: compactLaptop ? 58 : 72, height: compactLaptop ? 58 : 72, borderRadius: 14, background: `radial-gradient(circle at 35% 35%, ${tier.color}30, ${tier.color}0a)`, border: `2px solid ${tier.color}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: Fd, fontSize: compactLaptop ? 22 : 28, fontWeight: 900, color: tier.color, boxShadow: reducedMotion ? `0 0 0 2px ${tier.color}30` : undefined }}>
+                                <div
+                                    style={{ width: compactLaptop ? 58 : 72, height: compactLaptop ? 58 : 72, borderRadius: 14, background: `${tier.color}12`, border: `2px solid ${tier.color}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: Fd, fontSize: compactLaptop ? 22 : 28, fontWeight: 900, color: tier.color }}>
                                     {username.charAt(0).toUpperCase()}
-                                </motion.div>
+                                </div>
                             </div>
                             <div>
                                 <div style={{ fontFamily: Fd, fontSize: compactLaptop ? 20 : 24, fontWeight: 900, color: 'rgba(255,255,255,0.92)', letterSpacing: '0.02em', lineHeight: 1.05, marginBottom: compactLaptop ? 4 : 6 }}>{username}</div>
@@ -937,7 +904,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                             <span style={{ fontFamily: Fd, fontSize: 8, letterSpacing: '0.1em', color: tier.color, whiteSpace: 'nowrap' }}>{tier.name}</span>
                             <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
                                 <motion.div initial={{ width: 0 }} animate={{ width: `${tierPct}%` }} transition={{ duration: 1.4, ease: [0.16,1,0.3,1], delay: 0.3 }}
-                                    style={{ height: '100%', borderRadius: 3, background: `linear-gradient(90deg, ${tier.color}70, ${tier.color})`, boxShadow: `0 0 10px ${tier.color}70` }} />
+                                    style={{ height: '100%', borderRadius: 3, background: tier.color }} />
                             </div>
                             {nextTier && <span style={{ fontFamily: Fd, fontSize: 8, letterSpacing: '0.09em', color: nextTier.color, whiteSpace: 'nowrap' }}>{nextTier.name}</span>}
                         </div>
@@ -949,7 +916,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                         <StatCard label="Total Solved" value={total} color="rgba(255,255,255,0.85)" sub={lcTotal > 0 ? `/ ${lcTotal.toLocaleString()}` : undefined} />
                         <StatCard label="Contest Rating" value={rating} color="#00f5d4" sub={topRating ? `Peak ${topRating.toLocaleString()}` : undefined} />
                         <StatCard label="Global Rank" value={profile.ranking ? `#${profile.ranking.toLocaleString()}` : '—'} color={tier.color} sub={topPct ? `Top ${topPct}%` : undefined} />
-                        <StatCard label="Contests" value={attended} color="#a78bfa" sub={attended && topPct ? `Top ${topPct}% finish` : undefined} />
+                        <StatCard label="Contests" value={attended} color="#3b82f6" sub={attended && topPct ? `Top ${topPct}% finish` : undefined} />
                     </motion.div>
 
                     {/* ════ 4. PROBLEM BREAKDOWN ════ */}
@@ -1005,7 +972,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                     { head: 'AC STREAK',      val: streak,                color: streak >= 3 ? C_EASY : streak >= 1 ? C_MED : 'rgba(255,255,255,0.2)', sub: streak >= 5 ? '🔥 on fire' : streak >= 1 ? 'wins' : 'break the ice' },
                                     { head: 'WIN RATE',       val: `${winRate}%`,          color: winColor,  sub: winRate >= 80 ? 'Dominant' : 'Building' },
                                     { head: 'HARD BATTLES',   val: recentHardCount,        color: recentHardCount >= 3 ? C_HARD : 'rgba(255,255,255,0.5)', sub: 'last 10 subs' },
-                                    { head: 'GLOBAL TOP',     val: topPct ? `${topPct}%` : '—', color: '#a78bfa', sub: topPct ? `Top ${Math.round(100-topPct)}%` : null },
+                                    { head: 'GLOBAL TOP',     val: topPct ? `${topPct}%` : '—', color: '#3b82f6', sub: topPct ? `Top ${Math.round(100-topPct)}%` : null },
                                 ].map(({ head, val, color, sub }) => (
                                     <motion.div key={head} whileHover={{ y: -1 }}
                                         style={{ ...tileSurface, padding: '7px 10px', border: '1px solid rgba(0,245,212,0.15)', transition: 'border-color 0.2s' }}
@@ -1031,7 +998,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                     {[
                                         { head: 'Active Days',  val: activeDays,        color: '#00f5d4' },
                                         { head: 'Max Streak',   val: maxStreak,         color: '#f5a623' },
-                                        { head: 'Submissions',  val: totalSubmissions,  color: '#a78bfa' },
+                                        { head: 'Submissions',  val: totalSubmissions,  color: '#3b82f6' },
                                     ].map(({ head, val, color }) => (
                                         <div key={head} style={{ ...tileSurface, padding: '7px 10px' }}>
                                             <div style={{ fontFamily: Fm, fontSize: 7.5, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 4 }}>{head}</div>
@@ -1088,7 +1055,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                         return (
                                             <motion.div key={i} whileHover={{ x: 4, transition: { duration: 0.1 } }}
                                                 style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', borderBottom: i < 7 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
-                                                <div style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0, background: ok ? C_EASY : C_HARD, boxShadow: `0 0 5px ${ok ? C_EASY : C_HARD}80` }} />
+                                                <div style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0, background: ok ? C_EASY : C_HARD }} />
                                                 <span style={{ flex: 1, fontFamily: Fm, fontSize: 10, color: 'rgba(255,255,255,0.72)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</span>
                                                 {diffColor && <span style={{ fontFamily: Fm, fontSize: 8, color: diffColor, padding: '2px 5px', background: `${diffColor}14`, borderRadius: 3, flexShrink: 0, textTransform: 'uppercase' }}>{r.difficulty}</span>}
                                                 {ts && <span style={{ fontFamily: Fm, fontSize: 9, color: 'rgba(255,255,255,0.45)', flexShrink: 0 }}>{ts}</span>}
@@ -1116,7 +1083,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 6 }}>
                                 {[
                                     { head: 'Rating',  val: rating,    color: '#00f5d4', sub: cls.label },
-                                    { head: 'Streak',  val: streak,    color: '#a78bfa', sub: lastSubmit ? `Last AC ${lastSubmit}` : null },
+                                    { head: 'Streak',  val: streak,    color: '#3b82f6', sub: lastSubmit ? `Last AC ${lastSubmit}` : null },
                                     { head: 'Contests', val: attended, color: '#fb923c', sub: topPct ? `Top ${topPct}%` : null },
                                     { head: 'Top %',   val: topPct ? `${topPct}%` : null, color: C_EASY, sub: 'Global' },
                                     { head: 'Tier',    val: tier.name, color: tier.color, sub: nextTier ? `→ ${nextTier.name}` : 'MAX' },
@@ -1179,7 +1146,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                         <div style={{ height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
                                             <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
                                                 transition={{ duration: 0.6, ease: [0.16,1,0.3,1], delay: 0.1 }}
-                                                style={{ height: '100%', borderRadius: 2, background: color, boxShadow: `0 0 8px ${color}80` }} />
+                                                style={{ height: '100%', borderRadius: 2, background: color }} />
                                         </div>
                                     </div>
                                 ))}
@@ -1208,14 +1175,14 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
                     {/* Bottom accent line */}
                     <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 1, ease: [0.16,1,0.3,1], delay: 0.7 }}
-                        style={{ height: 1, marginTop: 8, transformOrigin: 'right', background: `linear-gradient(90deg, transparent, ${C_TEAL}60, ${C_TEAL}90)`, boxShadow: `0 0 8px ${C_TEAL}40` }} />
+                        style={{ height: 1, marginTop: 8, transformOrigin: 'right', background: C_TEAL }} />
 
                     {/* ════ BOTTOM ACTION BAR ════ */}
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.75 }}
                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: compactLaptop ? '12px 0 0' : '16px 0 4px', flexWrap: 'wrap', gap: 10 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <motion.div animate={reducedMotion ? undefined : { opacity: [1, 0.3, 1] }} transition={reducedMotion ? undefined : { duration: 2, repeat: Infinity }}
-                                style={{ width: 6, height: 6, borderRadius: '50%', background: C_EASY, boxShadow: `0 0 8px ${C_EASY}`, opacity: reducedMotion ? 1 : undefined }} />
+                                style={{ width: 6, height: 6, borderRadius: '50%', background: C_EASY, opacity: reducedMotion ? 1 : undefined }} />
                             <span style={{ fontFamily: Fm, fontSize: 9, letterSpacing: '0.16em', color: 'rgba(255,255,255,0.75)' }}>ONLINE · LAST SEEN JUST NOW</span>
                         </div>
                         <div style={{ display: 'flex', gap: 8 }}>

@@ -82,33 +82,28 @@ const TarsHud = React.memo(function TarsHud() {
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10,
         padding: '10px 14px', borderRadius: 6,
-        background: 'linear-gradient(180deg, #0a0e14 0%, #06090d 100%)',
-        border: '1px solid rgba(209,213,219,0.15)',
-        boxShadow: '0 0 24px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)',
-        animation: 'tars-idle 6s ease-in-out infinite',
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border)',
       }}>
         {/* Monolith slab */}
         <div style={{
           width: 18, height: 42, borderRadius: 2,
-          background: 'linear-gradient(180deg, #1a1d24 0%, #0b0d12 100%)',
-          border: '1px solid rgba(209,213,219,0.25)',
-          boxShadow: 'inset 0 0 4px rgba(255,255,255,0.08)',
+          background: 'var(--bg-surface-2)',
+          border: '1px solid var(--border)',
           position: 'relative',
         }}>
           <span style={{
             position: 'absolute', top: '50%', left: '50%',
             width: 2, height: 18, background: 'var(--amber)', borderRadius: 1,
             transform: 'translate(-50%, -50%)',
-            boxShadow: '0 0 8px var(--amber)',
-            animation: 'energy-pulse 2.5s ease infinite',
           }} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 9, letterSpacing: '0.12em' }}>
           <div style={{ color: 'var(--tars)', fontWeight: 700, marginBottom: 2 }}>TARS</div>
           {[
             ['HUMOR', 'humor', '#f5a623'],
-            ['HONESTY', 'honesty', '#00f5d4'],
-            ['TRUST', 'trust', '#8b5cf6'],
+            ['HONESTY', 'honesty', 'var(--accent)'],
+            ['TRUST', 'trust', 'var(--text-secondary)'],
           ].map(([label, key, color]) => (
             <button
               key={key}
@@ -134,9 +129,8 @@ const TarsHud = React.memo(function TarsHud() {
             exit={{ opacity: 0, y: -4 }}
             style={{
               maxWidth: 260, padding: '8px 12px', borderRadius: 6,
-              background: 'rgba(245,166,35,0.08)', border: '1px solid rgba(245,166,35,0.25)',
+              background: 'var(--bg-surface)', border: '1px solid rgba(245,166,35,0.25)',
               color: 'var(--amber)', fontSize: 10, letterSpacing: '0.06em',
-              textShadow: '0 0 8px rgba(245,166,35,0.3)',
             }}
           >
             {quip}
@@ -161,16 +155,14 @@ function StatusTicker({ phase }) {
     <div className="status-bar-bottom" style={{
       position: 'fixed', bottom: 12, left: 16, zIndex: 50, pointerEvents: 'none',
       display: 'flex', alignItems: 'center', gap: 8,
-      fontFamily: '"Share Tech Mono", monospace', fontSize: 9.5, color: 'rgba(0,245,212,0.9)',
+      fontFamily: '"Share Tech Mono", monospace', fontSize: 9.5, color: 'var(--accent)',
       letterSpacing: '0.15em',
       padding: '6px 12px', borderRadius: 6,
-      background: 'rgba(3,5,8,0.78)',
-      border: '1px solid rgba(0,245,212,0.12)',
-      backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+      background: 'var(--bg-surface)',
+      border: '1px solid var(--border)',
     }}>
       <span style={{
-        width: 6, height: 6, borderRadius: '50%', background: '#00f5d4',
-        boxShadow: '0 0 8px #00f5d4', animation: 'energy-pulse 2s ease infinite',
+        width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)',
       }} />
       <span>PHASE_{phase}</span>
       <span style={{ color: 'rgba(255,255,255,0.15)' }}>//</span>
@@ -179,7 +171,6 @@ function StatusTicker({ phase }) {
         style={{
           color: 'var(--amber)',
           animation: 'ticker-fade 4.2s ease-in-out both',
-          textShadow: '0 0 8px rgba(245,166,35,0.35)',
         }}
       >
         {STATUS_TICKS[tickIndex]}
@@ -373,19 +364,15 @@ function App() {
       background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: '"Share Tech Mono", monospace',
       transition: 'background 0.3s ease, color 0.3s ease',
     }}>
-      {/* Cinematic overlays */}
-      <div className="noise-overlay" />
-      <div className="scanline-overlay" />
-
       {/* Corner decorations */}
       <div className="corner-deco" style={{
         position: 'fixed', top: 0, left: 0, width: 120, height: 120,
-        borderTop: '1px solid rgba(0,245,212,0.15)', borderLeft: '1px solid rgba(0,245,212,0.15)',
+        borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)',
         pointerEvents: 'none', zIndex: 50,
       }} />
       <div className="corner-deco" style={{
         position: 'fixed', bottom: 0, right: 0, width: 120, height: 120,
-        borderBottom: '1px solid rgba(0,245,212,0.15)', borderRight: '1px solid rgba(0,245,212,0.15)',
+        borderBottom: '1px solid var(--border)', borderRight: '1px solid var(--border)',
         pointerEvents: 'none', zIndex: 50,
       }} />
 
