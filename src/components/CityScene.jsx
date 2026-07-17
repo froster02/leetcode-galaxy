@@ -1,13 +1,26 @@
-import React, { useRef, useState, useMemo, useLayoutEffect } from 'react';
+import React, { useRef, useState, useMemo, useLayoutEffect, lazy, Suspense } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
 
 import { CODERS, calcPower, getFighterClass, getPowerTier } from '../utils/gameData';
 import { parseCalendar, calendarStats } from '../utils/calendar';
 import { getSeasonPalette } from '../utils/season';
 import useReducedMotion from '../hooks/useReducedMotion';
+import useIsMobile from '../hooks/useIsMobile';
+
+// Desktop-only: keeps @react-three/postprocessing out of the bundle mobile
+// devices download (it's excluded from the three-vendor chunk in vite.config.js
+// specifically so this dynamic import resolves to its own lazy chunk).
+const CityBloom = lazy(() =>
+    import('@react-three/postprocessing').then(({ EffectComposer, Bloom }) => ({
+        default: () => (
+            <EffectComposer multisampling={0}>
+                <Bloom luminanceThreshold={0.5} luminanceSmoothing={0.7} intensity={1.4} radius={0.6} />
+            </EffectComposer>
+        ),
+    }))
+);
 
 /* ─────────────────── City Grid Constants ─────────────────── */
 const BLOCK_SIZE = 14;
@@ -929,6 +942,7 @@ function Aurora({ colors }) {
 /* ─────────────────── City Scene Inner ─────────────────── */
 function CitySceneInner({ roster, onSelectUser, showBlockLabels, isNight, palette, districts }) {
     const reducedMotion = useReducedMotion();
+    const isMobile = useIsMobile();
     const [hoveredIdx, setHoveredIdx] = useState(null);
     const globalMax = useMemo(() => {
         let m = 1;
@@ -974,15 +988,16 @@ function CitySceneInner({ roster, onSelectUser, showBlockLabels, isNight, palett
 
             {/* mipmapBlur dropped — the instanced-mesh refactor already cut
                 draw calls ~150x; the extra multi-pass blur cost isn't worth
-                it for a marginal glow difference. */}
-            <EffectComposer multisampling={0}>
-                <Bloom
-                    luminanceThreshold={0.5}
-                    luminanceSmoothing={0.7}
-                    intensity={1.4}
-                    radius={0.6}
-                />
-            </EffectComposer>
+                it for a marginal glow difference. Bloom itself is skipped on
+                mobile — multi-pass postprocessing is the single heaviest
+                per-frame GPU cost in this scene, and phone GPUs feel it —
+                and lazy-loaded via CityBloom so mobile never even fetches
+                the @react-three/postprocessing chunk. */}
+            {!isMobile && (
+                <Suspense fallback={null}>
+                    <CityBloom />
+                </Suspense>
+            )}
         </>
     );
 }

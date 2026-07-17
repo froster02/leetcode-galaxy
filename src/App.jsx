@@ -52,6 +52,7 @@ const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 /* ── TARS monolith HUD (Interstellar easter egg) ──────── */
 const TarsHud = React.memo(function TarsHud() {
+  const [expanded, setExpanded] = useState(false);
   const [settings, setSettings] = useState({ humor: 75, honesty: 90, trust: 100 });
   const [openQuote, setOpenQuote] = useState(false);
   const quips = [
@@ -79,50 +80,75 @@ const TarsHud = React.memo(function TarsHud() {
       display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8,
       fontFamily: '"Share Tech Mono", monospace', pointerEvents: 'auto',
     }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '10px 14px', borderRadius: 6,
-        background: 'var(--bg-surface)',
-        border: '1px solid var(--border)',
-      }}>
-        {/* Monolith slab */}
-        <div style={{
-          width: 18, height: 42, borderRadius: 2,
-          background: 'var(--bg-surface-2)',
-          border: '1px solid var(--border)',
-          position: 'relative',
-        }}>
+      {!expanded ? (
+        <button
+          onClick={() => setExpanded(true)}
+          title="TARS"
+          style={{
+            width: 34, height: 34, borderRadius: 6,
+            background: 'var(--bg-surface)', border: '1px solid var(--border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', padding: 0,
+          }}
+        >
           <span style={{
-            position: 'absolute', top: '50%', left: '50%',
-            width: 2, height: 18, background: 'var(--amber)', borderRadius: 1,
-            transform: 'translate(-50%, -50%)',
-          }} />
+            width: 12, height: 22, borderRadius: 2,
+            background: 'var(--bg-surface-2)', border: '1px solid var(--border)',
+            position: 'relative',
+          }}>
+            <span style={{
+              position: 'absolute', top: '50%', left: '50%',
+              width: 2, height: 10, background: 'var(--amber)', borderRadius: 1,
+              transform: 'translate(-50%, -50%)',
+            }} />
+          </span>
+        </button>
+      ) : (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '10px 14px', borderRadius: 6,
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border)',
+        }}>
+          {/* Monolith slab */}
+          <button onClick={() => setExpanded(false)} title="Collapse" style={{
+            width: 18, height: 42, borderRadius: 2,
+            background: 'var(--bg-surface-2)',
+            border: '1px solid var(--border)',
+            position: 'relative', padding: 0, cursor: 'pointer',
+          }}>
+            <span style={{
+              position: 'absolute', top: '50%', left: '50%',
+              width: 2, height: 18, background: 'var(--amber)', borderRadius: 1,
+              transform: 'translate(-50%, -50%)',
+            }} />
+          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 9, letterSpacing: '0.12em' }}>
+            <div style={{ color: 'var(--tars)', fontWeight: 700, marginBottom: 2 }}>TARS</div>
+            {[
+              ['HUMOR', 'humor', '#f5a623'],
+              ['HONESTY', 'honesty', 'var(--accent)'],
+              ['TRUST', 'trust', 'var(--text-secondary)'],
+            ].map(([label, key, color]) => (
+              <button
+                key={key}
+                onClick={() => cycle(key)}
+                title={`Adjust ${label.toLowerCase()}`}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                  color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 9, letterSpacing: '0.12em',
+                }}
+              >
+                <span style={{ minWidth: 54, textAlign: 'left' }}>{label}</span>
+                <span style={{ color, fontWeight: 700, minWidth: 34, textAlign: 'right' }}>{settings[key]}%</span>
+              </button>
+            ))}
+          </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 9, letterSpacing: '0.12em' }}>
-          <div style={{ color: 'var(--tars)', fontWeight: 700, marginBottom: 2 }}>TARS</div>
-          {[
-            ['HUMOR', 'humor', '#f5a623'],
-            ['HONESTY', 'honesty', 'var(--accent)'],
-            ['TRUST', 'trust', 'var(--text-secondary)'],
-          ].map(([label, key, color]) => (
-            <button
-              key={key}
-              onClick={() => cycle(key)}
-              title={`Adjust ${label.toLowerCase()}`}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-                color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 9, letterSpacing: '0.12em',
-              }}
-            >
-              <span style={{ minWidth: 54, textAlign: 'left' }}>{label}</span>
-              <span style={{ color, fontWeight: 700, minWidth: 34, textAlign: 'right' }}>{settings[key]}%</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
       <AnimatePresence>
-        {openQuote && (
+        {expanded && openQuote && (
           <motion.div
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
@@ -144,12 +170,13 @@ const TarsHud = React.memo(function TarsHud() {
 function StatusTicker({ phase }) {
   const [tickIndex, setTickIndex] = useState(0);
 
+  // Cycles through the message list once, then stops on the last line —
+  // no perpetual interval running for the life of the session.
   useEffect(() => {
-    const id = setInterval(() => {
-      setTickIndex(i => (i + 1) % STATUS_TICKS.length);
-    }, 4200);
-    return () => clearInterval(id);
-  }, []);
+    if (tickIndex >= STATUS_TICKS.length - 1) return;
+    const id = setTimeout(() => setTickIndex(i => i + 1), 4200);
+    return () => clearTimeout(id);
+  }, [tickIndex]);
 
   return (
     <div className="status-bar-bottom" style={{
@@ -364,18 +391,6 @@ function App() {
       background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: '"Share Tech Mono", monospace',
       transition: 'background 0.3s ease, color 0.3s ease',
     }}>
-      {/* Corner decorations */}
-      <div className="corner-deco" style={{
-        position: 'fixed', top: 0, left: 0, width: 120, height: 120,
-        borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)',
-        pointerEvents: 'none', zIndex: 50,
-      }} />
-      <div className="corner-deco" style={{
-        position: 'fixed', bottom: 0, right: 0, width: 120, height: 120,
-        borderBottom: '1px solid var(--border)', borderRight: '1px solid var(--border)',
-        pointerEvents: 'none', zIndex: 50,
-      }} />
-
       {/* Status bar — rotating PHM/Interstellar ticker */}
       <StatusTicker phase={phase} />
 

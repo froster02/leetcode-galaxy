@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { calcPower, getFighterClass, getPowerTier } from '../utils/gameData';
@@ -6,7 +6,7 @@ import { mapLeetCodeDataToCity } from '../utils/dataMapper';
 import { parseCalendar, calendarStats } from '../utils/calendar';
 import { Heatmap } from './Heatmap';
 
-// Lazy-loaded: pulls html2canvas/html-to-image out of the main bundle
+// Lazy-loaded: pulls html2canvas out of the main bundle
 const ShareModal = lazy(() => import('./ShareCard'));
 
 /* ── Contest rating sparkline — inline SVG, oldest → newest ── */
@@ -71,8 +71,16 @@ const StarCanvas = React.memo(function StarCanvas() {
 
     React.useEffect(() => {
         draw();
-        window.addEventListener('resize', draw);
-        return () => window.removeEventListener('resize', draw);
+        let timer;
+        const onResize = () => {
+            clearTimeout(timer);
+            timer = setTimeout(draw, 200);
+        };
+        window.addEventListener('resize', onResize);
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('resize', onResize);
+        };
     }, [draw]);
 
     return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />;
@@ -549,28 +557,6 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
         return () => { document.documentElement.style.overscrollBehavior = prev; };
     }, []);
 
-    /* Cursor-reactive parallax on the ambient background glow — subtle depth, skipped for reduced motion */
-    const [parallax, setParallax] = useState({ x: 0, y: 0 });
-    useEffect(() => {
-        if (reducedMotion) return;
-        let rafId = null;
-        const onMouseMove = (e) => {
-            if (rafId) return;
-            rafId = requestAnimationFrame(() => {
-                rafId = null;
-                setParallax({
-                    x: (e.clientX / window.innerWidth - 0.5) * 24,
-                    y: (e.clientY / window.innerHeight - 0.5) * 24,
-                });
-            });
-        };
-        window.addEventListener('mousemove', onMouseMove);
-        return () => {
-            window.removeEventListener('mousemove', onMouseMove);
-            if (rafId) cancelAnimationFrame(rafId);
-        };
-    }, [reducedMotion]);
-
     const compactLaptop = viewport.width <= 1440 && viewport.height <= 900;
     const isMobile = viewport.width <= 768;
     const contentMaxWidth = compactLaptop ? 960 : 1100;
@@ -589,8 +575,6 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
         border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: 11,
     };
-
-    const shooters = useMemo(() => Array.from({length:3},(_,i) => ({ x:8+i*28, y:3+i*18, dur:8+i*5, del:i*5+2 })), []);
 
     const handleQuickSearch = (e) => {
         e.preventDefault();
@@ -731,41 +715,8 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                 <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
                     background: 'radial-gradient(ellipse at 30% 0%, #0d1a2e 0%, #080c18 50%, #050810 100%)' }} />
 
-                {/* ── Grid overlay ── */}
-                <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
-                    backgroundImage: 'linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)',
-                    backgroundSize: '40px 40px' }} />
-
-                {/* ── Teal top aurora — cursor parallax ── */}
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 400, pointerEvents: 'none', zIndex: 0,
-                    transform: `translate(${parallax.x}px, ${parallax.y}px)`, transition: 'transform 0.3s cubic-bezier(0.16,1,0.3,1)',
-                    background: 'radial-gradient(ellipse at 50% -10%, rgba(0,245,212,0.25) 0%, rgba(0,100,120,0.06) 40%, transparent 70%)' }} />
-
-                {/* ── Side accent — cursor parallax, subtler ── */}
-                <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 2, pointerEvents: 'none', zIndex: 0,
-                    transform: `translate(${parallax.x * 0.4}px, ${parallax.y * 0.4}px)`, transition: 'transform 0.3s cubic-bezier(0.16,1,0.3,1)',
-                    background: 'linear-gradient(180deg, #00f5d4 0%, rgba(0,245,212,0.3) 30%, transparent 70%)' }} />
-
                 {/* ── Star field (canvas — single draw call) ── */}
                 <StarCanvas />
-
-                {/* ── Shooting stars ── */}
-                {!reducedMotion && (
-                    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
-                        {shooters.map((sh, i) => (
-                            <motion.div key={i}
-                                animate={{ x: ['0vw', '60vw'], y: ['0vh', '40vh'], opacity: [0, 0.6, 0] }}
-                                transition={{ duration: 1.5, repeat: Infinity, repeatDelay: sh.dur, delay: sh.del, ease: 'easeOut' }}
-                                style={{
-                                    position: 'absolute', left: `${sh.x}%`, top: `${sh.y}%`,
-                                    width: 60, height: 1,
-                                    background: 'linear-gradient(90deg, rgba(255,255,255,0.65), transparent)',
-                                    borderRadius: 1, transform: 'rotate(35deg)', transformOrigin: 'left center',
-                                }}
-                            />
-                        ))}
-                    </div>
-                )}
 
                 {/* ── Content ── */}
                 <div style={{ position: 'relative', zIndex: 1, maxWidth: contentMaxWidth, margin: '0 auto', padding: compactLaptop ? `0 18px ${pageBottomPad}px` : `0 24px ${pageBottomPad}px` }}>
