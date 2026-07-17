@@ -7,7 +7,7 @@ const ShareModal = lazy(() => import('./ShareCard'));
 import { calcPower, getPowerTier } from '../utils/gameData';
 import useIsMobile from '../hooks/useIsMobile';
 
-const PLANET_COLORS = ['#00f5d4', '#8b5cf6', '#f5a623', '#3b82f6', '#ef4444', '#ec4899', '#10b981', '#f59e0b'];
+const PLANET_COLORS = ['#00f5d4', '#f5a623', '#3b82f6', '#ef4444', '#ec4899', '#10b981', '#f59e0b', '#23d18b'];
 const FONT_ORBIT = 'Orbitron, sans-serif';
 const FONT_MONO = '"Share Tech Mono", monospace';
 
@@ -26,7 +26,7 @@ const tierWithIcon = (power) => {
 };
 
 /* ── Animated Power Level Display ────────────────────── */
-function PowerLevelDisplay({ level }) {
+const PowerLevelDisplay = React.memo(function PowerLevelDisplay({ level }) {
     const tier = tierWithIcon(level);
     const TierIcon = tier.icon;
     const [displayed, setDisplayed] = useState(0);
@@ -51,7 +51,7 @@ function PowerLevelDisplay({ level }) {
             style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '10px 16px', borderRadius: 12, marginBottom: 16,
-                background: `linear-gradient(135deg, ${tier.color}08, ${tier.color}04)`,
+                background: 'var(--bg-surface)',
                 border: `1px solid ${tier.color}20`,
             }}
         >
@@ -65,7 +65,6 @@ function PowerLevelDisplay({ level }) {
             <div style={{ flex: 1 }}>
                 <div style={{
                     fontFamily: FONT_ORBIT, fontSize: 18, fontWeight: 900, color: tier.color,
-                    textShadow: `0 0 20px ${tier.color}30`,
                 }}>
                     {displayed.toLocaleString()}
                 </div>
@@ -82,10 +81,10 @@ function PowerLevelDisplay({ level }) {
             </div>
         </motion.div>
     );
-}
+});
 
 /* ── Circular Progress Ring ──────────────────────────── */
-function ProgressRing({ value, max, size = 100, color = '#00f5d4', label }) {
+const ProgressRing = React.memo(function ProgressRing({ value, max, size = 100, color = '#00f5d4', label }) {
     const strokeWidth = 6;
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
@@ -104,7 +103,6 @@ function ProgressRing({ value, max, size = 100, color = '#00f5d4', label }) {
                     initial={{ strokeDashoffset: circumference }}
                     animate={{ strokeDashoffset: offset }}
                     transition={{ duration: 1.5, ease: 'easeOut', delay: 0.3 }}
-                    style={{ filter: `drop-shadow(0 0 8px ${color}60)` }}
                 />
             </svg>
             <div style={{
@@ -116,10 +114,10 @@ function ProgressRing({ value, max, size = 100, color = '#00f5d4', label }) {
             </div>
         </div>
     );
-}
+});
 
 /* ── SVG Radar Chart ─────────────────────────────────── */
-function RadarChart({ districts, size = 200 }) {
+const RadarChart = React.memo(function RadarChart({ districts, size = 200 }) {
     if (!districts || districts.length === 0) return null;
     const top = districts.slice(0, 6);
     const center = size / 2;
@@ -161,7 +159,6 @@ function RadarChart({ districts, size = 200 }) {
                 initial={{ opacity: 0, pathLength: 0 }}
                 animate={{ opacity: 1, pathLength: 1 }}
                 transition={{ duration: 1.5, delay: 0.5 }}
-                style={{ filter: 'drop-shadow(0 0 4px rgba(0,245,212,0.3))' }}
             />
             {dataPoints.map((pt, i) => (
                 <motion.circle
@@ -169,7 +166,6 @@ function RadarChart({ districts, size = 200 }) {
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.8 + i * 0.1, type: 'spring' }}
-                    style={{ filter: 'drop-shadow(0 0 4px #00f5d4)' }}
                 />
             ))}
             {axisPoints.map((pt, i) => (
@@ -180,10 +176,10 @@ function RadarChart({ districts, size = 200 }) {
             ))}
         </svg>
     );
-}
+});
 
 /* ── Difficulty bar ──────────────────────────────────── */
-function DiffBar({ label, count, total, color, index }) {
+const DiffBar = React.memo(function DiffBar({ label, count, total, color, index }) {
     const pct = total > 0 ? (count / total) * 100 : 0;
     return (
         <motion.div
@@ -203,17 +199,16 @@ function DiffBar({ label, count, total, color, index }) {
                     transition={{ duration: 1.2, delay: 0.5 + index * 0.1, ease: 'easeOut' }}
                     style={{
                         height: '100%', borderRadius: 3,
-                        background: `linear-gradient(90deg, ${color}60, ${color})`,
-                        boxShadow: `0 0 12px ${color}40`,
+                        background: color,
                     }}
                 />
             </div>
         </motion.div>
     );
-}
+});
 
 /* ── Achievement Badge ───────────────────────────────── */
-function AchievementBadge({ icon: Icon, label, color, unlocked, delay }) {
+const AchievementBadge = React.memo(function AchievementBadge({ icon: Icon, label, color, unlocked, delay }) {
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
@@ -241,7 +236,7 @@ function AchievementBadge({ icon: Icon, label, color, unlocked, delay }) {
             }}>{label}</span>
         </motion.div>
     );
-}
+});
 
 /* ── Main component ──────────────────────────────────── */
 function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
@@ -276,7 +271,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
         { icon: Zap, label: 'FIRST SOLVE', color: '#23d18b', unlocked: totalSolved >= 1 },
         { icon: Star, label: '100 CLUB', color: '#f5a623', unlocked: totalSolved >= 100 },
         { icon: Flame, label: 'HARD 10', color: '#ff3860', unlocked: hardSolved >= 10 },
-        { icon: Code2, label: 'POLYGLOT', color: '#8b5cf6', unlocked: (districts?.length || 0) >= 5 },
+        { icon: Code2, label: 'POLYGLOT', color: '#3b82f6', unlocked: (districts?.length || 0) >= 5 },
         { icon: Trophy, label: 'TOP 10K', color: '#fbbf24', unlocked: ranking > 0 && ranking <= 10000 },
         { icon: Crown, label: 'LEGEND', color: '#00f5d4', unlocked: ranking > 0 && ranking <= 1000 },
     ], [totalSolved, hardSolved, districts, ranking]);
@@ -329,11 +324,10 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
             {viewMode !== 'card' && <div style={{
                 position: 'absolute', top: 'max(16px, env(safe-area-inset-top))', left: '50%', transform: 'translateX(-50%)',
                 display: 'flex', alignItems: 'center', gap: 6,
-                background: 'rgba(4,7,18,0.82)', backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(0,245,212,0.18)',
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border)',
                 borderRadius: 18,
                 padding: '6px 8px',
-                boxShadow: '0 0 0 1px rgba(0,245,212,0.06), 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
                 pointerEvents: 'auto', zIndex: 20,
                 whiteSpace: 'nowrap',
             }}>
@@ -359,7 +353,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                 </motion.button>
 
                 {/* ── Divider ── */}
-                <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+                <div style={{ width: 1, height: 28, background: 'var(--border)', flexShrink: 0 }} />
 
                 {/* ── View toggles ── */}
                 {[
@@ -382,7 +376,6 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                                 background: active ? 'rgba(0,245,212,0.15)' : 'transparent',
                                 border: active ? '1px solid rgba(0,245,212,0.4)' : '1px solid transparent',
                                 color: active ? '#00f5d4' : 'rgba(255,255,255,0.4)',
-                                boxShadow: active ? '0 0 14px rgba(0,245,212,0.2), inset 0 1px 0 rgba(0,245,212,0.15)' : 'none',
                             }}
                         >
                             <Icon size={15} strokeWidth={active ? 2.5 : 2} />
@@ -397,7 +390,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                                             animate={{ scale: 1, opacity: 1 }}
                                             exit={{ scale: 0, opacity: 0 }}
                                             transition={{ duration: 0.2 }}
-                                            style={{ width: 5, height: 5, borderRadius: '50%', background: '#00f5d4', boxShadow: '0 0 6px #00f5d4' }}
+                                            style={{ width: 5, height: 5, borderRadius: '50%', background: '#00f5d4' }}
                                         />
                                     )}
                                 </AnimatePresence>
@@ -407,29 +400,28 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                 })}
 
                 {/* ── Divider ── */}
-                <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+                <div style={{ width: 1, height: 28, background: 'var(--border)', flexShrink: 0 }} />
 
                 {/* ── Share ── highlighted */}
                 <motion.button
                     onClick={() => setShowShare(true)}
-                    whileHover={{ scale: 1.05, boxShadow: '0 0 24px rgba(139,92,246,0.55)' }}
+                    whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.96 }}
                     title="Share your card"
                     style={{
                         display: 'flex', alignItems: 'center', gap: 7,
                         padding: isMobile ? '13px 12px' : '7px 16px', borderRadius: 12,
                         minHeight: isMobile ? 44 : undefined,
-                        background: 'linear-gradient(135deg, rgba(139,92,246,0.28) 0%, rgba(109,40,217,0.2) 100%)',
-                        border: '1px solid rgba(167,139,250,0.5)',
-                        color: '#e9d5ff', cursor: 'pointer',
+                        background: 'rgba(0,245,212,0.07)',
+                        border: '1px solid rgba(0,245,212,0.2)',
+                        color: 'var(--accent)', cursor: 'pointer',
                         fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.12em',
-                        boxShadow: '0 0 14px rgba(139,92,246,0.25), inset 0 1px 0 rgba(255,255,255,0.08)',
-                        transition: 'all 0.18s',
+                        transition: 'background 0.18s',
                     }}
                 >
-                    <span style={{ fontSize: 12, color: '#a78bfa' }}>✦</span>
+                    <span style={{ fontSize: 12 }}>✦</span>
                     <span>SHARE CARD</span>
-                    {!isMobile && <span style={{ fontSize: 12, color: '#a78bfa' }}>✦</span>}
+                    {!isMobile && <span style={{ fontSize: 12 }}>✦</span>}
                 </motion.button>
 
                 {/* ── Search toggle ── */}
@@ -440,11 +432,10 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                     style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         width: isMobile ? 44 : 36, height: isMobile ? 44 : 36, borderRadius: 12, flexShrink: 0,
-                        background: showSearch ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.08)',
-                        border: showSearch ? '1px solid rgba(139,92,246,0.5)' : '1px solid rgba(139,92,246,0.2)',
-                        color: showSearch ? '#c4b5fd' : '#a78bfa',
-                        cursor: 'pointer', transition: 'all 0.18s',
-                        boxShadow: showSearch ? '0 0 12px rgba(139,92,246,0.3)' : 'none',
+                        background: showSearch ? 'rgba(0,245,212,0.15)' : 'rgba(0,245,212,0.07)',
+                        border: showSearch ? '1px solid rgba(0,245,212,0.4)' : '1px solid rgba(0,245,212,0.15)',
+                        color: 'var(--accent)',
+                        cursor: 'pointer', transition: 'background 0.18s',
                     }}
                 >
                     {showSearch ? <X size={16} strokeWidth={2.5} /> : <Search size={16} strokeWidth={2.5} />}
@@ -462,25 +453,23 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                         style={{
                             position: 'absolute', top: 70, left: '50%', transform: 'translateX(-50%)',
                             display: 'flex', gap: 8, pointerEvents: 'auto', zIndex: 20,
-                            background: 'rgba(4,7,18,0.9)', backdropFilter: 'blur(20px)',
-                            border: '1px solid rgba(139,92,246,0.35)', borderRadius: 14,
+                            background: 'var(--bg-surface)',
+                            border: '1px solid var(--accent-border)', borderRadius: 14,
                             padding: '8px 8px',
-                            boxShadow: '0 8px 32px rgba(0,0,0,0.7), 0 0 0 1px rgba(139,92,246,0.1)',
                         }}>
                         <input
                             autoFocus value={quickSearch} onChange={e => setQuickSearch(e.target.value)}
                             placeholder="search user..."
                             style={{
                                 padding: '8px 14px', borderRadius: 9, fontFamily: FONT_MONO, fontSize: isMobile ? 16 : 12,
-                                background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)',
+                                background: 'rgba(0,245,212,0.06)', border: '1px solid var(--border)',
                                 color: '#fff', width: isMobile ? 160 : 210, outline: 'none', letterSpacing: '0.04em',
                             }}
                         />
                         <button type="submit" style={{
                             padding: '8px 18px', borderRadius: 9, fontSize: 11, fontWeight: 700,
-                            background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: '#fff',
+                            background: 'var(--accent)', color: '#030508',
                             border: 'none', cursor: 'pointer', fontFamily: FONT_MONO, letterSpacing: '0.1em',
-                            boxShadow: '0 0 12px rgba(139,92,246,0.4)',
                         }}>GO</button>
                     </motion.form>
                 )}
@@ -526,10 +515,8 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                     pointerEvents: 'auto',
                     display: 'flex', flexDirection: 'column',
                     overflow: 'hidden',
-                    background: 'var(--panel-bg)',
+                    background: 'var(--bg-surface)',
                     border: '1px solid var(--accent-border)',
-                    backdropFilter: 'blur(30px)',
-                    boxShadow: '0 8px 60px rgba(0,0,0,0.3), 0 0 40px rgba(0,245,212,0.03), inset 0 1px 0 rgba(255,255,255,0.03)',
                 }}
             >
 
@@ -559,7 +546,6 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                 {/* ── Profile Header ── */}
                 <div style={{
                     padding: isMobile ? '14px 16px 12px' : '20px 20px 16px', borderBottom: '1px solid var(--section-border)',
-                    background: 'linear-gradient(180deg, rgba(0,245,212,0.03) 0%, transparent 100%)',
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 16, marginBottom: 12 }}>
                         {/* Avatar */}
@@ -570,8 +556,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                             style={{
                                 width: isMobile ? 44 : 56, height: isMobile ? 44 : 56, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 fontFamily: FONT_ORBIT, fontWeight: 900, fontSize: isMobile ? 18 : 22, color: '#030508',
-                                background: `linear-gradient(135deg, ${powerTier.color}, #7c3aed)`,
-                                boxShadow: `0 4px 24px ${powerTier.color}40`,
+                                background: powerTier.color,
                                 position: 'relative',
                             }}
                         >
@@ -682,7 +667,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                                             >
                                                 <span style={{
                                                     width: 8, height: 8, borderRadius: '50%', background: c,
-                                                    boxShadow: `0 0 8px ${c}60`, flexShrink: 0,
+                                                    flexShrink: 0,
                                                 }} />
                                                 <span style={{
                                                     flex: 1, fontSize: 11, fontFamily: FONT_MONO, color: 'var(--text-secondary)',
@@ -731,7 +716,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                                             >
                                                 <span style={{
                                                     width: 10, height: 10, borderRadius: '50%', background: c,
-                                                    boxShadow: `0 0 8px ${c}60`, flexShrink: 0,
+                                                    flexShrink: 0,
                                                 }} />
                                                 <div style={{ flex: 1, minWidth: 0 }}>
                                                     <div style={{
@@ -743,7 +728,7 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                                                             initial={{ width: 0 }}
                                                             animate={{ width: `${pct}%` }}
                                                             transition={{ duration: 0.8, delay: i * 0.05 }}
-                                                            style={{ height: '100%', borderRadius: 2, background: c, boxShadow: `0 0 6px ${c}40` }}
+                                                            style={{ height: '100%', borderRadius: 2, background: c }}
                                                         />
                                                     </div>
                                                 </div>
@@ -787,7 +772,6 @@ function UserPanel({ data, onBack, viewMode, onViewModeChange }) {
                                                 <span style={{
                                                     width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
                                                     background: ac ? '#23d18b' : '#ff3860',
-                                                    boxShadow: `0 0 8px ${ac ? '#23d18b' : '#ff3860'}`,
                                                 }} />
                                                 <span style={{
                                                     flex: 1, fontSize: 12, fontFamily: FONT_MONO, color: 'var(--text-secondary)',
