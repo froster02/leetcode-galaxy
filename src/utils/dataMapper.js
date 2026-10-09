@@ -1,6 +1,6 @@
 import { normalizeStats, validateTotalQuestions, fixPercentages } from './normalization';
 
-export function mapLeetCodeDataToCity(data) {
+export function mapProfile(data) {
     if (!data || !data.profile?.matchedUser) return null;
 
     const user = data.profile.matchedUser;
@@ -25,23 +25,16 @@ export function mapLeetCodeDataToCity(data) {
         ...(tags.fundamental || [])
     ].sort((a, b) => b.problemsSolved - a.problemsSolved);
 
-    // Take top 8 tags to represent major City Districts
+    // Top 8 topics ("districts"), most-solved first
     const topTags = allTags.slice(0, 8);
     const maxSolved = topTags.length > 0 ? topTags[0].problemsSolved : 1;
 
-    const districts = topTags.map((tag, index) => {
-        // Normalize size for building height and cluster density
-        const normalizedSize = tag.problemsSolved / maxSolved; // 0..1
-        const size = 1.2 + normalizedSize * 1.6; // 1.2 to 2.8
-
-        return {
-            name: tag.tagName,
-            problemsSolved: tag.problemsSolved,
-            size,
-            normalizedScore: normalizedSize,
-            index
-        };
-    });
+    const districts = topTags.map((tag, index) => ({
+        name: tag.tagName,
+        problemsSolved: tag.problemsSolved,
+        normalizedScore: tag.problemsSolved / maxSolved, // 0..1 relative to the top topic
+        index,
+    }));
 
     const contest = data.contest || {};
     const badges = data.badges || {};

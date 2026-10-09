@@ -1,11 +1,11 @@
 import React, { useRef, useState, useCallback, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import html2canvas from 'html2canvas';
+import useShareCapture, { downloadDataUrl } from '../hooks/useShareCapture';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const Fs = '"Inter", "SF Pro Display", system-ui, sans-serif';
-const Fm = '"Share Tech Mono", monospace';
-const Fo = '"Orbitron", sans-serif';
+const Fs = 'var(--font)';
+const Fm = 'var(--font-mono)';
+const Fo = 'var(--font)';
 
 /* ── Rank ── */
 function getRank(hard, rating) {
@@ -98,7 +98,7 @@ function HexBadge({ rank, size = 170 }) {
 
             {/* Letter */}
             <text x={cx} y={cy + 3} textAnchor="middle" dominantBaseline="middle"
-                fontFamily="'Orbitron', sans-serif" fontSize={size * 0.3} fontWeight="900"
+                fontFamily="system-ui, -apple-system, sans-serif" fontSize={size * 0.3} fontWeight="900"
                 fill={`url(#${id}_txt)`} filter={`url(#${id}_txtglow)`}>
                 {rank.name[0]}
             </text>
@@ -424,62 +424,7 @@ export default function ShareModal({ data, onClose }) {
         if (scale < 1) setPreviewScale(Math.max(0.35, scale));
     }, [data]);
 
-    const capture = useCallback(async () => {
-        if (!cardRef.current) return Promise.reject(new Error('card not mounted'));
-
-        /* 1. Pre-convert every external <img> to a data URL.
-              LeetCode badge URLs and CDN images block CORS — leaving them
-              cross-origin taints the canvas and makes toDataURL() throw. */
-        const imgs     = Array.from(cardRef.current.querySelectorAll('img[src]'));
-        const origSrcs = imgs.map(i => i.getAttribute('src'));
-        const origDisp = imgs.map(i => i.style.display);
-
-        await Promise.allSettled(imgs.map(async (img) => {
-            if (img.src.startsWith('data:')) return;
-            try {
-                const res  = await fetch(img.src, { cache: 'force-cache' });
-                const blob = await res.blob();
-                img.src = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload  = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(blob);
-                });
-            } catch {
-                /* Can't fetch → hide so it doesn't cause taint */
-                img.style.display = 'none';
-            }
-        }));
-
-        try {
-            /* 2. html2canvas — useCORS:false because all images are now data URLs.
-                  onclone: set opacity→1 (element is opacity:0 in DOM) and strip
-                  backdrop-filter which html2canvas v1 cannot render. */
-            const canvas = await html2canvas(cardRef.current, {
-                backgroundColor: '#0a0c18',
-                scale: 2,
-                useCORS: false,
-                allowTaint: false,
-                logging: false,
-                onclone: (_doc, el) => {
-                    el.style.opacity = '1';
-                    el.querySelectorAll('*').forEach(node => {
-                        if (!node.style) return;
-                        node.style.backdropFilter       = '';
-                        node.style.webkitBackdropFilter = '';
-                    });
-                },
-            });
-
-            return canvas.toDataURL('image/png');
-        } finally {
-            /* 3. Always restore original srcs and display */
-            imgs.forEach((img, i) => {
-                img.style.display = origDisp[i];
-                if (origSrcs[i]) img.setAttribute('src', origSrcs[i]);
-            });
-        }
-    }, []);
+    const { capture } = useShareCapture(cardRef, { backgroundColor: '#0a0c18' });
 
     /* 'idle' | 'download' | 'copy' | 'linkedin'
        | 'done-download' | 'done-copy' | 'done-linkedin'
@@ -487,21 +432,12 @@ export default function ShareModal({ data, onClose }) {
     const [actionState, setActionState] = useState('idle');
     const busy = actionState === 'download' || actionState === 'copy' || actionState === 'linkedin';
 
-    const triggerDownload = (dataUrl, filename) => {
-        const a = document.createElement('a');
-        a.download = filename;
-        a.href = dataUrl;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    };
-
     const handleDownload = useCallback(async () => {
         if (busy) return;
         setActionState('download');
         try {
             const dataUrl = await capture();
-            triggerDownload(dataUrl, `leetcode-${data?.username || 'card'}.png`);
+            downloadDataUrl(dataUrl, `leetcode-${data?.username || 'card'}.png`);
             setActionState('done-download');
         } catch (err) {
             console.error('[ShareCard] Download failed:', err);
@@ -535,7 +471,7 @@ export default function ShareModal({ data, onClose }) {
             const dataUrl = await capture();
             /* Download the image first — LinkedIn can't receive images via URL,
                so we hand it to the user and open the post composer. */
-            triggerDownload(dataUrl, `leetcode-${data?.username || 'card'}.png`);
+            downloadDataUrl(dataUrl, `leetcode-${data?.username || 'card'}.png`);
             /* Small delay so the download dialog appears before the new tab */
             await new Promise(r => setTimeout(r, 300));
             window.open('https://www.linkedin.com/feed/?shareActive=true', '_blank', 'noopener,noreferrer');
@@ -567,7 +503,7 @@ export default function ShareModal({ data, onClose }) {
         <AnimatePresence>
             <motion.div key="share-bg"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                style={{ position: 'fixed', inset: 0, zIndex: 16777272, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px 32px', paddingBottom: 'max(32px, env(safe-area-inset-bottom))', overflow: 'hidden' }}
+                data-theme="dark" style={{ position: 'fixed', inset: 0, zIndex: 16777272, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px 32px', paddingBottom: 'max(32px, env(safe-area-inset-bottom))', overflow: 'hidden' }}
                 onClick={onClose}>
 
                 <motion.div

@@ -1,4 +1,4 @@
-/* Shared submission-calendar helpers (used by ShareCard and CityScene). */
+/* Shared submission-calendar helpers. */
 
 /** Returns the raw { unixTs: count } map from a calendar payload; {} if absent/malformed. */
 export function parseCalendar(cal) {

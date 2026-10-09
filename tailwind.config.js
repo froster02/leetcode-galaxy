@@ -7,16 +7,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#030508',
-        accent: '#00f5d4',
-        easy: '#23d18b',
-        medium: '#f5a623',
-        hard: '#ff3860'
+        background: 'var(--bg)',
+        surface: 'var(--surface)',
+        label: 'var(--label)',
+        tint: 'var(--tint)',
+        easy: 'var(--easy)',
+        medium: 'var(--medium)',
+        hard: 'var(--hard)',
       },
       fontFamily: {
-        orbitron: ['Orbitron', 'sans-serif'],
-        mono: ['"Share Tech Mono"', 'monospace'],
-      }
+        sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+        mono: ['ui-monospace', '"SF Mono"', 'Menlo', 'monospace'],
+      },
     },
   },
   plugins: [],

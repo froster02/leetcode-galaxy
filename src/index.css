@@ -1,39 +1,84 @@
 /* ═══════════════════════════════════════════════════════
-   THEME CSS VARIABLES
+   SEMANTIC TOKENS — light default, dark via prefers-color-scheme
    ═══════════════════════════════════════════════════════ */
 :root {
-  --bg-primary: #030508;
-  --bg-surface: #0f0f14;
-  --bg-surface-2: #0d0d12;
-  --text-primary: #f0f0f0;
-  --text-secondary: #c4cbd4;
-  --text-muted: #8a94a3;
-  --text-ultra-muted: #6a7380;
-  /* Interstellar / PHM themed accents */
-  --amber: #f5a623;
-  --astrophage: #ff6b35;
-  --rocky: #d4c168;
-  --tars: #d1d5db;
-  --border: rgba(255, 255, 255, 0.07);
-  --border-subtle: rgba(255, 255, 255, 0.05);
-  --accent: #00f5d4;
-  --card-header-bg: rgba(255, 255, 255, 0.02);
-  --scrollbar-thumb: rgba(0, 245, 212, 0.25);
-  --scrollbar-thumb-hover: rgba(0, 245, 212, 0.45);
-  /* Component-level tokens */
-  --panel-bg: rgba(3, 5, 8, 0.92);
-  --btn-bg: rgba(0, 0, 0, 0.6);
-  --input-bg: #060b14;
-  --input-color: #ffffff;
-  --input-placeholder: #374151;
-  --accent-border: rgba(0, 245, 212, 0.2);
-  --section-border: rgba(255, 255, 255, 0.04);
-  --topic-row-bg: rgba(255, 255, 255, 0.02);
-  --topic-row-border: rgba(255, 255, 255, 0.03);
-  --kbd-bg: rgba(255, 255, 255, 0.06);
-  --kbd-border: rgba(255, 255, 255, 0.08);
+  color-scheme: light dark;
+
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface-2: #f2f2f7;
+  --label: #1d1d1f;
+  --secondary-label: #6e6e73;
+  --tertiary-label: #86868b;
+  --separator: rgba(0, 0, 0, 0.1);
+  --fill: rgba(120, 120, 128, 0.12);
+  --tint: #0071e3;
+  --on-tint: #ffffff;
+  --material: rgba(255, 255, 255, 0.72);
+  --material-edge: rgba(255, 255, 255, 0.5);
+  --scrim: rgba(0, 0, 0, 0.4);
+
+  --easy: #248a3d;
+  --medium: #c93400;
+  --hard: #d70015;
+
+  --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+
+  --radius-sm: 10px;
+  --radius: 16px;
+  --radius-lg: 24px;
+
+  /* Legacy aliases (FighterCard / ShareCard / ErrorToast) */
+  --bg-primary: var(--bg);
+  --bg-surface: var(--surface);
+  --bg-surface-2: var(--surface-2);
+  --text-primary: var(--label);
+  --text-secondary: var(--secondary-label);
+  --text-muted: var(--tertiary-label);
+  --border: var(--separator);
+  --accent: var(--tint);
+  --amber: var(--medium);
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --surface-2: #2c2c2e;
+    --label: #f5f5f7;
+    --secondary-label: #a1a1a6;
+    --tertiary-label: #6e6e73;
+    --separator: rgba(255, 255, 255, 0.12);
+    --fill: rgba(120, 120, 128, 0.24);
+    --tint: #0a84ff;
+    --material: rgba(28, 28, 30, 0.72);
+    --material-edge: rgba(255, 255, 255, 0.08);
+    --scrim: rgba(0, 0, 0, 0.6);
+    --easy: #30d158;
+    --medium: #ff9f0a;
+    --hard: #ff453a;
+  }
+}
+
+/* Forces the dark palette on a subtree (used by views with dark-only art) */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #000000;
+  --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --label: #f5f5f7;
+  --secondary-label: #a1a1a6;
+  --tertiary-label: #6e6e73;
+  --separator: rgba(255, 255, 255, 0.12);
+  --fill: rgba(120, 120, 128, 0.24);
+  --tint: #0a84ff;
+  --material: rgba(28, 28, 30, 0.72);
+  --material-edge: rgba(255, 255, 255, 0.08);
+  --easy: #30d158;
+  --medium: #ff9f0a;
+  --hard: #ff453a;
+}
 
 *,
 *::before,
@@ -43,17 +88,23 @@
   padding: 0;
 }
 
+html {
+  font: 100%/1.5 var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
 html,
 body,
 #root {
   width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: var(--bg-primary);
-  transition: background 0.3s ease;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--label);
+  font-family: var(--font);
 }
 
-/* Faster taps + no accidental double-tap zoom on controls (zoom stays enabled page-wide) */
 button,
 a,
 input,
@@ -61,13 +112,21 @@ select,
 textarea,
 [role="button"] {
   touch-action: manipulation;
+  font: inherit;
+  color: inherit;
 }
 
-/* Full-viewport height that tracks the mobile URL bar; falls back to vh where dvh is unsupported */
+button { cursor: pointer; }
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--tint) 55%, transparent);
+  outline-offset: 2px;
+}
+
 .app-viewport {
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .page-viewport {
@@ -75,148 +134,152 @@ textarea,
   min-height: 100dvh;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+/* ═══════════════════════════════════════════════════════
+   TYPE SCALE — tracking tightens and leading drops as size grows
+   ═══════════════════════════════════════════════════════ */
+.t-display {
+  font-size: clamp(2.5rem, 7vw, 4.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-weight: 700;
 }
 
-::-webkit-scrollbar-track {
-  background: rgba(128, 128, 128, 0.05);
-  border-radius: 4px;
+.t-title {
+  font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  font-weight: 700;
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 4px;
+.t-headline {
+  font-size: 1.0625rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  font-weight: 600;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
+.t-body {
+  font-size: 1rem;
+  line-height: 1.5;
 }
+
+.t-footnote {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  color: var(--secondary-label);
+}
+
+.t-caption {
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--secondary-label);
+}
+
+.tabular { font-variant-numeric: tabular-nums; }
 
 /* ═══════════════════════════════════════════════════════
-   GLOBAL ANIMATIONS
+   SURFACES, MATERIALS, CONTROLS
    ═══════════════════════════════════════════════════════ */
-
-@keyframes shoot {
-  0% { transform: translateX(-100px) translateY(-100px) rotate(45deg); opacity: 1; }
-  100% { transform: translateX(300px) translateY(300px) rotate(45deg); opacity: 0; }
+.surface {
+  background: var(--surface);
+  border-radius: var(--radius);
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+/* Floating chrome only — content scrolls beneath it */
+.material {
+  background: var(--material);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--material-edge);
 }
 
-@keyframes warp {
-  0% { transform: scaleY(0); opacity: 0; }
-  30% { opacity: 1; }
-  100% { transform: scaleY(1); opacity: 0; }
+/* Feedback lands on pointer-down, not release */
+.press {
+  transition: transform 100ms ease-out, opacity 100ms ease-out, background-color 150ms ease;
+}
+.press:active {
+  transform: scale(0.97);
 }
 
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border-radius: 999px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
-/* Fade in up */
-@keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+.btn-primary { background: var(--tint); color: var(--on-tint); }
+.btn-secondary { background: var(--fill); color: var(--label); }
+.btn-plain { background: transparent; color: var(--tint); }
+
+.field {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 1.125rem;
+  border-radius: 14px;
+  border: 1px solid var(--separator);
+  background: var(--surface);
+  color: var(--label);
+  font-size: 1.0625rem;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.field::placeholder { color: var(--tertiary-label); }
+.field:focus {
+  border-color: var(--tint);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tint) 20%, transparent);
 }
 
-/* Shimmer */
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+.spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid var(--fill);
+  border-top-color: var(--secondary-label);
+  animation: spin 0.8s linear infinite;
 }
 
-/* Rotate */
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* Ticker fade for rotating status messages */
-@keyframes ticker-fade {
-  0% { opacity: 0; transform: translateY(4px); }
-  12% { opacity: 1; transform: translateY(0); }
-  88% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-4px); }
-}
-
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ═══════════════════════════════════════════════════════
-   FLAT PANEL
+   ACCESSIBILITY PREFERENCES
    ═══════════════════════════════════════════════════════ */
-.glass-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  transition: border-color 0.2s ease;
-}
-
-.glass-card:hover {
-  border-color: var(--accent-border);
-}
-
-/* ═══════════════════════════════════════════════════════
-   POWER LEVEL BAR
-   ═══════════════════════════════════════════════════════ */
-.power-bar {
-  position: relative;
-  overflow: hidden;
-  border-radius: 4px;
-}
-
-.power-bar::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  animation: shimmer 2s ease-in-out infinite;
-}
-
-/* ═══════════════════════════════════════════════════════
-   MOBILE RESPONSIVE
-   ═══════════════════════════════════════════════════════ */
-@media (max-width: 768px) {
-  .status-bar-bottom {
-    display: none !important;
+@media (prefers-reduced-transparency: reduce) {
+  .material {
+    background: var(--surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 }
 
-/* ═══════════════════════════════════════════════════════
-   FIGHTER CARD — THEMED COMPONENTS
-   ═══════════════════════════════════════════════════════ */
-.stat-bar {
-  height: 6px;
-  background: var(--border);
-  border-radius: 3px;
-  overflow: hidden;
+@media (prefers-contrast: more) {
+  .material {
+    background: var(--surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-color: var(--label);
+  }
+  .field { border-color: var(--label); }
 }
 
-.stat-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.8s cubic-bezier(0.16,1,0.3,1);
-}
-
-/* Freezes every CSS @keyframes-driven animation (float, shimmer, etc.) for
-   users who requested reduced motion. Framer-motion animations are gated
-   separately per-component via useReducedMotion(). */
+/* Framer-motion animations are gated per-component via useReducedMotion() */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
   }
+  .press:active { transform: none; }
 }
-
-
