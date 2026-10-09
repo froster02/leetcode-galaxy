@@ -1,101 +1,72 @@
-# LC Galaxy
+# LeetCode Wrapped
 
-> Transform any LeetCode profile into a bioluminescent neon mushroom biome — a living, breathing sci-fi visualization of your coding journey.
+> Your LeetCode, wrapped. Your problems, streaks, and coder personality — in one story worth sharing.
 
-**[Live Demo](https://froster02.github.io/leetcode-galaxy/)** · Built with React + Three.js · No login required
+**[Live Demo](https://froster02.github.io/leetcode-galaxy/)** · Built with React 19 + Vite · No backend, no WebGL
 
 ---
 
 ## What It Does
 
-Enter any LeetCode username. Watch your profile materialize as a glowing cyberpunk biome — mushroom field, stats panel, shareable card, and all.
+Enter any LeetCode username (or paste a profile URL). You get a short, swipeable story about *you*:
 
----
+1. **Problems solved** — and what share of LeetCode that is
+2. **Easy / Medium / Hard split** — and what it says about you
+3. **Home-turf topic** — your most-solved tag
+4. **Peak month & favorite weekday** — from your submission calendar
+5. **Longest and current streak**
+6. **Contest rating** — if you compete
+7. **Your coder type** — a 4-letter personality (e.g. `HDWA · The Relentless Climber`)
+8. **One roast** — because you earned it
+9. **A 9:16 share card** — Share (native share sheet on phones), Save (1080×1920 PNG), or Copy
 
-## Features
+Want everything? **Full stats** opens the detailed dashboard (contest sparkline, heatmap, power level, Challenge-a-friend battle).
 
-### Galaxy Landing
-- Animated star field with orbit rings and glitch title
-- Live stats: Total Questions · Last Contest Participants · Max Daily Streak
-- Featured legendary coders (cpcs, votrubac, lee215…)
-- Press `/` to focus search from anywhere
+## Design
 
-### Bioluminescent Mushroom Biome
-- 10×10 procedural grid — each patch represents a LeetCode user
-- **Cyan mushrooms** = Easy solves · **Amber** = Medium · **Magenta/Purple** = Hard
-- Giant animated centerpiece mushroom at your beacon spawn point
-- 90 ambient spore particles drifting upward across the biome
-- Orbiting mini-spores around the centerpiece
-- Cyan grid floor · Aurora overhead · Floating neon wisps
-- Bloom post-processing for full bioluminescent glow
+Minimal and quiet, following Apple's interface guidance:
 
-### Side Panel
-- Power Level with animated counter + tier badge (Explorer → Hail Mary Hero)
-- Circular progress ring, difficulty breakdown bars, SVG radar chart
-- Tabbed view: Stats / Topics / Activity
-- Achievement badges (First Solve, 100 Club, Hard 10, Polyglot, Top 10K, Legend)
-- Quick search · View mode toggle (City / Card) · Share Card
-
-### Activity Overlay
-- **Submission Heatmap** — 12-week GitHub-style calendar from real API data
-- **Streak Tracker** — current + longest streak + 7-day bar chart
-
-### Fighter Card
-- Full-screen profile card: contest rating, global rank, badges, power tier
-- Power DNA breakdown (Easy ×1 · Medium ×3 · Hard ×10)
-- Battle Momentum, Recent Submissions, Specialties
-- Challenge any LeetCode user — live VS battle result modal
-- Direct link to LeetCode profile
-
-### Share Card
-- Premium glass card with hex rank badge, heatmap, contest stats, badges
-- Download as high-res PNG (2×)
-- Copy image to clipboard
-- Share directly to LinkedIn — auto-downloads PNG + opens post composer
-
-### Responsive
-- Full mobile support — bottom-sheet side panel, compressed HUD, scaled share modal
-- Adaptive layouts across all screen sizes
-
----
+- System font, size-specific tracking and leading, tabular numbers
+- Light and dark themes from the OS
+- Spring-based motion; the story tracks your finger 1:1, projects flick momentum, rubber-bands at the ends, and can be interrupted mid-animation
+- Feedback on press, not release; translucent material only on floating controls
+- Respects reduced motion, reduced transparency, and increased contrast
 
 ## Tech Stack
 
-| Layer | Technology |
+| Layer | Tech |
 |---|---|
-| Frontend | React 19 + hooks |
-| 3D | Three.js · `@react-three/fiber` · `@react-three/drei` |
-| Post-processing | `@react-three/postprocessing` (Bloom) |
+| UI | React 19, Vite |
 | Motion | Framer Motion |
-| Image Export | `html2canvas` |
-| Build | Vite 7 |
-| Data | Alfa LeetCode API + LeetCode GraphQL |
-
----
+| Share image | html2canvas |
+| Data | [alfa-leetcode-api](https://alfa-leetcode-api.onrender.com) (optional Cloudflare Worker fallback) |
+| Tests | Vitest |
 
 ## Project Structure
 
 ```
 src/
-├── App.jsx                  # Phase manager, routing, transitions
+├── App.jsx                  # view state: landing → loading → wrapped / card, URL sync
 ├── components/
-│   ├── LandingUI.jsx        # Galaxy landing, search, live stats
-│   ├── GalaxyScene.jsx      # Animated star field
-│   ├── TransitionOverlay.jsx
-│   ├── CityScene.jsx        # Mushroom biome, spores, aurora, heatmap
-│   ├── UserPanel.jsx        # Side stats panel + share trigger
-│   ├── FighterCard.jsx      # Full-screen profile card + VS modal
-│   ├── ShareCard.jsx        # Exportable PNG card + LinkedIn share
-│   └── Navbar.jsx
+│   ├── LandingUI.jsx        # search, legends, sample card
+│   ├── wrapped/
+│   │   ├── WrappedStory.jsx # story shell, gestures, sharing
+│   │   ├── slides.jsx       # one component per slide
+│   │   └── WrappedCard.jsx  # 9:16 share card
+│   ├── FighterCard.jsx      # Full stats + VS battle
+│   ├── ShareCard.jsx        # share modal for Full stats
+│   ├── Heatmap.jsx
+│   └── ErrorToast.jsx
 ├── hooks/
-│   └── useLeetCode.js       # API fetch + localStorage cache (30min TTL)
+│   ├── useLeetCode.js       # fetch + localStorage cache
+│   ├── useShareCapture.js   # PNG render, download, copy, native share
+│   ├── useIsMobile.js
+│   └── useReducedMotion.js
 └── utils/
-    ├── dataMapper.js        # Raw API → app model
-    ├── normalization.js     # Stats normalization + validation
-    └── gameData.js          # Power tiers, fighter classes, coders roster
+    ├── dataMapper.js        # mapProfile(): API → view model
+    ├── wrapped.js           # story stats + personality
+    ├── calendar.js · roast.js · gameData.js · handle.js · normalization.js
 ```
-
----
 
 ## Local Development
 
@@ -105,28 +76,17 @@ npm run dev
 # → http://localhost:5173
 ```
 
----
-
 ## Data Flow
 
 ```
 Search username
-  → useLeetCode.fetchProfile()
-      → parallel: profile · skillStats · contest · badges · calendar
-  → mapLeetCodeDataToCity()     # normalize into app model
-  → CityCanvas(data)            # build 10×10 roster, render biome
-  → UserPanel(data)             # stats, heatmap, streak
-  → FighterCard(data)           # full card view on demand
+  → useLeetCode.fetchProfile()     # profile · skills · contest · badges · calendar
+  → mapProfile()                   # normalize into the app model
+  → buildWrapped()                 # derive story stats + personality
+  → WrappedStory / FighterCard
 ```
 
-**Cache:** `localStorage` per username, 30-minute TTL. Stale or malformed entries are auto-purged.
-
-**Landing stats (live):**
-- Total Questions → LeetCode GraphQL `allQuestionsCount`
-- Last Contest Participants → `leetcode.com/contest/api/info/weekly-contest-N/` (slug computed from known anchor)
-- Max Daily Streak → computed from Daily Challenge launch date (2020-04-01), always accurate
-
----
+**Cache:** `localStorage` per username, 30-minute TTL; only complete payloads are cached.
 
 ## Commands
 
@@ -139,9 +99,7 @@ Search username
 | `npm test` | Unit tests (Vitest) |
 | `bash scripts/run-tests.sh` | Build + lint + unit tests (run after every change) |
 
-See [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md) for the full manual test checklist (M1–M32).
-
----
+See [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md) for the manual test checklist.
 
 ## Easter Eggs
 
@@ -149,9 +107,7 @@ Try searching: `rocky` · `tars` · `murph` · `cooper` · `hail mary`
 
 ---
 
-*Made by [Arush Naudiyal](https://github.com/froster02)*
-
----
+*Made by [Arush Naudiyal](https://github.com/froster02). Uses public LeetCode data; not affiliated with LeetCode.*
 
 ## 🤖 AI Contributors
 
