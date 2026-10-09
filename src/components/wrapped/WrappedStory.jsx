@@ -5,7 +5,7 @@ import { Intro, Total, Split, Topic, Rhythm, Streak, Contest, Personality, Roast
 import WrappedCard, { CARD_W, CARD_H } from './WrappedCard';
 import useShareCapture from '../../hooks/useShareCapture';
 import useReducedMotion from '../../hooks/useReducedMotion';
-import useIsMobile from '../../hooks/useIsMobile';
+import useViewportSize from '../../hooks/useViewportSize';
 
 const SLIDE_MS = 5500;
 const HOLD_MS = 220;
@@ -27,15 +27,35 @@ function buildSlides(w) {
     ].filter(Boolean);
 }
 
+/** Callback ref that reports an element's rendered height; disconnects on unmount. */
+function heightObserver(setter) {
+    let ro = null;
+    return (el) => {
+        ro?.disconnect();
+        ro = null;
+        if (!el) return;
+        ro = new ResizeObserver(() => setter(Math.round(el.getBoundingClientRect().height)));
+        ro.observe(el);
+    };
+}
+
 /* Apple's scroll-deceleration projection: where a flick would come to rest. */
 function project(velocity, rate = 0.998) {
     return ((velocity / 1000) * rate) / (1 - rate);
 }
 
-function FinalSlide({ w, site, stageH, stageW }) {
-    const scale = Math.max(0.1, Math.min((stageH - 230) / CARD_H, (stageW - 48) / CARD_W, 1));
+/* The card sits above the action bar in portrait and beside it in landscape;
+   `layout` carries the measured chrome so the card scales into what's left. */
+function FinalSlide({ w, site, stageH, stageW, layout }) {
+    const { top, bar, landscape, panelW } = layout;
+    const availW = landscape ? stageW - panelW - 36 : stageW - 32;
+    const availH = landscape ? stageH - top - 16 : stageH - top - bar - 28;
+    const scale = Math.max(0.2, Math.min(availH / CARD_H, availW / CARD_W, 1));
     return (
-        <div style={{ width: '100%', height: '100%', background: '#000', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 76 }}>
+        <div style={{
+            width: landscape ? stageW - panelW - 12 : '100%', height: '100%', background: '#000',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: top + 4,
+        }}>
             <div style={{ width: CARD_W * scale, height: CARD_H * scale, borderRadius: 28 * scale + 4, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <WrappedCard w={w} site={site} style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }} />
             </div>
@@ -45,7 +65,9 @@ function FinalSlide({ w, site, stageH, stageW }) {
 
 export default function WrappedStory({ data, onClose, onFullStats, onAnother }) {
     const reduced = useReducedMotion();
-    const isMobile = useIsMobile();
+    const viewport = useViewportSize();
+    // Phones in either orientation (and any short window) get the full-bleed story
+    const compact = viewport.width <= 768 || viewport.height < 600;
     const w = useMemo(() => buildWrapped(data), [data]);
     const site = `${window.location.host}${BASE_PATH}`;
     const slides = useMemo(() => [...buildSlides(w), { id: 'final', Component: FinalSlide }], [w]);
@@ -66,11 +88,28 @@ export default function WrappedStory({ data, onClose, onFullStats, onAnother }) 
         const ro = new ResizeObserver(([entry]) => {
             const { width, height } = entry.contentRect;
             setSize({ w: width, h: height });
+            x.stop(); // a running spring would otherwise land on the old width's offset
             x.set(-indexRef.current * width);
         });
         ro.observe(el);
         return () => ro.disconnect();
     }, [x]);
+
+    // Stop iOS from rubber-banding the whole page while the user swipes slides
+    useEffect(() => {
+        const root = document.documentElement;
+        const prev = root.style.overscrollBehavior;
+        root.style.overscrollBehavior = 'none';
+        return () => { root.style.overscrollBehavior = prev; };
+    }, []);
+
+    const [chromeH, setChromeH] = useState(72);
+    const [barH, setBarH] = useState(150);
+    const headerRef = useMemo(() => heightObserver(setChromeH), []);
+    const barRef = useMemo(() => heightObserver(setBarH), []);
+    const landscape = size.w > size.h && size.w >= 520;
+    const panelW = landscape ? Math.min(320, Math.round(size.w * 0.42)) : 0;
+    const layout = { top: chromeH, bar: barH, landscape, panelW };
 
     const goTo = useCallback((target, velocity = 0, instant = false) => {
         const i = Math.max(0, Math.min(last, target));
@@ -184,7 +223,7 @@ export default function WrappedStory({ data, onClose, onFullStats, onAnother }) 
         try { await copy(image); flash('Copied to clipboard'); } catch { flash('Copy not supported here'); }
     };
 
-    const frame = isMobile
+    const frame = compact
         ? { position: 'fixed', inset: 0 }
         : { position: 'relative', width: 'min(440px, 100vw)', height: 'min(900px, calc(100dvh - 48px))', borderRadius: 32, overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,0.35)' };
     const Current = slides[index].Component;
@@ -192,7 +231,7 @@ export default function WrappedStory({ data, onClose, onFullStats, onAnother }) 
     return (
         <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20 }}>
             {/* Desktop step affordances sit outside the frame so they never cover content */}
-            {!isMobile && (
+            {!compact && (
                 <button aria-label="Previous" onClick={prev} disabled={index === 0} className="press"
                     style={{ ...arrowBtn, marginRight: 20, opacity: index === 0 ? 0.3 : 1 }}>‹</button>
             )}
@@ -205,7 +244,7 @@ export default function WrappedStory({ data, onClose, onFullStats, onAnother }) 
                         <AnimatePresence initial={false}>
                             <motion.div key={slides[index].id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                 transition={{ duration: 0.15 }} style={{ position: 'absolute', inset: 0 }}>
-                                <Current w={w} site={site} active reduced stageW={size.w} stageH={size.h} />
+                                <Current w={w} site={site} active reduced stageW={size.w} stageH={size.h} layout={layout} />
                             </motion.div>
                         </AnimatePresence>
                     ) : (
@@ -221,7 +260,7 @@ export default function WrappedStory({ data, onClose, onFullStats, onAnother }) 
                             {slides.map(({ id, Component }, i) => (
                                 <div key={id} aria-hidden={i !== index} style={{ flex: '0 0 100%', height: '100%' }}>
                                     {Math.abs(i - index) <= 1 && (
-                                        <Component w={w} site={site} active={i === index} reduced={false} stageW={size.w} stageH={size.h} />
+                                        <Component w={w} site={site} active={i === index} reduced={false} stageW={size.w} stageH={size.h} layout={layout} />
                                     )}
                                 </div>
                             ))}
@@ -230,7 +269,7 @@ export default function WrappedStory({ data, onClose, onFullStats, onAnother }) 
                 </div>
 
                 {/* Progress + header — floating chrome above the slides */}
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: 'max(12px, env(safe-area-inset-top)) 12px 0', pointerEvents: 'none' }}>
+                <div ref={headerRef} style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: 'max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left))', pointerEvents: 'none' }}>
                     <div style={{ display: 'flex', gap: 4 }}>
                         {slides.map(({ id }, i) => (
                             <div key={id} style={{ flex: 1, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.3)', overflow: 'hidden' }}>
@@ -241,52 +280,58 @@ export default function WrappedStory({ data, onClose, onFullStats, onAnother }) 
                             </div>
                         ))}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, pointerEvents: 'auto' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, pointerEvents: 'auto' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                             <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#0a84ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 15 }}>
                                 {w.username[0]?.toUpperCase()}
                             </div>
-                            <span style={{ fontSize: 15, fontWeight: 600 }}>{w.username}</span>
+                            <span style={{ fontSize: 15, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.username}</span>
                             {paused && <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>Paused</span>}
                         </div>
-                        <div style={{ display: 'flex', gap: 4 }}>
+                        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                             <button onClick={onFullStats} className="press" style={chromeBtn}>Full stats</button>
-                            <button onClick={onClose} aria-label="Close" className="press" style={{ ...chromeBtn, width: 36, padding: 0, fontSize: 20 }}>×</button>
+                            <button onClick={onClose} aria-label="Close" className="press" style={{ ...chromeBtn, width: 44, padding: 0, fontSize: 22 }}>×</button>
                         </div>
                     </div>
                 </div>
 
                 {index === last && (
                     <motion.div
-                        initial={reduced ? false : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                        ref={barRef}
+                        initial={reduced ? false : (landscape ? { opacity: 0, x: 20 } : { opacity: 0, y: 20 })}
+                        animate={{ opacity: 1, x: 0, y: 0 }}
                         transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
                         className="material"
                         style={{
-                            position: 'absolute', left: 12, right: 12, bottom: 'max(12px, env(safe-area-inset-bottom))',
-                            borderRadius: 24, padding: 12, display: 'flex', flexDirection: 'column', gap: 8,
+                            position: 'absolute', borderRadius: 24, padding: 12,
+                            display: 'flex', flexDirection: 'column', gap: 8,
+                            ...(landscape
+                                ? { right: 'max(12px, env(safe-area-inset-right))', width: panelW, top: chromeH + 4, bottom: 'max(12px, env(safe-area-inset-bottom))', justifyContent: 'center' }
+                                : { left: 12, right: 12, bottom: 'max(12px, env(safe-area-inset-bottom))' }),
                         }}>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                            <button onClick={onShare} disabled={!image} className="btn btn-primary press" style={{ flex: 1, opacity: image ? 1 : 0.5 }}>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: landscape ? 'wrap' : 'nowrap' }}>
+                            <button onClick={onShare} disabled={!image} className="btn btn-primary press" style={{ flex: landscape ? '1 1 100%' : 1, minWidth: 0, opacity: image ? 1 : 0.5 }}>
                                 {image ? 'Share' : 'Preparing…'}
                             </button>
-                            <button onClick={onSave} disabled={!image} className="btn btn-secondary press" style={{ opacity: image ? 1 : 0.5 }}>Save</button>
-                            <button onClick={onCopy} disabled={!image} className="btn btn-secondary press" style={{ opacity: image ? 1 : 0.5 }}>Copy</button>
+                            <button onClick={onSave} disabled={!image} className="btn btn-secondary press" style={{ flex: landscape ? 1 : 'none', opacity: image ? 1 : 0.5 }}>Save</button>
+                            <button onClick={onCopy} disabled={!image} className="btn btn-secondary press" style={{ flex: landscape ? 1 : 'none', opacity: image ? 1 : 0.5 }}>Copy</button>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 6px' }}>
-                            <button onClick={onAnother} className="btn btn-plain press" style={{ minHeight: 36, padding: 0, fontSize: 15 }}>Wrap someone else</button>
-                            <span role="status" aria-live="polite" style={{ fontSize: 13, color: 'var(--secondary-label)' }}>{status}</span>
-                            <button onClick={() => goTo(0, 0, true)} className="btn btn-plain press" style={{ minHeight: 36, padding: 0, fontSize: 15 }}>Replay</button>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 6px', gap: 8 }}>
+                            <button onClick={onAnother} className="btn btn-plain press" style={{ padding: 0, fontSize: 15 }}>{landscape ? 'New' : 'Wrap someone else'}</button>
+                            <span role="status" aria-live="polite" style={{ flex: 1, minWidth: 0, textAlign: 'center', fontSize: 13, color: 'var(--secondary-label)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{status}</span>
+                            <button onClick={() => goTo(0, 0, true)} className="btn btn-plain press" style={{ padding: 0, fontSize: 15 }}>Replay</button>
                         </div>
                     </motion.div>
                 )}
             </div>
-            {!isMobile && (
+            {!compact && (
                 <button aria-label="Next" onClick={next} disabled={index === last} className="press"
                     style={{ ...arrowBtn, marginLeft: 20, opacity: index === last ? 0.3 : 1 }}>›</button>
             )}
 
             {/* Off-screen-but-painted capture target (browsers skip painting nodes far off-viewport) */}
-            <div aria-hidden style={{ position: 'fixed', left: 0, top: 0, opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
+            {/* Clipped to the viewport so the 540px node can't widen a phone's layout viewport */}
+            <div aria-hidden style={{ position: 'fixed', inset: 0, overflow: 'hidden', opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
                 <WrappedCard ref={captureRef} w={w} site={site} />
             </div>
         </div>
@@ -294,7 +339,7 @@ export default function WrappedStory({ data, onClose, onFullStats, onAnother }) 
 }
 
 const chromeBtn = {
-    height: 36, padding: '0 12px', borderRadius: 18, border: 'none',
+    height: 44, padding: '0 14px', borderRadius: 22, border: 'none',
     background: 'rgba(255,255,255,0.16)', color: '#fff', fontSize: 14, fontWeight: 600,
 };
 

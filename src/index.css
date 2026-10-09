@@ -89,6 +89,8 @@
 }
 
 html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   font: 100%/1.5 var(--font);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -117,6 +119,13 @@ textarea,
 }
 
 button { cursor: pointer; }
+
+/* We draw our own pressed state (.press), so drop the grey iOS flash */
+button,
+a,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
 
 :focus-visible {
   outline: 3px solid color-mix(in srgb, var(--tint) 55%, transparent);
@@ -218,6 +227,36 @@ button { cursor: pointer; }
   font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: none;
+  background: var(--fill);
+  color: var(--label);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+/* Inline text links that act as controls get a full-size hit area */
+.hit {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+}
+
+/* Touch screens: every control reaches the 44pt minimum */
+@media (pointer: coarse) {
+  .chip,
+  .btn,
+  .hit,
+  .tap-44 {
+    min-height: 44px;
+  }
 }
 
 .btn-primary { background: var(--tint); color: var(--on-tint); }

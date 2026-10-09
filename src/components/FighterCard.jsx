@@ -203,7 +203,7 @@ const StatCard = React.memo(function StatCard({ label, value, color, sub }) {
     return (
         <div
             style={{
-                flex: 1, minWidth: 0,
+                flex: '1 1 140px', minWidth: 0,
                 padding: '12px 14px',
                 background: 'rgba(255,255,255,0.03)',
                 border: `1px solid ${color}30`,
@@ -214,7 +214,7 @@ const StatCard = React.memo(function StatCard({ label, value, color, sub }) {
             <span style={{ fontFamily: Fm, fontSize: 11, letterSpacing: '0.05em', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase' }}>
                 {label}
             </span>
-            <span style={{ fontFamily: Fd, fontSize: 18, fontWeight: 900, color, lineHeight: 1.1 }}>
+            <span style={{ fontFamily: Fd, fontSize: 18, fontWeight: 900, color, lineHeight: 1.1, fontVariantNumeric: 'tabular-nums', overflowWrap: 'anywhere' }}>
                 {value ?? '—'}
             </span>
             {sub && (
@@ -283,7 +283,7 @@ const MiniRing = React.memo(function MiniRing({ pct, size, color, stroke = 5, ch
 const FighterCol = React.memo(function FighterCol({ cls, name, pow, isMe, won }) {
     return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
-            padding: '24px 16px', borderRadius: 14,
+            padding: '24px 12px', borderRadius: 14, minWidth: 0,
             background: won ? `${cls.color}0c` : 'rgba(255,255,255,0.03)',
             border: `1px solid ${won ? cls.color + '40' : 'rgba(255,255,255,0.08)'}`,
             position: 'relative', overflow: 'hidden' }}>
@@ -298,8 +298,8 @@ const FighterCol = React.memo(function FighterCol({ cls, name, pow, isMe, won })
             <div style={{ fontFamily: Fm, fontSize: 11, letterSpacing: '0.2em', color: cls.color, textTransform: 'uppercase' }}>{cls.label}</div>
             <div style={{ fontFamily: Fd, fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.9)', textAlign: 'center' }}>{name}</div>
             <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: Fd, fontSize: 32, fontWeight: 900, color: won ? cls.color : 'rgba(255,255,255,0.5)',
-                    lineHeight: 1 }}>
+                <div style={{ fontFamily: Fd, fontSize: 'clamp(1.375rem, 7vw, 2rem)', fontWeight: 900, color: won ? cls.color : 'rgba(255,255,255,0.5)',
+                    lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
                     {pow.toLocaleString()}
                 </div>
                 <div style={{ fontFamily: Fm, fontSize: 11, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.05em', marginTop: 4 }}>POWER</div>
@@ -329,23 +329,23 @@ function VSModal({ myData, opponent, onClose }) {
         <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}
             data-theme="dark" style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.92)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+                display: 'flex', overflowY: 'auto', overscrollBehavior: 'contain', padding: 'max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom))' }}
             onClick={onClose}
         >
             <motion.div
                 initial={{ scale: 0.92, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.92, y: 16 }}
                 transition={{ duration: 0.18, ease: [0.16,1,0.3,1] }}
                 onClick={e => e.stopPropagation()}
-                style={{ background: 'var(--bg-surface)',
+                style={{ background: 'var(--bg-surface)', margin: 'auto',
                     border: `1px solid ${resultColor}30`, borderRadius: 20,
-                    padding: '32px 28px', maxWidth: 580, width: '100%',
+                    padding: 'clamp(20px, 5vw, 32px) clamp(16px, 5vw, 28px)', maxWidth: 580, width: '100%',
                     position: 'relative', overflow: 'hidden' }}
             >
                 {/* Result header */}
                 <div style={{ textAlign: 'center', marginBottom: 24, position: 'relative' }}>
                     <div style={{ fontFamily: Fm, fontSize: 11, letterSpacing: '0.05em', color: 'rgba(255,255,255,0.35)', marginBottom: 6 }}>BATTLE RESULT</div>
                     <motion.div initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.1, duration: 0.35, ease: [0.16,1,0.3,1] }}
-                        style={{ fontFamily: Fd, fontSize: 42, fontWeight: 900, color: resultColor,
+                        style={{ fontFamily: Fd, fontSize: 'clamp(2rem, 9vw, 2.625rem)', fontWeight: 900, color: resultColor,
                             letterSpacing: '0.05em' }}>
                         {iWin ? 'VICTORY' : 'DEFEAT'}
                     </motion.div>
@@ -667,7 +667,6 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                             padding: compactLaptop ? '12px 18px' : '14px 24px',
                             paddingTop: compactLaptop ? 'max(12px, env(safe-area-inset-top))' : 'max(14px, env(safe-area-inset-top))',
                             marginBottom: 8,
-                            width: '100vw', marginLeft: 'calc(50% - 50vw)', marginRight: 'calc(50% - 50vw)',
                         }}>
                         {/* Floating pill */}
                         <div className="material" style={{
@@ -741,15 +740,15 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                     {/* ════ 1. HERO HEADER ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.08 }}
                         style={{ ...panelSurface, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: isMobile ? 'wrap' : 'nowrap', gap: isMobile ? 12 : 0, padding: heroPad, marginBottom: sectionGap }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: compactLaptop ? 14 : 20, flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: compactLaptop ? 14 : 20, flex: isMobile ? '1 1 100%' : 1, minWidth: 0 }}>
                             <div style={{ position: 'relative', flexShrink: 0 }}>
                                 <div
                                     style={{ width: compactLaptop ? 58 : 72, height: compactLaptop ? 58 : 72, borderRadius: 14, background: `${tier.color}12`, border: `2px solid ${tier.color}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: Fd, fontSize: compactLaptop ? 22 : 28, fontWeight: 900, color: tier.color }}>
                                     {username.charAt(0).toUpperCase()}
                                 </div>
                             </div>
-                            <div>
-                                <div style={{ fontFamily: Fd, fontSize: compactLaptop ? 20 : 24, fontWeight: 900, color: 'rgba(255,255,255,0.92)', letterSpacing: '0.02em', lineHeight: 1.05, marginBottom: compactLaptop ? 4 : 6 }}>{username}</div>
+                            <div style={{ minWidth: 0 }}>
+                                <div style={{ fontFamily: Fd, fontSize: compactLaptop ? 20 : 24, fontWeight: 900, color: 'rgba(255,255,255,0.92)', letterSpacing: '0.02em', lineHeight: 1.05, marginBottom: compactLaptop ? 4 : 6, overflowWrap: 'anywhere' }}>{username}</div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
                                     <span style={{ fontFamily: Fm, fontSize: compactLaptop ? 12 : 13, letterSpacing: '0.1em', color: tier.color, textTransform: 'uppercase', padding: compactLaptop ? '2px 7px' : '2px 8px', borderRadius: 4, background: `${tier.color}12`, border: `1px solid ${tier.color}28` }}>{tier.name}</span>
                                     <span style={{ fontFamily: Fm, fontSize: compactLaptop ? 12 : 13, color: 'rgba(255,255,255,0.78)' }}>·</span>
@@ -762,8 +761,10 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                 </div>
                             </div>
                         </div>
-                        <div style={{ textAlign: 'center', paddingLeft: compactLaptop ? 14 : 24 }}>
-                            <div style={{ fontFamily: Fm, fontSize: compactLaptop ? 11 : 12, letterSpacing: '0.05em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase', marginBottom: 8 }} title="AC rate over the most recent submissions, not lifetime">Recent AC Rate</div>
+                        <div style={isMobile
+                            ? { display: 'flex', flexDirection: 'row-reverse', justifyContent: 'flex-end', alignItems: 'center', gap: 14, flex: '1 1 100%', paddingTop: 12, borderTop: '1px solid var(--separator)' }
+                            : { textAlign: 'center', paddingLeft: compactLaptop ? 14 : 24 }}>
+                            <div style={{ fontFamily: Fm, fontSize: compactLaptop ? 11 : 12, letterSpacing: '0.05em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase', marginBottom: isMobile ? 0 : 8 }} title="AC rate over the most recent submissions, not lifetime">Recent AC Rate</div>
                             <MiniRing pct={winRate} size={compactLaptop ? 68 : 76} color={winColor} stroke={5}>
                                 <div style={{ textAlign: 'center' }}>
                                     <div style={{ fontFamily: Fd, fontSize: compactLaptop ? 14 : 16, fontWeight: 900, color: winColor, lineHeight: 1 }}>{winRate}%</div>
@@ -776,11 +777,11 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                     {/* ════ 2. POWER LEVEL ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.14 }}
                         style={{ ...panelSurface, padding: blockPadWide, marginBottom: sectionGap }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 6 }}>
-                            <div style={{ fontFamily: Fm, fontSize: 12, letterSpacing: '0.05em', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase' }}>Power Level</div>
+                        <div style={{ display: 'flex', alignItems: 'center', columnGap: 14, rowGap: 4, marginBottom: 6, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
+                            <div style={{ fontFamily: Fm, fontSize: 12, letterSpacing: '0.05em', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', flexBasis: isMobile ? '100%' : 'auto' }}>Power Level</div>
                             <PowerCounter target={power} color={tier.color} />
                             <span style={{ fontFamily: Fm, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>/ {tier.max.toLocaleString()}</span>
-                            {toNextTier > 0 && <span style={{ fontFamily: Fm, fontSize: 12, color: tier.color, letterSpacing: '0.06em', marginLeft: 'auto' }}>{toNextTier.toLocaleString()} TO NEXT TIER</span>}
+                            {toNextTier > 0 && <span style={{ fontFamily: Fm, fontSize: 12, color: tier.color, letterSpacing: '0.06em', marginLeft: isMobile ? 0 : 'auto', flexBasis: isMobile ? '100%' : 'auto' }}>{toNextTier.toLocaleString()} TO NEXT TIER</span>}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span style={{ fontFamily: Fd, fontSize: 11, letterSpacing: '0.1em', color: tier.color, whiteSpace: 'nowrap' }}>{tier.name}</span>
@@ -794,7 +795,9 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
 
                     {/* ════ 3. STATS ROW ════ */}
                     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16,1,0.3,1], delay: 0.2 }}
-                        style={{ display: 'flex', gap: 10, marginBottom: sectionGap, flexWrap: 'wrap' }}>
+                        style={isMobile
+                            ? { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, marginBottom: sectionGap }
+                            : { display: 'flex', gap: 10, marginBottom: sectionGap, flexWrap: 'wrap' }}>
                         <StatCard label="Total Solved" value={total} color="rgba(255,255,255,0.85)" sub={lcTotal > 0 ? `/ ${lcTotal.toLocaleString()}` : undefined} />
                         <StatCard label="Contest Rating" value={rating} color="#0a84ff" sub={topRating ? `Peak ${topRating.toLocaleString()}` : undefined} />
                         <StatCard label="Global Rank" value={profile.ranking ? `#${profile.ranking.toLocaleString()}` : '—'} color={tier.color} sub={topPct ? `Top ${topPct}%` : undefined} />
@@ -811,7 +814,9 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                 <span style={{ marginLeft: 8, color: tier.color }}>· {totalPctCleared != null ? `${totalPctCleared}% CLEARED` : '--'}</span>
                             </span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', gap: 8 }}>
+                        <div style={isMobile
+                            ? { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', justifyItems: 'center', rowGap: 16, columnGap: 8 }
+                            : { display: 'flex', justifyContent: 'space-around', alignItems: 'flex-start', gap: 8 }}>
                             {[
                                 { count: easy, total: lcEasy, color: C_EASY, label: 'Easy',   beats: easyBeats, delay: 360 },
                                 { count: med,  total: lcMed,  color: C_MED,  label: 'Medium', beats: medBeats,  delay: 740 },
@@ -1042,11 +1047,12 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                                 <span style={{ fontFamily: Fm, fontSize: 12, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.82)', textTransform: 'uppercase' }}>Challenge a Legend</span>
                                 <span style={{ fontFamily: Fm, fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Type username, compare power in popup</span>
                             </div>
-                            <form onSubmit={handleChallengeSubmit} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                <input value={challengeName} onChange={(e) => setChallengeName(e.target.value)} placeholder="enter username..."
-                                    style={{ flex: 1, padding: '8px 12px', borderRadius: 9, border: '1px solid rgba(10,132,255,0.22)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.9)', fontFamily: Fm, fontSize: isMobile ? 16 : 10, letterSpacing: '0.06em', outline: 'none' }} />
+                            <form onSubmit={handleChallengeSubmit} style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
+                                <input value={challengeName} onChange={(e) => setChallengeName(e.target.value)} placeholder="Enter username"
+                                    autoCapitalize="none" autoCorrect="off" spellCheck={false} enterKeyHint="go"
+                                    style={{ flex: '1 1 160px', minWidth: 0, minHeight: isMobile ? 44 : undefined, padding: '8px 12px', borderRadius: 9, border: '1px solid rgba(10,132,255,0.22)', background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.9)', fontFamily: Fm, fontSize: isMobile ? 16 : 10, letterSpacing: '0.06em', outline: 'none' }} />
                                 <button type="submit"
-                                    style={{ fontFamily: Fm, fontSize: 12, letterSpacing: '0.05em', textTransform: 'uppercase', color: '#0a84ff', background: 'rgba(10,132,255,0.08)', border: '1px solid rgba(10,132,255,0.28)', borderRadius: 9, padding: isMobile ? '13px 16px' : '8px 14px', cursor: 'pointer', transition: 'all 0.18s', whiteSpace: 'nowrap' }}
+                                    style={{ fontFamily: Fm, fontSize: 12, letterSpacing: '0.05em', textTransform: 'uppercase', color: '#0a84ff', background: 'rgba(10,132,255,0.08)', border: '1px solid rgba(10,132,255,0.28)', borderRadius: 9, padding: isMobile ? '0 16px' : '8px 14px', minHeight: isMobile ? 44 : undefined, width: isMobile ? '100%' : 'auto', cursor: 'pointer', transition: 'all 0.18s', whiteSpace: 'nowrap' }}
                                     onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(10,132,255,0.5)'; e.currentTarget.style.background = 'rgba(10,132,255,0.14)'; }}
                                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(10,132,255,0.28)'; e.currentTarget.style.background = 'rgba(10,132,255,0.08)'; }}>
                                     CHALLENGE
@@ -1070,7 +1076,7 @@ function FighterCard({ data, username, onBack, fetchProfile }) {
                         <div style={{ display: 'flex', gap: 8 }}>
                             {username && (
                                 <a href={`https://leetcode.com/${username}`} target="_blank" rel="noreferrer"
-                                    style={{ fontFamily: Fm, fontSize: 12, letterSpacing: '0.05em', color: 'rgba(255,255,255,0.7)', padding: '7px 16px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(10,132,255,0.2)', cursor: 'pointer', textDecoration: 'none', transition: 'all 0.18s' }}
+                                    style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, fontFamily: Fm, fontSize: 12, letterSpacing: '0.05em', color: 'rgba(255,255,255,0.7)', padding: '0 16px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(10,132,255,0.2)', cursor: 'pointer', textDecoration: 'none', transition: 'all 0.18s' }}
                                     onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
                                     onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}>
                                     VIEW ON LEETCODE ↗

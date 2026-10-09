@@ -43,7 +43,10 @@ function Frame({ bg, children }) {
         <div style={{
             width: '100%', height: '100%', background: bg, color: '#fff',
             display: 'flex', flexDirection: 'column', justifyContent: 'center',
-            padding: '88px 28px 112px', gap: 18, overflow: 'hidden',
+            // Clears the floating header (safe area + progress + 44px buttons)
+            // Side padding also caps the text column at ~600px on wide/landscape screens
+            padding: 'calc(max(12px, env(safe-area-inset-top)) + 76px) max(24px, env(safe-area-inset-right), calc((100% - 600px) / 2)) max(32px, calc(env(safe-area-inset-bottom) + 20px)) max(24px, env(safe-area-inset-left), calc((100% - 600px) / 2))',
+            gap: 'clamp(10px, 2.2vh, 18px)', overflow: 'hidden',
         }}>
             {children}
         </div>
@@ -51,9 +54,10 @@ function Frame({ bg, children }) {
 }
 
 const caption = { fontSize: '0.8125rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)' };
-const display = { fontSize: 'clamp(3rem, 16vw, 5.5rem)', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.04em', fontVariantNumeric: 'tabular-nums' };
-const title = { fontSize: 'clamp(2rem, 9vw, 2.75rem)', fontWeight: 700, lineHeight: 1.08, letterSpacing: '-0.03em' };
-const body = { fontSize: '1.125rem', lineHeight: 1.45, color: 'rgba(255,255,255,0.78)', letterSpacing: '-0.005em' };
+// Sizes follow the smaller of width and height so landscape phones don't overflow
+const display = { fontSize: 'clamp(2.75rem, min(16vw, 12vh), 5.5rem)', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.04em', fontVariantNumeric: 'tabular-nums' };
+const title = { fontSize: 'clamp(1.75rem, min(9vw, 7vh), 2.75rem)', fontWeight: 700, lineHeight: 1.08, letterSpacing: '-0.03em' };
+const body = { fontSize: 'clamp(1rem, 2.4vh, 1.125rem)', lineHeight: 1.45, color: 'rgba(255,255,255,0.78)', letterSpacing: '-0.005em' };
 
 export function Intro({ w, active, reduced }) {
     return (
@@ -99,7 +103,7 @@ export function Split({ w, active, reduced }) {
     return (
         <Frame bg="#0f2418">
             <Rise active={active} reduced={reduced}><div style={caption}>How you like them</div></Rise>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginTop: 6 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 2.2vh, 18px)', marginTop: 6 }}>
                 {rows.map((r, i) => (
                     <Rise key={r.label} active={active} reduced={reduced} delay={0.06 + i * 0.07}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
@@ -128,14 +132,14 @@ export function Split({ w, active, reduced }) {
     );
 }
 
-export function Topic({ w, active, reduced }) {
+export function Topic({ w, active, reduced, stageH }) {
     const [top, ...rest] = w.topics;
     return (
         <Frame bg="#2a1706">
             <Rise active={active} reduced={reduced}><div style={caption}>Your home turf</div></Rise>
             <Rise active={active} reduced={reduced} delay={0.06}><div style={{ ...title, color: '#ffb340' }}>{top.name}</div></Rise>
             <Rise active={active} reduced={reduced} delay={0.12}><div style={body}>{top.solved.toLocaleString()} problems solved.</div></Rise>
-            {rest.length > 0 && (
+            {rest.length > 0 && stageH >= 560 && (
                 <Rise active={active} reduced={reduced} delay={0.22} style={{ marginTop: 10 }}>
                     <div style={{ ...caption, marginBottom: 10 }}>Also on rotation</div>
                     {rest.slice(0, 3).map(t => (
@@ -159,7 +163,7 @@ export function Rhythm({ w, active, reduced }) {
             <Rise active={active} reduced={reduced} delay={0.12}>
                 <div style={body}>{w.busiestMonth.count.toLocaleString()} submissions.{w.busiestWeekday && ` ${w.busiestWeekday.name}s are your day.`}</div>
             </Rise>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 120, marginTop: 12 }} aria-hidden>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 'min(120px, 18vh)', marginTop: 12 }} aria-hidden>
                 {w.months.map((m, i) => (
                     <div key={`${m.year}-${m.month}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%', justifyContent: 'flex-end' }}>
                         <motion.div
@@ -220,11 +224,11 @@ export function Personality({ w, active, reduced }) {
             <Rise active={active} reduced={reduced}><div style={caption}>Your coder type</div></Rise>
             <div style={{ display: 'flex', gap: 8 }}>
                 {p.code.split('').map((ch, i) => (
-                    <Rise key={i} active={active} reduced={reduced} delay={0.06 + i * 0.07}>
+                    <Rise key={i} active={active} reduced={reduced} delay={0.06 + i * 0.07} style={{ flex: '1 1 0', maxWidth: 64 }}>
                         <div style={{
-                            width: 64, height: 76, borderRadius: 14, background: '#0a84ff',
+                            width: '100%', aspectRatio: '64 / 76', borderRadius: 14, background: '#0a84ff',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.02em',
+                            fontSize: 'clamp(1.75rem, min(9vw, 7vh), 2.5rem)', fontWeight: 800, letterSpacing: '-0.02em',
                         }}>{ch}</div>
                     </Rise>
                 ))}

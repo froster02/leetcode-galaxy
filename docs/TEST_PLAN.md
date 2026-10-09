@@ -21,7 +21,7 @@ Run `scripts/run-tests.sh` after every code change. Automated checks run first; 
 | M1 | Load `/` | Headline, search field, sample Wrapped card visible; correct in both light and dark system theme |
 | M2 | Type `@cpcs` or `https://leetcode.com/u/cpcs/` and submit | Treated as handle `cpcs` |
 | M3 | Press `/` key | Search input focuses |
-| M4 | Resize to mobile (≤ 768px) | Single column, card preview below, no horizontal scroll, input ≥ 16px (no iOS zoom) |
+| M4 | Mobile viewports 320×568, 375×812, 390×844, 812×375 (landscape), 768×1024 | Single column on phones, no horizontal scroll, no overlapping text, touch targets ≥ 44px, text ≥ 11px, input ≥ 16px (no iOS zoom) |
 | M5 | Click a **Try a legend** chip (e.g. `cpcs`, `votrubac`) | Wrapped loads OR "LeetCode is busy right now" toast if the Alfa API is throttling — **never** "Couldn’t load that profile" on a 429 |
 
 ---
@@ -52,6 +52,9 @@ Run `scripts/run-tests.sh` after every code change. Automated checks run first; 
 | M18 | Esc or × | Returns to landing (URL `/`) |
 | M33 | OS reduced motion on | No drag, no auto-advance, slides cross-fade; numbers appear without count-up |
 | M34 | OS reduced transparency / increased contrast | Final action bar becomes solid |
+| M38 | Story on a landscape phone (812×375) | Full-bleed; final slide shows the card beside a right-hand action panel (not covered by it) |
+| M39 | Rotate / resize mid-story | Current slide stays aligned, no partial neighbour slide visible |
+| M40 | Full stats at 320px | Hero ring below the name, stat cards 2-up, Problem Breakdown 2×2, Challenge button full width; VS modal scrolls and power numbers fit |
 
 ---
 
@@ -105,5 +108,5 @@ Run `scripts/run-tests.sh` after every code change. Automated checks run first; 
 - [ ] All deleted files have zero imports remaining (`npm run lint` catches this)
 - [ ] `npm run build` has no three.js / WebGL chunk and total JS does not grow unexpectedly
 - [ ] `public/404.html` SPA redirect still works on GitHub Pages (open `/u/<user>` and `/u/<user>?view=card` directly)
-- [ ] No horizontal scroll at 375px on landing, story, or stats
+- [ ] No horizontal scroll at 320px and 375px (portrait) and 812×375 (landscape) on landing, story, stats, Share modal, VS modal
 - [ ] Light and dark system themes both readable on landing and toast

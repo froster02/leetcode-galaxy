@@ -43,7 +43,7 @@ export default function ErrorToast({ message, onRetry, onClose }) {
                         {friendlyCopy(message)}
                     </span>
                     {canRetry && (
-                        <button onClick={onRetry} className="btn btn-plain press" style={{ minHeight: 36, padding: '0 12px', fontSize: '0.875rem' }}>
+                        <button onClick={onRetry} className="btn btn-plain press" style={{ minHeight: 40, padding: '0 12px', fontSize: '0.875rem' }}>
                             Retry
                         </button>
                     )}
@@ -52,7 +52,7 @@ export default function ErrorToast({ message, onRetry, onClose }) {
                         aria-label="Dismiss"
                         className="press"
                         style={{
-                            flexShrink: 0, width: 36, height: 36, borderRadius: '50%', border: 'none',
+                            flexShrink: 0, width: 40, height: 40, borderRadius: '50%', border: 'none',
                             background: 'var(--fill)', color: 'var(--secondary-label)', fontSize: 18, lineHeight: 1,
                         }}
                     >

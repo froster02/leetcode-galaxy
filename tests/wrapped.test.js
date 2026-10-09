@@ -129,6 +129,11 @@ describe('buildWrapped', () => {
         expect(buildWrapped({ ...data, contestInfo: { attended: 0 } }, NOW).contest).toBeNull();
     });
 
+    it('does not roast a low AC rate when there are no recent submissions', () => {
+        const w = buildWrapped({ ...data, recent: [] }, NOW);
+        expect(w.roast).not.toMatch(/recent AC rate/);
+    });
+
     it('returns null without data', () => {
         expect(buildWrapped(null)).toBeNull();
     });

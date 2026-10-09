@@ -24,10 +24,7 @@ const EGGS = {
 
 function Chip({ children, onClick }) {
     return (
-        <button onClick={onClick} className="press" style={{
-            minHeight: 36, padding: '0 14px', borderRadius: 999, border: 'none',
-            background: 'var(--fill)', color: 'var(--label)', fontSize: '0.9375rem', fontWeight: 500,
-        }}>{children}</button>
+        <button onClick={onClick} className="chip press">{children}</button>
     );
 }
 
@@ -84,7 +81,7 @@ function LandingUI({ onSearch, recent = [] }) {
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="t-headline">LeetCode Wrapped</span>
                 <a href="https://github.com/froster02/leetcode-galaxy" target="_blank" rel="noreferrer"
-                    className="t-footnote" style={{ color: 'var(--tint)', textDecoration: 'none' }}>GitHub</a>
+                    className="t-footnote hit" style={{ color: 'var(--tint)', textDecoration: 'none', padding: '0 4px' }}>GitHub</a>
             </header>
 
             <div style={{

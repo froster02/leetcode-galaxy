@@ -80,7 +80,7 @@ export function Heatmap({ rawMap, months: monthCount = 6 }) {
                         </div>
                         {/* Month label centered below block */}
                         <span style={{
-                            fontFamily: Fs, fontSize: 10, fontWeight: 600,
+                            fontFamily: Fs, fontSize: 11, fontWeight: 600,
                             color: 'rgba(255,255,255,0.5)', letterSpacing: '0.02em',
                         }}>{MN[month]}</span>
                     </div>

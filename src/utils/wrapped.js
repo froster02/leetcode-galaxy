@@ -114,7 +114,8 @@ export function buildWrapped(data, now = new Date()) {
 
     const recent = data.recent || [];
     const accepted = recent.filter(r => r.statusDisplay === 'Accepted').length;
-    const winRate = recent.length ? Math.round((accepted / recent.length) * 100) : 0;
+    // No recent submissions means "unknown", not "0% accepted" — stay neutral for the roast
+    const winRate = recent.length ? Math.round((accepted / recent.length) * 100) : 100;
     const streak = currentStreak(map, now);
     const power = calcPower(easy, med, hard);
 
