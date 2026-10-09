@@ -408,22 +408,31 @@ export default function ShareModal({ data, onClose }) {
     const [cardNaturalH, setCardNaturalH] = useState(null);
     const [roastMode, setRoastMode] = useState(false);
 
-    /* After first paint, measure off-screen cardRef (no transforms) for accurate natural height. */
+    /* Fit the preview to the screen: measure the unscaled capture node, then
+       re-fit whenever the viewport changes (rotation, resize) or roast mode
+       changes the card's height. */
     useLayoutEffect(() => {
-        if (!cardRef.current) return;
-        const naturalH = cardRef.current.scrollHeight;
-        setCardNaturalH(naturalH);
-        const CARD_W = 520;
-        /* Reserve: top pad + title + gaps + action rows + bottom. Narrow screens
-           wrap the four actions onto two rows. */
-        const reserved = window.innerWidth < 560 ? 290 : 210;
-        const availableH = window.innerHeight - reserved;
-        const availableW = window.innerWidth - 32; // 16px padding each side
-        const scaleH = naturalH > availableH ? availableH / naturalH : 1;
-        const scaleW = availableW < CARD_W ? availableW / CARD_W : 1;
-        const scale = Math.min(scaleH, scaleW);
-        if (scale < 1) setPreviewScale(Math.max(0.35, scale));
-    }, [data]);
+        const fit = () => {
+            if (!cardRef.current) return;
+            const naturalH = cardRef.current.scrollHeight;
+            setCardNaturalH(naturalH);
+            const CARD_W = 520;
+            /* Reserve: top pad + title + gaps + action rows + bottom. Narrow screens
+               wrap the four actions onto two rows. */
+            const reserved = window.innerWidth < 560 ? 290 : 210;
+            const availableH = window.innerHeight - reserved;
+            const availableW = window.innerWidth - 32; // 16px padding each side
+            const scale = Math.min(availableH / naturalH, availableW / CARD_W, 1);
+            setPreviewScale(Math.max(0.35, scale));
+        };
+        fit();
+        window.addEventListener('resize', fit);
+        window.addEventListener('orientationchange', fit);
+        return () => {
+            window.removeEventListener('resize', fit);
+            window.removeEventListener('orientationchange', fit);
+        };
+    }, [data, roastMode]);
 
     const { capture } = useShareCapture(cardRef, { backgroundColor: '#0a0c18' });
 
