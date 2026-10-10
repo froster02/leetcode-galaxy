@@ -110,8 +110,10 @@ function App() {
   const switchView = useCallback((next) => {
     const u = mappedData?.username;
     if (!u) return;
+    // Stats opened from the story: "back" pops that entry instead of pushing a new one
+    if (next === 'wrapped' && window.history.state?.fromWrapped) { window.history.back(); return; }
     setView(next);
-    window.history.pushState({}, '', profileUrl(u, next));
+    window.history.pushState(next === 'card' ? { fromWrapped: true } : {}, '', profileUrl(u, next));
   }, [mappedData?.username]);
 
   // FighterCard's quick-search dispatches this
@@ -136,8 +138,12 @@ function App() {
     const onPop = () => {
       const loc = parseLocation();
       if (!loc) { goLanding(false); return; }
-      if (mappedData && loc.username.toLowerCase() === mappedData.username.toLowerCase()) setView(loc.view);
-      else handleSearch(loc.username, false, loc.view);
+      if (mappedData && loc.username.toLowerCase() === mappedData.username.toLowerCase()) {
+        searchSeqRef.current++; // cancel any search still in flight for another user
+        setView(loc.view);
+      } else {
+        handleSearch(loc.username, false, loc.view);
+      }
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);

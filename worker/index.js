@@ -90,7 +90,13 @@ function buildPayload(data) {
         ? Math.max(...history.map(h => Number(h.rating) || 0))
         : (ranking?.rating ?? null);
 
+    // Contest data is legitimately absent for users who never competed, so it
+    // doesn't count; a null calendar, tag list or badge list means LeetCode
+    // dropped that section and the payload shouldn't be cached.
+    const complete = user.userCalendar != null && user.tagProblemCounts != null && user.badges != null;
+
     return {
+        complete,
         username: user.username,
         profile: user.profile || {},
         acSubmissionNum: user.submitStats?.acSubmissionNum || [],
@@ -160,18 +166,18 @@ export default {
                     });
                 }
 
-                response = new Response(JSON.stringify(buildPayload(result.data)), {
+                const payload = buildPayload(result.data);
+                response = new Response(JSON.stringify(payload), {
                     headers: {
                         ...CORS_HEADERS,
                         'Content-Type': 'application/json',
                         // Matches the client's CACHE_TTL (useLeetCode.js) so the edge
                         // cache can't outlive the client cache and serve stale data.
-                        'Cache-Control': 'public, max-age=1800'
+                        'Cache-Control': payload.complete ? 'public, max-age=1800' : 'no-store'
                     }
                 });
 
-                // Store in cache
-                ctx.waitUntil(cache.put(cacheKey, response.clone()));
+                if (payload.complete) ctx.waitUntil(cache.put(cacheKey, response.clone()));
             } catch {
                 return new Response(JSON.stringify({ error: 'Failed to fetch' }), {
                     status: 500,

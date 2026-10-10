@@ -4,14 +4,17 @@ const Fs = '"Inter", "SF Pro Display", system-ui, sans-serif';
 
 /* ── Month-block heatmap — N independent month grids side-by-side ── */
 export function Heatmap({ rawMap, months: monthCount = 6 }) {
+    /* LeetCode keys are UTC-midnight timestamps, so all day math is UTC
+       (same as utils/wrapped.js) — local getters would shift days west of UTC. */
     const today = new Date();
-    const todayStr = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+    const todayY = today.getUTCFullYear(), todayM = today.getUTCMonth();
+    const todayStr = `${todayY}-${todayM}-${today.getUTCDate()}`;
 
     /* Build submission count map keyed by "YYYY-M-D" */
     const countMap = {};
     Object.entries(rawMap).forEach(([ts, count]) => {
         const d = new Date(Number(ts) * 1000);
-        const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        const k = `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
         countMap[k] = (countMap[k] || 0) + Number(count);
     });
     const maxCount = Math.max(...Object.values(countMap), 1);
@@ -28,15 +31,15 @@ export function Heatmap({ rawMap, months: monthCount = 6 }) {
 
     /* Current month + (monthCount-1) previous — always dynamic */
     const months = Array.from({ length: monthCount }, (_, i) => {
-        const d = new Date(today.getFullYear(), today.getMonth() - (monthCount - 1 - i), 1);
-        return { year: d.getFullYear(), month: d.getMonth() };
+        const d = new Date(Date.UTC(todayY, todayM - (monthCount - 1 - i), 1));
+        return { year: d.getUTCFullYear(), month: d.getUTCMonth() };
     });
 
     /* Build calendar grid for a month.
        Returns array of weeks; each week = 7 slots (null = outside month) */
     function buildGrid(year, month) {
-        const firstDow = (new Date(year, month, 1).getDay() + 6) % 7; // 0=Mon…6=Sun
-        const lastDay  = new Date(year, month + 1, 0).getDate();
+        const firstDow = (new Date(Date.UTC(year, month, 1)).getUTCDay() + 6) % 7; // 0=Mon…6=Sun
+        const lastDay  = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
         const numWeeks = Math.ceil((firstDow + lastDay) / 7);
 
         return Array.from({ length: numWeeks }, (_, w) =>

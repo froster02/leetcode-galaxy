@@ -18,7 +18,11 @@ function useCountUp(target, active, reduced, duration = 1100) {
             if (p < 1) raf = requestAnimationFrame(tick);
         };
         raf = requestAnimationFrame(tick);
-        return () => cancelAnimationFrame(raf);
+        return () => {
+            cancelAnimationFrame(raf);
+            // Reset on leave so a revisit starts at 0 instead of flashing the old total
+            setValue(0);
+        };
     }, [target, active, reduced, duration]);
     return active && !reduced ? value : target;
 }

@@ -3,7 +3,7 @@ import { motion, AnimatePresence, animate, useMotionValue } from 'framer-motion'
 import { buildWrapped } from '../../utils/wrapped';
 import { Intro, Total, Split, Topic, Rhythm, Streak, Contest, Personality, Roast } from './slides';
 import WrappedCard, { CARD_W, CARD_H } from './WrappedCard';
-import useShareCapture from '../../hooks/useShareCapture';
+import useShareCapture, { dataUrlToBlob } from '../../hooks/useShareCapture';
 import useReducedMotion from '../../hooks/useReducedMotion';
 import useViewportSize from '../../hooks/useViewportSize';
 
@@ -142,7 +142,8 @@ export default function WrappedStory({ data, onClose, onFullStats, onAnother }) 
 
     useEffect(() => {
         const onKey = (e) => {
-            if (e.target.closest?.('input, textarea')) return;
+            // Let focused controls keep their own keys (Space/Enter activate buttons)
+            if (e.target.closest?.('input, textarea, select, button, a, [role="button"]')) return;
             if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
             else if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
             else if (e.key === 'Escape') onClose();
@@ -193,11 +194,17 @@ export default function WrappedStory({ data, onClose, onFullStats, onAnother }) 
     const captureRef = useRef(null);
     const { capture, download, copy, share } = useShareCapture(captureRef, { backgroundColor: '#000000' });
     const [image, setImage] = useState(null);
+    const [imageBlob, setImageBlob] = useState(null);
     const [status, setStatus] = useState('');
     useEffect(() => {
         if (index !== last || image) return;
         let alive = true;
-        capture().then(url => { if (alive) setImage(url); }).catch(() => {});
+        capture()
+            .then(async (url) => {
+                const blob = await dataUrlToBlob(url);
+                if (alive) { setImage(url); setImageBlob(blob); }
+            })
+            .catch(() => {});
         return () => { alive = false; };
     }, [index, last, image, capture]);
 
@@ -206,7 +213,7 @@ export default function WrappedStory({ data, onClose, onFullStats, onAnother }) 
     const onShare = async () => {
         try {
             const shared = await share({
-                filename, dataUrl: image,
+                filename, blob: imageBlob,
                 title: 'My LeetCode Wrapped',
                 text: `I'm ${w.personality.code} — ${w.personality.title}. What's your LeetCode type?`,
                 url: `${window.location.origin}${BASE_PATH}/u/${encodeURIComponent(w.username)}`,
@@ -220,7 +227,7 @@ export default function WrappedStory({ data, onClose, onFullStats, onAnother }) 
         try { await download(filename, image); flash('Image saved'); } catch { flash('Couldn’t save image'); }
     };
     const onCopy = async () => {
-        try { await copy(image); flash('Copied to clipboard'); } catch { flash('Copy not supported here'); }
+        try { await copy({ blob: imageBlob }); flash('Copied to clipboard'); } catch { flash('Copy not supported here'); }
     };
 
     const frame = compact
