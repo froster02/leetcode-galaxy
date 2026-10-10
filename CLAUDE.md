@@ -18,32 +18,29 @@ Docker alternative: `docker-compose up` runs the frontend (Vite, :5173) and the 
 
 ## Architecture
 
-Client-side-only React 19 + Vite SPA, plain `.jsx` (no TypeScript). Renders a LeetCode profile as a 3D neon "mushroom biome" using Three.js. No backend, no database — all data comes from public LeetCode APIs at runtime.
+Client-side-only React 19 + Vite SPA, plain `.jsx` (no TypeScript). Turns a LeetCode profile into **"LeetCode Wrapped"** — a swipeable, Apple-style story ending in a shareable 9:16 card — plus a "Full stats" dashboard. No backend, no database, no WebGL — all data comes from public LeetCode APIs at runtime.
 
 ### App structure
 
-- **No router.** `src/App.jsx` is a phase state machine (landing → transition → biome/city) driven by `useState` and Framer Motion `AnimatePresence`. The react-three-fiber `<Canvas>` is set up there. GitHub Pages SPA routing is handled by `public/404.html` plus a `?p=` restore shim in `index.html`.
-- **No state library.** Plain hooks with prop drilling from `App.jsx`.
-- **3D stack:** `three`, `@react-three/fiber`, `@react-three/drei`, `@react-three/postprocessing` (Bloom). Main scene is `src/components/CityScene.jsx` (exports `CityCanvas`); `GalaxyScene.jsx` renders the star field.
-- **Styling:** Tailwind (custom theme colors `background`/`accent`/`easy`/`medium`/`hard`, fonts `orbitron`/`mono` in `tailwind.config.js`) plus heavy inline styles for neon/3D effects.
+- **No router.** `src/App.jsx` holds `view: 'landing' | 'loading' | 'wrapped' | 'card'`. URLs: `/` landing, `/u/<user>` story, `/u/<user>?view=card` stats; `pushState`/`popstate` keep them in sync. GitHub Pages deep links work via `public/404.html` plus a `?p=` restore shim in `index.html`. `searchSeqRef` drops stale responses when a newer search starts.
+- **No state library.** Plain hooks with prop drilling from `App.jsx`. `WrappedStory` and `FighterCard` are lazy-loaded.
+- **Styling:** semantic CSS tokens in `src/index.css` (`--bg`, `--surface`, `--label`, `--secondary-label`, `--separator`, `--tint`, `--easy/--medium/--hard`), light by default and dark via `prefers-color-scheme`; a `data-theme="dark"` attribute forces the dark palette on a subtree (the story, the stats page and their portaled modals are dark-only art). System font stack (`--font`), no web fonts. Utility classes: `.t-display/.t-title/.t-headline/.t-body/.t-footnote/.t-caption`, `.btn`(`-primary/-secondary/-plain`), `.field`, `.surface`, `.material` (translucent chrome only — solid under `prefers-reduced-transparency`/`prefers-contrast`), `.press` (pointer-down scale feedback). Tailwind is configured but not imported; inline styles + these classes do the work. Older components still read legacy aliases (`--bg-surface`, `--accent`, `--border`…) defined on top of the new tokens.
+- **Motion:** Framer Motion springs (`{ type: 'spring', bounce: 0, duration: ~0.4 }` by default; bounce only after a flick). `useReducedMotion` (own hook) gates drag/auto-advance/count-ups into plain cross-fades.
 
 ### Key directories
 
-- `src/components/` — large monolithic files: `FighterCard.jsx` (~1265 lines, profile card + VS battle), `CityScene.jsx` (~1030, biome + the instancing layer below), `UserPanel.jsx` (~834), `LandingUI.jsx` (~709), plus `ShareCard.jsx` (PNG export via html2canvas)
-- `src/hooks/` — `useLeetCode.js` (all data fetching + caching), `useIsMobile.js`, `useReducedMotion.js`
-- `src/utils/` — `dataMapper.js` (maps API data to the 3D scene), `normalization.js` (stat validation/fixing), `gameData.js` (power tiers, fighter classes, easter-egg usernames like `tars`/`murph`/`cooper` and special-cased legendary coders), `calendar.js` (submission-calendar parsing/streak math), `season.js` (viewer's-local-month → city color palette, purely cosmetic), `roast.js` (pure roast-line generator for ShareCard's roast-mode toggle), `colors.js`
+- `src/components/wrapped/` — `WrappedStory.jsx` (story shell: progress bars, tap/hold/keys, auto-advance, drag with momentum projection, share actions), `slides.jsx` (one component per slide + `buildSlides(w)` which skips slides lacking data), `WrappedCard.jsx` (540×960 share card, rasterized at 2× by html2canvas — explicit hex colors, no backdrop-filter)
+- `src/components/` — `LandingUI.jsx`, `FighterCard.jsx` (Full stats page shell + derived stats), `fighter/` (its pieces: `widgets.jsx` gauges/rings/sparkline/`CollapsibleGroup`, `ActivitySection.jsx`, `DeepStatsSection.jsx`, `VSModal.jsx`, `theme.js` fonts/colors/helpers), `ShareCard.jsx` (legacy share modal from Full stats) + `ShareCardView.jsx` (the card it renders), `ErrorToast.jsx`, `Heatmap.jsx` (UTC day buckets, like `utils/wrapped.js`)
+- `src/hooks/` — `useLeetCode.js` (all data fetching + caching), `useShareCapture.js` (html2canvas pipeline + download/copy/native share; actions accept a pre-rendered dataUrl because Safari drops user activation across a slow render), `useIsMobile.js`, `useReducedMotion.js`
+- `src/utils/` — `dataMapper.js` (`mapProfile`: API payload → view model; `districts` = top 8 topics), `wrapped.js` (pure: monthly/weekday totals, current streak, `personality()` 4-letter archetype, `buildWrapped()` slide model), `calendar.js`, `normalization.js`, `gameData.js` (power formula, tiers, fighter classes), `roast.js`, `handle.js` (accepts `@name` / profile URLs)
 
-**Note:** `.github/copilot-instructions.md` documents an older solar-system architecture (`Sun.jsx`/`Planet.jsx`/`Moon.jsx`, numeric-string phases, `mapLeetCodeDataToSolarSystem`) that no longer exists in this codebase — it's stale, ignore it.
+**Note:** `.github/copilot-instructions.md` documents an older solar-system architecture that no longer exists — it's stale, ignore it.
 
 ### Data flow — important gotcha
 
 The runtime fetches from a **hardcoded third-party API** in `src/hooks/useLeetCode.js`: `https://alfa-leetcode-api.onrender.com` (Render free tier — the hook fires a `prewarmApi()` ping to wake it, uses a 12s per-request timeout, and caches in localStorage under `lc_<username>` with a 30-min TTL and a `CACHE_VERSION` constant that invalidates old caches when bumped).
 
-The Cloudflare Worker in `worker/index.js` (CORS proxy to `leetcode.com/graphql`, 30-min edge cache — matches the client TTL so the two caches expire in lockstep) is an **optional fallback**: when `VITE_WORKER_URL` is set at build time, the hook retries via the worker whenever the Alfa API throws `Rate limited` or `Network error` (never on `No user found`). Unset (the default) = Alfa-only. The worker's flat payload is mapped to the canonical shape by the exported pure `mapWorkerResponse` in `useLeetCode.js`. Both the Alfa path and the worker-fallback path only write to the localStorage cache when the payload is *complete* (all secondary endpoints succeeded) — a partial/timed-out response is never pinned for 30 minutes.
-
-### CityScene rendering — instanced, not per-building meshes
-
-`CityScene.jsx` does **not** render one `<mesh>` per building. Buildings are generated by pure functions (`generateBlockBuildings`/`generateTopicBuildings`), flattened across the whole 10×10 roster by `collectBuildingInstances`, then bucketed by their fixed hex color (`groupByColor` — buildings only ever use one of ~11 known hues: 3 difficulty colors + 8 topic colors) into a handful of `THREE.InstancedMesh` pools via the `InstancedBucket` component. This turns ~850 draw calls into ~15-20. Each bucket's material uses the exact same `color`/`emissive` formula a single building's mesh used to use — do **not** try to drive per-instance color via `vertexColors`/`instanceColor`; r3f silently drops unrecognized `on*`-prefixed JSX props (e.g. `onBeforeCompile` gets mistaken for a pointer-event handler), and per-color bucketing is simpler and already proven correct. Hover/click on a building resolves to its owning grid block via `event.instanceId` (see `blockIdx` on each instance) rather than DOM/scene-graph bubbling, since buildings are no longer children of their block's `<group>`. Any `<instancedMesh>` added here needs `frustumCulled={false}` — instance matrices are written post-mount in `useLayoutEffect`, so the default empty bounding sphere would otherwise get the whole pool culled.
+The Cloudflare Worker in `worker/index.js` (CORS proxy to `leetcode.com/graphql`, 30-min edge cache — matches the client TTL so the two caches expire in lockstep) is an **optional fallback**: when `VITE_WORKER_URL` is set at build time, the hook retries via the worker whenever the Alfa API throws `Rate limited` or `Network error` (never on `No user found`). Unset (the default) = Alfa-only. The worker's flat payload is mapped to the canonical shape by the exported pure `mapWorkerResponse` in `useLeetCode.js`. Both the Alfa path and the worker-fallback path only write to the localStorage cache when the payload is *complete* — a partial/timed-out response is never pinned for 30 minutes. The worker fills missing sections with empty defaults, so it sends its own `complete` flag (and skips its edge cache when false); the client trusts only `complete === true`.
 
 ## Deployment
 
@@ -55,9 +52,9 @@ The Cloudflare Worker in `worker/index.js` (CORS proxy to `leetcode.com/graphql`
 Run `scripts/run-tests.sh` (build + lint + unit tests), then verify the relevant manual cases in [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md).
 
 Key manual cases to always hit:
-- **M5** — Legendary Explorers load (or show rate-limit message, never "Unable to load profile")
+- **M5** — Legend chips load (or show rate-limit toast, never "Couldn’t load that profile")
 - **M7/M8** — Bad username shows "No user found" and Back button is clean
-- **M11** — Biome renders after any data/3D change
+- **M11–M15** — Wrapped story renders and navigates (tap, keys, swipe, hold, auto-advance) after any data/UI change
 - **M30** — Zero console errors
 
 ## Conventions

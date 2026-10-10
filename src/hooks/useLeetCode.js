@@ -87,10 +87,9 @@ async function fetchFromWorker(username) {
     }
     const json = await res.json().catch(() => null);
     if (!json) throw new Error('Network error');
-    // Mirrors the Alfa path's completeness check: only cache-worthy if the
-    // secondary fields actually came back, not silently defaulted to {}/[].
-    const complete = [json.contest, json.badges, json.tagProblemCounts, json.calendar?.submissionCalendar]
-        .every(part => part !== undefined && part !== null);
+    // The worker fills missing sections with empty defaults, so it reports
+    // completeness itself; older deployments without the flag are never cached.
+    const complete = json.complete === true;
     return { mapped: mapWorkerResponse(username, json), complete };
 }
 

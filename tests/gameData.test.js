@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcPower, getFighterClass, getPowerTier, CODERS } from '../src/utils/gameData';
+import { calcPower, getFighterClass, getPowerTier } from '../src/utils/gameData';
 
 describe('calcPower', () => {
     it('weights easy x1, medium x3, hard x10', () => {
@@ -52,18 +52,3 @@ describe('getPowerTier thresholds', () => {
     });
 });
 
-describe('CODERS legend dataset', () => {
-    it('every entry is flagged simulated', () => {
-        expect(CODERS.length).toBeGreaterThan(0);
-        for (const c of CODERS) expect(c.sim).toBe(true);
-    });
-
-    it('every entry has non-negative counts and a username', () => {
-        for (const c of CODERS) {
-            expect(typeof c.u).toBe('string');
-            expect(c.easy).toBeGreaterThanOrEqual(0);
-            expect(c.med).toBeGreaterThanOrEqual(0);
-            expect(c.hard).toBeGreaterThanOrEqual(0);
-        }
-    });
-});

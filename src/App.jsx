@@ -1,204 +1,58 @@
 import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Stars } from '@react-three/drei';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
-import GalaxyScene from './components/GalaxyScene';
 import LandingUI from './components/LandingUI';
-import UserPanel from './components/UserPanel';
-import TransitionOverlay from './components/TransitionOverlay';
 import ErrorToast from './components/ErrorToast';
-// Lazy-loaded: biome + card code stays out of the landing bundle
-const CityCanvas = lazy(() => import('./components/CityScene'));
-const FighterCard = lazy(() => import('./components/FighterCard'));
 import { useLeetCode, prewarmApi } from './hooks/useLeetCode';
-import useIsMobile from './hooks/useIsMobile';
-import { mapLeetCodeDataToCity } from './utils/dataMapper';
+import { mapProfile } from './utils/dataMapper';
 
-const MAX_RECENT = 12;
+// Lazy: story + stats code stays out of the landing bundle
+const WrappedStory = lazy(() => import('./components/wrapped/WrappedStory'));
+const FighterCard = lazy(() => import('./components/FighterCard'));
 
-/* ── Rotating status ticker messages (PHM + Interstellar easter eggs) ── */
-const STATUS_TICKS = [
-  'SYS.ONLINE // HAIL_MARY // READY',
-  'TARS: HUMOR 75% // HONESTY 90% // TRUST ∞',
-  'QUESTION? ... ANSWER: YES. AMAZE.',
-  'DO NOT GO GENTLE INTO THAT GOOD NIGHT',
-  'PETROVA LINE BREACHED // TAUMOEBA ACTIVE',
-  'GARGANTUA HORIZON // 1hr = 7yrs',
-  'COOPER... WE\'VE GOT A WAVE',
-  'FIST MY BUMP // ROCKY ONLINE',
-  'EUREKA — MURPH, IT\'S YOU',
-  'ASTROPHAGE CONTAINMENT: NOMINAL',
-];
-const TRANSITION_LINES = {
-  lock: [
-    'LOCKING COORDINATES... // ENDURANCE SPIN-UP',
-    'LOCKING COORDINATES... // HAIL MARY AWAKEN',
-    'LOCKING COORDINATES... // TARS, ARE YOU WITH ME?',
-  ],
-  map: [
-    'MAPPING STAR SYSTEM... // TAU CETI BEARING LOCKED',
-    'MAPPING STAR SYSTEM... // CROSS-REFERENCING ASTROPHAGE GRID',
-    'MAPPING STAR SYSTEM... // PLOTTING WORMHOLE VECTOR',
-  ],
-  jump: [
-    'INITIATING HYPERSPACE JUMP... // GARGANTUA SLINGSHOT',
-    'INITIATING HYPERSPACE JUMP... // ERIDANI 40 INTERCEPT',
-    'INITIATING HYPERSPACE JUMP... // PLAN A, MURPH',
-  ],
-};
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const MAX_RECENT = 8;
+// '/leetcode-galaxy/' → '/leetcode-galaxy', '/' → ''
+const BASE_PATH = import.meta.env.BASE_URL.replace(/\/$/, '');
 
-/* ── TARS monolith HUD (Interstellar easter egg) ──────── */
-const TarsHud = React.memo(function TarsHud() {
-  const [settings, setSettings] = useState({ humor: 75, honesty: 90, trust: 100 });
-  const [openQuote, setOpenQuote] = useState(false);
-  const quips = [
-    '"Cooper, this is no time for caution."',
-    '"Everybody good? Plenty of slaves for my robot colony?"',
-    '"I have a cue light I can use when I\'m joking if you like."',
-    '"That\'s impossible." — "No. It\'s necessary."',
-  ];
-  const [quip, setQuip] = useState(quips[0]);
-  const quoteTimerRef = useRef(null);
+function profileUrl(username, view) {
+  return `${BASE_PATH}/u/${encodeURIComponent(username)}${view === 'card' ? '?view=card' : ''}`;
+}
 
-  useEffect(() => () => clearTimeout(quoteTimerRef.current), []);
+function parseLocation() {
+  const path = window.location.pathname;
+  const appPath = BASE_PATH && path.startsWith(BASE_PATH) ? path.slice(BASE_PATH.length) || '/' : path;
+  const match = appPath.match(/^\/u\/(.+)$/);
+  if (!match) return null;
+  const view = new URLSearchParams(window.location.search).get('view') === 'card' ? 'card' : 'wrapped';
+  return { username: decodeURIComponent(match[1]), view };
+}
 
-  const cycle = (key) => {
-    setSettings(s => ({ ...s, [key]: s[key] >= 100 ? 0 : s[key] + 25 }));
-    setQuip(quips[Math.floor(Math.random() * quips.length)]); // eslint-disable-line react-hooks/purity
-    setOpenQuote(true);
-    clearTimeout(quoteTimerRef.current);
-    quoteTimerRef.current = setTimeout(() => setOpenQuote(false), 2800);
-  };
-
+function Loading({ username }) {
   return (
-    <div style={{
-      position: 'fixed', top: 16, right: 16, zIndex: 60,
-      display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8,
-      fontFamily: '"Share Tech Mono", monospace', pointerEvents: 'auto',
-    }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '10px 14px', borderRadius: 6,
-        background: 'var(--bg-surface)',
-        border: '1px solid var(--border)',
-      }}>
-        {/* Monolith slab */}
-        <div style={{
-          width: 18, height: 42, borderRadius: 2,
-          background: 'var(--bg-surface-2)',
-          border: '1px solid var(--border)',
-          position: 'relative',
-        }}>
-          <span style={{
-            position: 'absolute', top: '50%', left: '50%',
-            width: 2, height: 18, background: 'var(--amber)', borderRadius: 1,
-            transform: 'translate(-50%, -50%)',
-          }} />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 9, letterSpacing: '0.12em' }}>
-          <div style={{ color: 'var(--tars)', fontWeight: 700, marginBottom: 2 }}>TARS</div>
-          {[
-            ['HUMOR', 'humor', '#f5a623'],
-            ['HONESTY', 'honesty', 'var(--accent)'],
-            ['TRUST', 'trust', 'var(--text-secondary)'],
-          ].map(([label, key, color]) => (
-            <button
-              key={key}
-              onClick={() => cycle(key)}
-              title={`Adjust ${label.toLowerCase()}`}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-                color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 9, letterSpacing: '0.12em',
-              }}
-            >
-              <span style={{ minWidth: 54, textAlign: 'left' }}>{label}</span>
-              <span style={{ color, fontWeight: 700, minWidth: 34, textAlign: 'right' }}>{settings[key]}%</span>
-            </button>
-          ))}
-        </div>
-      </div>
-      <AnimatePresence>
-        {openQuote && (
-          <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            style={{
-              maxWidth: 260, padding: '8px 12px', borderRadius: 6,
-              background: 'var(--bg-surface)', border: '1px solid rgba(245,166,35,0.25)',
-              color: 'var(--amber)', fontSize: 10, letterSpacing: '0.06em',
-            }}
-          >
-            {quip}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-});
-
-function StatusTicker({ phase }) {
-  const [tickIndex, setTickIndex] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setTickIndex(i => (i + 1) % STATUS_TICKS.length);
-    }, 4200);
-    return () => clearInterval(id);
-  }, []);
-
-  return (
-    <div className="status-bar-bottom" style={{
-      position: 'fixed', bottom: 12, left: 16, zIndex: 50, pointerEvents: 'none',
-      display: 'flex', alignItems: 'center', gap: 8,
-      fontFamily: '"Share Tech Mono", monospace', fontSize: 9.5, color: 'var(--accent)',
-      letterSpacing: '0.15em',
-      padding: '6px 12px', borderRadius: 6,
-      background: 'var(--bg-surface)',
-      border: '1px solid var(--border)',
-    }}>
-      <span style={{
-        width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)',
-      }} />
-      <span>PHASE_{phase}</span>
-      <span style={{ color: 'rgba(255,255,255,0.15)' }}>//</span>
-      <span
-        key={tickIndex}
-        style={{
-          color: 'var(--amber)',
-          animation: 'ticker-fade 4.2s ease-in-out both',
-        }}
-      >
-        {STATUS_TICKS[tickIndex]}
-      </span>
-    </div>
+    <motion.div
+      key="loading"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      role="status" aria-live="polite"
+      style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}
+    >
+      <div className="spinner" aria-hidden />
+      <div className="t-footnote">Wrapping up @{username}…</div>
+    </motion.div>
   );
 }
 
-// Strip trailing slash, e.g. '/leetcode-galaxy/' → '/leetcode-galaxy', '/' → ''
-const BASE_PATH = import.meta.env.BASE_URL.replace(/\/$/, '');
-
 function App() {
-  const [phase, setPhase] = useState(1);
-  const [viewMode, setViewMode] = useState('city');
-  const [isNight] = useState(true);
-  const isMobile = useIsMobile();
+  // 'landing' | 'loading' | 'wrapped' | 'card'
+  const [view, setView] = useState('landing');
+  const [loadingName, setLoadingName] = useState('');
   const [searchError, setSearchError] = useState('');
-  const [transitionStage, setTransitionStage] = useState(0);
-  const [transitionMsg, setTransitionMsg] = useState('');
   const [mappedData, setMappedData] = useState(null);
-  const transitionTimerRef = useRef(null);
-  // Monotonic id per search; stale responses (an older search resolving after
-  // a newer one started) are ignored so they can't overwrite the latest view
+  // Monotonic id per search; an older search resolving late is ignored
   const searchSeqRef = useRef(0);
-  // Which search flow + args last ran — set right before each fetch attempt so
-  // ErrorToast's Retry button can re-run the right one (see handleRetry below)
   const lastAttemptRef = useRef(null);
-  const [recentlyExplored, setRecentlyExplored] = useState(() => {
+  const [recent, setRecent] = useState(() => {
     try { return JSON.parse(localStorage.getItem('recentExplorers') || '[]'); }
     catch { return []; }
   });
@@ -207,276 +61,126 @@ function App() {
   useEffect(() => { prewarmApi(); }, []);
 
   const addToRecent = useCallback((username) => {
-    setRecentlyExplored(prev => {
-      const filtered = prev.filter(u => u !== username);
-      const next = [username, ...filtered].slice(0, MAX_RECENT);
-      localStorage.setItem('recentExplorers', JSON.stringify(next));
+    setRecent(prev => {
+      const next = [username, ...prev.filter(u => u.toLowerCase() !== username.toLowerCase())].slice(0, MAX_RECENT);
+      try { localStorage.setItem('recentExplorers', JSON.stringify(next)); } catch { /* private mode */ }
       return next;
     });
   }, []);
 
-  const handleSearch = useCallback(async (username, pushUrl = true, targetView = 'city') => {
+  const handleSearch = useCallback(async (username, pushUrl = true, targetView = 'wrapped') => {
     const seq = ++searchSeqRef.current;
     setSearchError('');
-    setPhase(2);
-    setViewMode('city');
-    setTransitionStage(1);
-    setTransitionMsg(pick(TRANSITION_LINES.lock));
-    lastAttemptRef.current = { fn: 'search', args: [username, pushUrl, targetView] };
-
-    if (pushUrl) {
-      const qs = targetView === 'card' ? '?view=card' : '';
-      window.history.pushState({}, '', `${BASE_PATH}/u/${encodeURIComponent(username)}${qs}`);
-    }
+    setLoadingName(username);
+    setView('loading');
+    lastAttemptRef.current = [username, pushUrl, targetView];
+    if (pushUrl) window.history.pushState({}, '', profileUrl(username, targetView));
 
     try {
-      setTransitionMsg(pick(TRANSITION_LINES.map));
-
-      const rawData = await fetchProfile(username);
-      if (seq !== searchSeqRef.current) return; // a newer search superseded this one
-      const structuredData = mapLeetCodeDataToCity(rawData);
-      setMappedData(structuredData);
+      const raw = await fetchProfile(username);
+      if (seq !== searchSeqRef.current) return;
+      setMappedData(mapProfile(raw));
       addToRecent(username);
-
-      setTransitionStage(2);
-      setTransitionMsg(pick(TRANSITION_LINES.jump));
-
-      transitionTimerRef.current = setTimeout(() => {
-        setPhase(3);
-        setViewMode(targetView);
-        setTransitionStage(0);
-      }, 600);
-
+      setView(targetView);
     } catch (err) {
       if (seq !== searchSeqRef.current) return;
       const msg = err?.message;
       setSearchError(msg === 'No user found' ? 'No user found' : msg === 'Rate limited' ? 'API rate limited — try again in a moment' : 'Unable to load profile');
-      clearTimeout(transitionTimerRef.current);
-      setPhase(1);
-      setTransitionStage(0);
+      setView('landing');
       // replace (not push) so the dead /u/<user> entry doesn't pollute history
       if (pushUrl) window.history.replaceState({}, '', `${BASE_PATH}/`);
     }
   }, [fetchProfile, addToRecent]);
 
-  // Clickable blocks within the City Scene
-  const handleQuickInspect = useCallback(async (username) => {
-    const seq = ++searchSeqRef.current;
-    setSearchError('');
-    setTransitionStage(1);
-    setTransitionMsg(`FETCHING: ${username.toUpperCase()}`);
-    lastAttemptRef.current = { fn: 'quickInspect', args: [username] };
-
-    try {
-      const rawData = await fetchProfile(username);
-      if (seq !== searchSeqRef.current) return; // a newer search superseded this one
-      const structuredData = mapLeetCodeDataToCity(rawData);
-      setMappedData(structuredData);
-      addToRecent(username);
-      setTransitionStage(0);
-      setViewMode('card');
-      window.history.pushState({}, '', `${BASE_PATH}/u/${encodeURIComponent(username)}?view=card`);
-    } catch (err) {
-      if (seq !== searchSeqRef.current) return;
-      const msg = err?.message;
-      setSearchError(msg === 'No user found' ? 'No user found' : msg === 'Rate limited' ? 'API rate limited — try again in a moment' : 'Unable to load profile');
-      setTransitionStage(0);
-    }
-  }, [fetchProfile, addToRecent]);
-
   const handleRetry = useCallback(() => {
-    const attempt = lastAttemptRef.current;
-    if (!attempt) return;
+    if (!lastAttemptRef.current) return;
     setSearchError('');
-    if (attempt.fn === 'search') handleSearch(...attempt.args);
-    else handleQuickInspect(...attempt.args);
-  }, [handleSearch, handleQuickInspect]);
+    handleSearch(...lastAttemptRef.current);
+  }, [handleSearch]);
 
   const dismissError = useCallback(() => setSearchError(''), []);
 
-  const handleBack = useCallback((pushUrl = true) => {
-    clearTimeout(transitionTimerRef.current);
-    setPhase(1);
-    setTransitionStage(0);
+  const goLanding = useCallback((pushUrl = true) => {
+    searchSeqRef.current++;
+    setView('landing');
     setMappedData(null);
-    setSearchError('');
-    setViewMode('city');
-    if (pushUrl) {
-      window.history.pushState({}, '', `${BASE_PATH}/`);
-    }
+    if (pushUrl) window.history.pushState({}, '', `${BASE_PATH}/`);
   }, []);
 
-  const handleViewModeChange = useCallback((mode) => {
-    setViewMode(mode);
+  const switchView = useCallback((next) => {
     const u = mappedData?.username;
-    if (u) {
-      const qs = mode === 'card' ? '?view=card' : '';
-      window.history.pushState({}, '', `${BASE_PATH}/u/${encodeURIComponent(u)}${qs}`);
-    }
+    if (!u) return;
+    // Stats opened from the story: "back" pops that entry instead of pushing a new one
+    if (next === 'wrapped' && window.history.state?.fromWrapped) { window.history.back(); return; }
+    setView(next);
+    window.history.pushState(next === 'card' ? { fromWrapped: true } : {}, '', profileUrl(u, next));
   }, [mappedData?.username]);
 
+  // FighterCard's quick-search dispatches this
   useEffect(() => {
     const handler = (e) => {
-      const detail = e.detail;
-      if (typeof detail === 'string') {
-        handleSearch(detail);
-        return;
-      }
-      if (detail && typeof detail.username === 'string') {
-        handleSearch(detail.username, true, detail.targetView || 'city');
-      }
+      const d = e.detail;
+      if (typeof d === 'string') handleSearch(d);
+      else if (d && typeof d.username === 'string') handleSearch(d.username, true, d.targetView === 'card' ? 'card' : 'wrapped');
     };
     window.addEventListener('quickSearch', handler);
     return () => window.removeEventListener('quickSearch', handler);
   }, [handleSearch]);
 
-  // URL-based profile loading
+  // Deep link on first load
   useEffect(() => {
-    const path = window.location.pathname;
-    const appPath = BASE_PATH && path.startsWith(BASE_PATH) ? path.slice(BASE_PATH.length) || '/' : path;
-    const match = appPath.match(/^\/u\/(.+)$/);
-    if (match) {
-      const view = new URLSearchParams(window.location.search).get('view') || 'city';
-      handleSearch(decodeURIComponent(match[1]), false, view); // eslint-disable-line react-hooks/set-state-in-effect
-    }
+    const loc = parseLocation();
+    if (loc) handleSearch(loc.username, false, loc.view); // eslint-disable-line react-hooks/set-state-in-effect
   }, [handleSearch]);
 
-  // Handle browser back/forward
+  // Back/forward
   useEffect(() => {
     const onPop = () => {
-      const path = window.location.pathname;
-      const appPath = BASE_PATH && path.startsWith(BASE_PATH) ? path.slice(BASE_PATH.length) || '/' : path;
-      const match = appPath.match(/^\/u\/(.+)$/);
-      if (match) {
-        const view = new URLSearchParams(window.location.search).get('view') || 'city';
-        handleSearch(decodeURIComponent(match[1]), false, view);
+      const loc = parseLocation();
+      if (!loc) { goLanding(false); return; }
+      if (mappedData && loc.username.toLowerCase() === mappedData.username.toLowerCase()) {
+        searchSeqRef.current++; // cancel any search still in flight for another user
+        setView(loc.view);
       } else {
-        handleBack(false);
+        handleSearch(loc.username, false, loc.view);
       }
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
-  }, [handleSearch, handleBack]);
+  }, [handleSearch, goLanding, mappedData]);
 
   return (
-    <div className="app-viewport" style={{
-      position: 'relative', overflow: 'hidden',
-      background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: '"Share Tech Mono", monospace',
-      transition: 'background 0.3s ease, color 0.3s ease',
-    }}>
-      {/* Corner decorations */}
-      <div className="corner-deco" style={{
-        position: 'fixed', top: 0, left: 0, width: 120, height: 120,
-        borderTop: '1px solid var(--border)', borderLeft: '1px solid var(--border)',
-        pointerEvents: 'none', zIndex: 50,
-      }} />
-      <div className="corner-deco" style={{
-        position: 'fixed', bottom: 0, right: 0, width: 120, height: 120,
-        borderBottom: '1px solid var(--border)', borderRight: '1px solid var(--border)',
-        pointerEvents: 'none', zIndex: 50,
-      }} />
+    <div className="app-viewport">
+      <AnimatePresence mode="wait">
+        {view === 'landing' && <LandingUI key="landing" onSearch={handleSearch} recent={recent} />}
+        {view === 'loading' && <Loading key="loading" username={loadingName} />}
+      </AnimatePresence>
 
-      {/* Status bar — rotating PHM/Interstellar ticker */}
-      <StatusTicker phase={phase} />
-
-      {/* TARS monolith HUD — top right on landing (desktop only) */}
-      {phase === 1 && !isMobile && <TarsHud />}
-
-      {/* 3D Canvas */}
-      {phase === 3 ? (
-        <Suspense fallback={null}>
-          <CityCanvas
+      <Suspense fallback={null}>
+        {view === 'wrapped' && mappedData && (
+          <WrappedStory
             data={mappedData}
-            isNight={isNight}
-            onSelectUser={handleQuickInspect}
-            recentlyExplored={recentlyExplored}
-            showActivityOverlay={viewMode !== 'card'}
-            showBlockLabels={viewMode !== 'card'}
+            onClose={() => goLanding()}
+            onFullStats={() => switchView('card')}
+            onAnother={() => goLanding()}
           />
-        </Suspense>
-      ) : (
-        <Canvas
-          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-          camera={{ position: [0, 60, 120], fov: 60 }}
-          gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
-          dpr={[1, 1.5]}
-        >
-          <color attach="background" args={['#030508']} />
-          <ambientLight intensity={0.3} />
-          <Stars radius={300} depth={60} count={5000} factor={4} saturation={0} fade speed={0.5} />
-
-          {phase === 1 && <GalaxyScene onSelectUser={handleSearch} />}
-          {phase === 2 && <GalaxyScene isTransitioning onSelectUser={handleSearch} />}
-
-          <OrbitControls
-            enablePan={phase === 3}
-            enableZoom={phase === 3}
-            maxDistance={phase === 3 ? 250 : 120}
-            minDistance={5}
-            autoRotate={phase === 1}
-            autoRotateSpeed={0.3}
-            enableDamping
-            dampingFactor={0.05}
+        )}
+        {view === 'card' && mappedData && (
+          <FighterCard
+            data={mappedData}
+            username={mappedData.username}
+            onBack={() => switchView('wrapped')}
+            fetchProfile={fetchProfile}
           />
-        </Canvas>
-      )}
+        )}
+      </Suspense>
 
-      {/* Fighter Card overlay */}
-      <div style={{ position: 'absolute', inset: 0, zIndex: 15, pointerEvents: 'none', perspective: 1200 }}>
-        <AnimatePresence>
-          {phase === 3 && viewMode === 'card' && (
-            <motion.div
-              key="card-reveal"
-              initial={{ opacity: 0, scale: 0.85, rotateY: -30 }}
-              animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-              exit={{ opacity: 0, scale: 0.85, rotateY: 30 }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              style={{
-                position: 'absolute', inset: 0, background: 'var(--bg-primary)', overflow: 'auto',
-                pointerEvents: 'auto', transformStyle: 'preserve-3d',
-                transition: 'background 0.3s ease',
-              }}
-            >
-              <Suspense fallback={null}>
-                <FighterCard
-                  data={mappedData}
-                  username={mappedData?.username}
-                  onBack={() => {
-                    setViewMode('city');
-                    const u = mappedData?.username;
-                    if (u) window.history.pushState({}, '', `${BASE_PATH}/u/${encodeURIComponent(u)}`);
-                  }}
-                  fetchProfile={fetchProfile}
-                />
-              </Suspense>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+      <ErrorToast message={searchError} onRetry={handleRetry} onClose={dismissError} />
 
-      {/* UI Overlays */}
-      {phase === 1 && <LandingUI onSearch={handleSearch} />}
-      <TransitionOverlay stage={transitionStage} message={transitionMsg} />
-      <ErrorToast
-        message={searchError}
-        onRetry={handleRetry}
-        onClose={dismissError}
-      />
-      {phase === 3 && (
-        <UserPanel
-          data={mappedData}
-          onBack={handleBack}
-          viewMode={viewMode}
-          onViewModeChange={handleViewModeChange}
-        />
-      )}
-
-      {/* Vercel Web Analytics */}
       <Analytics />
       <SpeedInsights />
     </div>
   );
 }
-
 
 export default App;
