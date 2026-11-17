@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import useReducedMotion from '../hooks/useReducedMotion';
 import { buildSummary } from '../utils/profile';
 import {
     Header, Headline, Solved, Activity, Contests, Skills, Languages, Badges, Recent,
 } from './profile/sections';
-import ShareDialog from './profile/ShareDialog';
+// html2canvas only loads once someone opens the share dialog
+const ShareDialog = lazy(() => import('./profile/ShareDialog'));
 
 /* The single page profile ("Ledger"): every public LeetCode stat in one
    column, plus a LinkedIn share flow. `data` is a mapProfile() result. */
@@ -57,7 +58,11 @@ export default function ProfilePage({ data, onBack }) {
                 </footer>
             </div>
 
-            {sharing && <ShareDialog s={s} name={data.identity.name} url={window.location.href} onClose={closeShare} />}
+            {sharing && (
+                <Suspense fallback={null}>
+                    <ShareDialog s={s} name={data.identity.name} url={window.location.href} onClose={closeShare} />
+                </Suspense>
+            )}
         </motion.main>
     );
 }

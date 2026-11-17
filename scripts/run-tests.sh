@@ -12,7 +12,6 @@ echo ""
 
 echo "[2/3] Linting..."
 # Known false-positives that are non-blocking:
-#   - react-hooks/purity: Math.random() inside useMemo/useRef in 3D animation code
 #   - no-unused-vars: `motion` from framer-motion (JSX member usage not tracked without eslint-plugin-react)
 #   - react-hooks/set-state-in-effect: handleSearch in URL-init effect (intentional SPA routing)
 #   - react-hooks/exhaustive-deps: fetchWithRetry in useLeetCode (stable closure, safe to omit)
@@ -41,7 +40,7 @@ fi
 
 echo ""
 echo "=== Build: PASS | Lint: $([ $LINT_EXIT -eq 0 ] && echo PASS || echo ISSUES) | Tests: $([ $TEST_EXIT -eq 0 ] && echo PASS || echo FAIL) ==="
-echo "Run manual checks in docs/TEST_PLAN.md (M1–M32)."
+echo "Run manual checks in docs/TEST_PLAN.md."
 
 [ $LINT_EXIT -ne 0 ] && exit $LINT_EXIT
 exit $TEST_EXIT

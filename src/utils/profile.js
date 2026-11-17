@@ -1,5 +1,5 @@
 import { parseCalendar, calendarStats } from './calendar';
-import { currentStreak, busiestMonth, busiestWeekday } from './wrapped';
+import { currentStreak, busiestMonth, busiestWeekday } from './activity';
 
 /* Pure helpers for the single page profile (ProfilePage + share dialog). */
 

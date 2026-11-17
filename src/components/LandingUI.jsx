@@ -37,7 +37,7 @@ function LedgerPreview() {
                     <div key={l} style={{ display: 'grid', gridTemplateColumns: '64px minmax(0, 1fr) 84px', gap: 10, alignItems: 'center', fontSize: '0.875rem' }}>
                         <span>{l}</span>
                         <div className="bar"><span style={{ width: `${(n / of) * 100}%` }} /></div>
-                        <span className="num t-footnote" style={{ textAlign: 'right' }}>{n} / {of}</span>
+                        <span className="num t-footnote" style={{ textAlign: 'right' }}>{n.toLocaleString('en-US')} / {of.toLocaleString('en-US')}</span>
                     </div>
                 ))}
             </div>
