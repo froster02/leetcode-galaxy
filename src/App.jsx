@@ -87,7 +87,8 @@ function App() {
     } catch (err) {
       if (seq !== searchSeqRef.current) return;
       const msg = err?.message;
-      setSearchError(msg === 'No user found' ? 'No user found' : msg === 'Rate limited' ? 'API rate limited — try again in a moment' : 'Unable to load profile');
+      // Error code — ErrorToast owns the copy
+      setSearchError(msg === 'No user found' ? 'not_found' : msg === 'Rate limited' ? 'rate_limited' : 'network');
       setView('landing');
       // replace (not push) so the dead /u/<user> entry doesn't pollute history
       if (pushUrl) window.history.replaceState({}, '', `${BASE_PATH}/`);
@@ -177,7 +178,7 @@ function App() {
         )}
       </Suspense>
 
-      <ErrorToast message={searchError} onRetry={handleRetry} onClose={dismissError} />
+      <ErrorToast code={searchError} onRetry={handleRetry} onClose={dismissError} />
 
       {ON_VERCEL && <Analytics />}
       {ON_VERCEL && <SpeedInsights />}

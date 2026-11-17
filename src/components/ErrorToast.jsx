@@ -3,27 +3,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const AUTO_DISMISS_MS = 5000;
 
-/* Maps the exact strings App.jsx's searchError produces to plain-language copy. */
-function friendlyCopy(message) {
-    if (message === 'No user found') return 'No user found. Check the handle and try again.';
-    if (message === 'API rate limited — try again in a moment') return 'LeetCode is busy right now. Try again in a moment.';
-    if (message === 'Unable to load profile') return 'Couldn’t load that profile.';
-    return message;
-}
+/* Copy per error code set by App.jsx's handleSearch. */
+const COPY = {
+    not_found: 'No user found. Check the handle and try again.',
+    rate_limited: 'LeetCode is busy right now. Try again in a moment.',
+    network: 'Couldn’t load that profile.',
+};
 
-/** Top-center toast for search errors. */
-export default function ErrorToast({ message, onRetry, onClose }) {
+/** Top-center toast for search errors. `code` is a key of COPY, or '' when hidden. */
+export default function ErrorToast({ code, onRetry, onClose }) {
     useEffect(() => {
-        if (!message) return;
+        if (!code) return;
         const t = setTimeout(onClose, AUTO_DISMISS_MS);
         return () => clearTimeout(t);
-    }, [message, onClose]);
+    }, [code, onClose]);
 
-    const canRetry = onRetry && message && message !== 'No user found';
+    const canRetry = onRetry && code && code !== 'not_found';
 
     return (
         <AnimatePresence>
-            {message && (
+            {code && (
                 <motion.div
                     role="alert"
                     initial={{ opacity: 0, y: -12, x: '-50%' }}
@@ -40,7 +39,7 @@ export default function ErrorToast({ message, onRetry, onClose }) {
                     }}
                 >
                     <span className="t-footnote" style={{ color: 'var(--label)', fontWeight: 500 }}>
-                        {friendlyCopy(message)}
+                        {COPY[code] || COPY.network}
                     </span>
                     {canRetry && (
                         <button onClick={onRetry} className="btn btn-plain press" style={{ minHeight: 40, padding: '0 12px', fontSize: '0.875rem' }}>

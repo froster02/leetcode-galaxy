@@ -1,3 +1,8 @@
 name = "leetcode-galaxy-proxy"
 main = "index.js"
 compatibility_date = "2024-03-04"
+
+# Optional: restrict which sites may read this proxy's responses (comma-separated
+# origins). Unset = any origin, i.e. a public LeetCode proxy.
+# [vars]
+# ALLOWED_ORIGINS = "https://YOUR_USER.github.io,http://localhost:5173"

@@ -1,8 +1,30 @@
-const CORS_HEADERS = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-};
+// LeetCode handles are short and plain; anything else never reaches LeetCode
+const USERNAME_RE = /^[A-Za-z0-9_.-]{1,64}$/;
+
+/* CORS headers for this request. ALLOWED_ORIGINS (comma-separated, optional —
+   see wrangler.toml) restricts which sites may read responses; unset = any. */
+function corsHeaders(request, env) {
+    const headers = {
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+    };
+    const allowed = String(env?.ALLOWED_ORIGINS || '').split(',').map(o => o.trim().replace(/\/+$/, '')).filter(Boolean);
+    if (allowed.length === 0) {
+        headers['Access-Control-Allow-Origin'] = '*';
+        return headers;
+    }
+    headers['Vary'] = 'Origin';
+    const origin = request.headers.get('Origin');
+    if (origin && allowed.includes(origin)) headers['Access-Control-Allow-Origin'] = origin;
+    return headers;
+}
+
+function json(body, status, cors, extra = {}) {
+    return new Response(typeof body === 'string' ? body : JSON.stringify(body), {
+        status,
+        headers: { ...cors, 'Content-Type': 'application/json', ...extra },
+    });
+}
 
 const LEETCODE_API = 'https://leetcode.com/graphql';
 
@@ -24,7 +46,6 @@ const QUERY_FULL = `
       profile {
         ranking
         reputation
-        starRating
       }
       userCalendar {
         streak
@@ -76,8 +97,9 @@ async function fetchLeetcode(query, variables) {
 }
 
 /* Reshape raw GraphQL data into the flat payload the frontend fallback expects
-   (mirrors the Alfa API field names where they exist). */
-function buildPayload(data) {
+   (mirrors the Alfa API field names where they exist). `hadErrors`: LeetCode
+   returned the user but reported errors for some section. */
+function buildPayload(data, hadErrors = false) {
     const user = data.matchedUser;
     const questionCounts = {};
     for (const q of data.allQuestionsCount || []) {
@@ -93,7 +115,7 @@ function buildPayload(data) {
     // Contest data is legitimately absent for users who never competed, so it
     // doesn't count; a null calendar, tag list or badge list means LeetCode
     // dropped that section and the payload shouldn't be cached.
-    const complete = user.userCalendar != null && user.tagProblemCounts != null && user.badges != null;
+    const complete = !hadErrors && user.userCalendar != null && user.tagProblemCounts != null && user.badges != null;
 
     return {
         complete,
@@ -130,62 +152,57 @@ function buildPayload(data) {
 
 export default {
     async fetch(request, env, ctx) {
+        const cors = corsHeaders(request, env);
+
         if (request.method === 'OPTIONS') {
-            return new Response(null, { headers: CORS_HEADERS });
+            return new Response(null, { headers: cors });
         }
 
         if (request.method !== 'GET') {
-            return new Response('Method not allowed', { status: 405, headers: CORS_HEADERS });
+            return new Response('Method not allowed', { status: 405, headers: cors });
         }
 
         const targetUrl = new URL(request.url);
-        const username = targetUrl.searchParams.get('username');
+        const username = (targetUrl.searchParams.get('username') || '').trim();
 
-        if (!username) {
-            return new Response(JSON.stringify({ error: 'Username is required' }), {
-                status: 400,
-                headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
-            });
-        }
+        if (!username) return json({ error: 'Username is required' }, 400, cors);
+        if (!USERNAME_RE.test(username)) return json({ error: 'Invalid username' }, 400, cors);
 
-        // Cache check
-        const cacheUrl = new URL(request.url);
-        const cacheKey = new Request(cacheUrl.toString(), request);
+        // Key on the lowercased username alone: extra query params or a case
+        // change must not bypass the edge cache and hit LeetCode again. The
+        // cached entry carries no CORS headers — those are per-request.
+        const cacheKey = new Request(`${targetUrl.origin}/?username=${encodeURIComponent(username.toLowerCase())}`);
         const cache = caches.default;
 
-        let response = await cache.match(cacheKey);
-
-        if (!response) {
-            try {
-                const result = await fetchLeetcode(QUERY_FULL, { username });
-
-                if (result.errors || !result.data?.matchedUser) {
-                    return new Response(JSON.stringify({ error: 'User not found or API error' }), {
-                        status: 404,
-                        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
-                    });
-                }
-
-                const payload = buildPayload(result.data);
-                response = new Response(JSON.stringify(payload), {
-                    headers: {
-                        ...CORS_HEADERS,
-                        'Content-Type': 'application/json',
-                        // Matches the client's CACHE_TTL (useLeetCode.js) so the edge
-                        // cache can't outlive the client cache and serve stale data.
-                        'Cache-Control': payload.complete ? 'public, max-age=1800' : 'no-store'
-                    }
-                });
-
-                if (payload.complete) ctx.waitUntil(cache.put(cacheKey, response.clone()));
-            } catch {
-                return new Response(JSON.stringify({ error: 'Failed to fetch' }), {
-                    status: 500,
-                    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
-                });
-            }
+        const cached = await cache.match(cacheKey);
+        if (cached) {
+            return json(await cached.text(), 200, cors, { 'Cache-Control': 'public, max-age=1800' });
         }
 
-        return response;
+        let result;
+        try {
+            result = await fetchLeetcode(QUERY_FULL, { username });
+        } catch {
+            return json({ error: 'Failed to fetch' }, 502, cors);
+        }
+
+        // LeetCode answers an unknown handle with matchedUser: null (plus an
+        // error entry). No data at all is an upstream failure, not a 404 —
+        // the client must not read it as "No user found".
+        if (!result?.data) return json({ error: 'Upstream error' }, 502, cors);
+        if (!result.data.matchedUser) return json({ error: 'User not found' }, 404, cors);
+
+        const payload = buildPayload(result.data, Array.isArray(result.errors) && result.errors.length > 0);
+        const body = JSON.stringify(payload);
+
+        if (payload.complete) {
+            // max-age matches the client's CACHE_TTL (useLeetCode.js) so the edge
+            // cache can't outlive the client cache and serve stale data.
+            ctx.waitUntil(cache.put(cacheKey, new Response(body, {
+                headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800' },
+            })));
+        }
+
+        return json(body, 200, cors, { 'Cache-Control': payload.complete ? 'public, max-age=1800' : 'no-store' });
     }
 };
