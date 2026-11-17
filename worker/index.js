@@ -15,16 +15,40 @@ const QUERY_FULL = `
     }
     matchedUser(username: $username) {
       username
+      githubUrl
+      twitterUrl
+      linkedinUrl
       submitStats {
         acSubmissionNum {
           difficulty
           count
+          submissions
+        }
+        totalSubmissionNum {
+          difficulty
+          count
+          submissions
         }
       }
       profile {
         ranking
         reputation
         starRating
+        realName
+        userAvatar
+        countryName
+        company
+        school
+        aboutMe
+        websites
+      }
+      languageProblemCount {
+        languageName
+        problemsSolved
+      }
+      problemsSolvedBeatsStats {
+        difficulty
+        percentage
       }
       userCalendar {
         streak
@@ -51,6 +75,14 @@ const QUERY_FULL = `
     userContestRankingHistory(username: $username) {
       attended
       rating
+      ranking
+      trendDirection
+      problemsSolved
+      totalProblems
+      contest {
+        title
+        startTime
+      }
     }
     recentSubmissionList(username: $username, limit: 20) {
       title
@@ -58,6 +90,11 @@ const QUERY_FULL = `
       timestamp
       statusDisplay
       lang
+    }
+    recentAcSubmissionList(username: $username, limit: 20) {
+      title
+      titleSlug
+      timestamp
     }
   }
 `;
@@ -93,12 +130,34 @@ function buildPayload(data) {
     // Contest data is legitimately absent for users who never competed, so it
     // doesn't count; a null calendar, tag list or badge list means LeetCode
     // dropped that section and the payload shouldn't be cached.
-    const complete = user.userCalendar != null && user.tagProblemCounts != null && user.badges != null;
+    const complete = user.userCalendar != null && user.tagProblemCounts != null && user.badges != null
+        && user.languageProblemCount != null;
+    const p = user.profile || {};
 
     return {
         complete,
         username: user.username,
-        profile: user.profile || {},
+        profile: { ranking: p.ranking, reputation: p.reputation, starRating: p.starRating },
+        // Field names mirror the Alfa /:username endpoint
+        identity: {
+            name: p.realName || null,
+            avatar: p.userAvatar || null,
+            country: p.countryName || null,
+            company: p.company || null,
+            school: p.school || null,
+            about: p.aboutMe || null,
+            website: p.websites || [],
+            gitHub: user.githubUrl || null,
+            twitter: user.twitterUrl || null,
+            linkedIN: user.linkedinUrl || null,
+        },
+        languageProblemCount: user.languageProblemCount || [],
+        recentAcSubmissions: data.recentAcSubmissionList || [],
+        submitTotals: {
+            ac: user.submitStats?.acSubmissionNum || [],
+            total: user.submitStats?.totalSubmissionNum || [],
+        },
+        beats: user.problemsSolvedBeatsStats || null,
         acSubmissionNum: user.submitStats?.acSubmissionNum || [],
         tagProblemCounts: user.tagProblemCounts || {},
         recentSubmissions: data.recentSubmissionList || [],
@@ -119,7 +178,7 @@ function buildPayload(data) {
             contestGlobalRanking: ranking.globalRanking ?? null,
             contestAttend: ranking.attendedContestsCount ?? 0,
             contestTopPercentage: ranking.topPercentage ?? null,
-            contestParticipation: history.map(h => ({ rating: h.rating })),
+            contestParticipation: history,
         } : {},
         badges: {
             badgesCount: (user.badges || []).length,

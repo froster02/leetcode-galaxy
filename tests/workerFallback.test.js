@@ -71,3 +71,29 @@ describe('mapWorkerResponse', () => {
         expect(json.calendar.submissionCalendar).toEqual({});
     });
 });
+
+describe('mapWorkerResponse: single page profile fields', () => {
+    it('passes the new sections through in the Alfa shapes', () => {
+        const json = mapWorkerResponse('tester', workerPayload({
+            identity: { name: 'Ada', country: 'India', gitHub: 'https://github.com/ada' },
+            languageProblemCount: [{ languageName: 'Java', problemsSolved: 3 }],
+            recentAcSubmissions: [{ title: 'Two Sum', titleSlug: 'two-sum', timestamp: '1' }],
+            submitTotals: { ac: [{ difficulty: 'All', submissions: 6 }], total: [{ difficulty: 'All', submissions: 10 }] },
+            beats: [{ difficulty: 'Easy', percentage: 80 }],
+        }));
+        expect(json.identity.name).toBe('Ada');
+        expect(json.languages).toEqual({ languageProblemCount: [{ languageName: 'Java', problemsSolved: 3 }] });
+        expect(json.acRecent.submission).toHaveLength(1);
+        expect(json.submitTotals.total[0].submissions).toBe(10);
+        expect(json.beats).toEqual([{ difficulty: 'Easy', percentage: 80 }]);
+    });
+
+    it('defaults the new sections when an older worker omits them', () => {
+        const json = mapWorkerResponse('tester', workerPayload());
+        expect(json.identity).toEqual({});
+        expect(json.languages).toEqual({ languageProblemCount: [] });
+        expect(json.acRecent).toEqual({ submission: [] });
+        expect(json.submitTotals).toEqual({});
+        expect(json.beats).toBeNull();
+    });
+});

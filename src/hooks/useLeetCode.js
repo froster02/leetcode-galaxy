@@ -3,7 +3,7 @@ import { normalizeStats, validateTotalQuestions, fixPercentages } from '../utils
 
 // For local dev, you might run wrangler dev in the worker directory (http://127.0.0.1:8787)
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3; // v3: identity, languages, accepted list, submit totals
 const FETCH_TIMEOUT = 12000; // 12s per request — free Render tier cold-starts in ~10s
 export const API = 'https://alfa-leetcode-api.onrender.com';
 // Optional Cloudflare Worker fallback (worker/index.js) — used when Alfa
@@ -65,6 +65,12 @@ export function mapWorkerResponse(username, w) {
         recent: { recentSubmissionList: w?.recentSubmissions || [] },
         contest: w?.contest ?? {},
         badges: w?.badges ?? {},
+        // Same shapes as the matching Alfa endpoints, so mapProfile reads one format
+        identity: w?.identity ?? {},
+        languages: { languageProblemCount: w?.languageProblemCount || [] },
+        acRecent: { submission: w?.recentAcSubmissions || [] },
+        submitTotals: w?.submitTotals ?? {},
+        beats: w?.beats ?? null,
         calendar: {
             ...(w?.calendar ?? {}),
             submissionCalendar: w?.calendar?.submissionCalendar || {},
@@ -192,11 +198,14 @@ export function useLeetCode() {
             const encodedUser = encodeURIComponent(username);
 
             // Fetch core profile first; skill stats in parallel but non-blocking
-            const [profileData, contestData, badgesData, calendarData] = await Promise.all([
+            const [profileData, contestData, badgesData, calendarData, identityData, languageData, acData] = await Promise.all([
                 fetchProfileStrict(`${API}/userProfile/${encodedUser}`),
                 safeFetch(`${API}/${encodedUser}/contest`),
                 safeFetch(`${API}/${encodedUser}/badges`),
                 safeFetch(`${API}/${encodedUser}/calendar`),
+                safeFetch(`${API}/${encodedUser}`),
+                safeFetch(`${API}/languageStats?username=${encodedUser}`),
+                safeFetch(`${API}/${encodedUser}/acSubmission?limit=20`),
             ]);
 
             // skillStats fetched separately so a slow cold-start doesn't blank topic strength
@@ -251,6 +260,16 @@ export function useLeetCode() {
                 },
                 contest: contestData ?? {},
                 badges: badgesData ?? {},
+                identity: identityData ?? {},
+                languages: languageData ?? {},
+                acRecent: acData ?? {},
+                // Accepted vs total submissions, for the acceptance rate
+                submitTotals: {
+                    ac: profileData.matchedUserStats?.acSubmissionNum || [],
+                    total: profileData.matchedUserStats?.totalSubmissionNum || profileData.totalSubmissions || [],
+                },
+                // Only LeetCode GraphQL (worker) exposes "beats %"
+                beats: null,
                 // Merge: /calendar gives streak metadata; userProfile has the actual heatmap dict
                 calendar: {
                     ...(calendarData ?? {}),
@@ -267,7 +286,7 @@ export function useLeetCode() {
             setData(json);
             // Cache only complete payloads — a timed-out secondary endpoint
             // would otherwise pin empty contest/badges/heatmap data for 30 min
-            const complete = [contestData, badgesData, calendarData, statsData]
+            const complete = [contestData, badgesData, calendarData, statsData, identityData, languageData, acData]
                 .every(part => part !== null);
             if (complete) setCache(username, json);
             return json;
