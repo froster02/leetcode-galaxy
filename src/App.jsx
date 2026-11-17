@@ -7,16 +7,15 @@ import ErrorToast from './components/ErrorToast';
 import { useLeetCode, prewarmApi } from './hooks/useLeetCode';
 import { mapProfile } from './utils/dataMapper';
 
-// Lazy: story + stats code stays out of the landing bundle
-const WrappedStory = lazy(() => import('./components/wrapped/WrappedStory'));
-const FighterCard = lazy(() => import('./components/FighterCard'));
+// Lazy: profile page code stays out of the landing bundle
+const ProfilePage = lazy(() => import('./components/ProfilePage'));
 
 const MAX_RECENT = 8;
 // '/leetcode-galaxy/' → '/leetcode-galaxy', '/' → ''
 const BASE_PATH = import.meta.env.BASE_URL.replace(/\/$/, '');
 
-function profileUrl(username, view) {
-  return `${BASE_PATH}/u/${encodeURIComponent(username)}${view === 'card' ? '?view=card' : ''}`;
+function profileUrl(username) {
+  return `${BASE_PATH}/u/${encodeURIComponent(username)}`;
 }
 
 function parseLocation() {
@@ -24,8 +23,8 @@ function parseLocation() {
   const appPath = BASE_PATH && path.startsWith(BASE_PATH) ? path.slice(BASE_PATH.length) || '/' : path;
   const match = appPath.match(/^\/u\/(.+)$/);
   if (!match) return null;
-  const view = new URLSearchParams(window.location.search).get('view') === 'card' ? 'card' : 'wrapped';
-  return { username: decodeURIComponent(match[1]), view };
+  // Old `?view=card` links land on the same single page
+  return { username: decodeURIComponent(match[1]) };
 }
 
 function Loading({ username }) {
@@ -38,13 +37,13 @@ function Loading({ username }) {
       style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}
     >
       <div className="spinner" aria-hidden />
-      <div className="t-footnote">Wrapping up @{username}…</div>
+      <div className="t-footnote">Loading @{username}…</div>
     </motion.div>
   );
 }
 
 function App() {
-  // 'landing' | 'loading' | 'wrapped' | 'card'
+  // 'landing' | 'loading' | 'profile'
   const [view, setView] = useState('landing');
   const [loadingName, setLoadingName] = useState('');
   const [searchError, setSearchError] = useState('');
@@ -68,20 +67,21 @@ function App() {
     });
   }, []);
 
-  const handleSearch = useCallback(async (username, pushUrl = true, targetView = 'wrapped') => {
+  const handleSearch = useCallback(async (username, pushUrl = true) => {
     const seq = ++searchSeqRef.current;
     setSearchError('');
     setLoadingName(username);
     setView('loading');
-    lastAttemptRef.current = [username, pushUrl, targetView];
-    if (pushUrl) window.history.pushState({}, '', profileUrl(username, targetView));
+    lastAttemptRef.current = [username, pushUrl];
+    if (pushUrl) window.history.pushState({}, '', profileUrl(username));
 
     try {
       const raw = await fetchProfile(username);
       if (seq !== searchSeqRef.current) return;
       setMappedData(mapProfile(raw));
       addToRecent(username);
-      setView(targetView);
+      setView('profile');
+      window.scrollTo(0, 0);
     } catch (err) {
       if (seq !== searchSeqRef.current) return;
       const msg = err?.message;
@@ -107,30 +107,10 @@ function App() {
     if (pushUrl) window.history.pushState({}, '', `${BASE_PATH}/`);
   }, []);
 
-  const switchView = useCallback((next) => {
-    const u = mappedData?.username;
-    if (!u) return;
-    // Stats opened from the story: "back" pops that entry instead of pushing a new one
-    if (next === 'wrapped' && window.history.state?.fromWrapped) { window.history.back(); return; }
-    setView(next);
-    window.history.pushState(next === 'card' ? { fromWrapped: true } : {}, '', profileUrl(u, next));
-  }, [mappedData?.username]);
-
-  // FighterCard's quick-search dispatches this
-  useEffect(() => {
-    const handler = (e) => {
-      const d = e.detail;
-      if (typeof d === 'string') handleSearch(d);
-      else if (d && typeof d.username === 'string') handleSearch(d.username, true, d.targetView === 'card' ? 'card' : 'wrapped');
-    };
-    window.addEventListener('quickSearch', handler);
-    return () => window.removeEventListener('quickSearch', handler);
-  }, [handleSearch]);
-
   // Deep link on first load
   useEffect(() => {
     const loc = parseLocation();
-    if (loc) handleSearch(loc.username, false, loc.view); // eslint-disable-line react-hooks/set-state-in-effect
+    if (loc) handleSearch(loc.username, false); // eslint-disable-line react-hooks/set-state-in-effect
   }, [handleSearch]);
 
   // Back/forward
@@ -140,9 +120,9 @@ function App() {
       if (!loc) { goLanding(false); return; }
       if (mappedData && loc.username.toLowerCase() === mappedData.username.toLowerCase()) {
         searchSeqRef.current++; // cancel any search still in flight for another user
-        setView(loc.view);
+        setView('profile');
       } else {
-        handleSearch(loc.username, false, loc.view);
+        handleSearch(loc.username, false);
       }
     };
     window.addEventListener('popstate', onPop);
@@ -157,21 +137,8 @@ function App() {
       </AnimatePresence>
 
       <Suspense fallback={null}>
-        {view === 'wrapped' && mappedData && (
-          <WrappedStory
-            data={mappedData}
-            onClose={() => goLanding()}
-            onFullStats={() => switchView('card')}
-            onAnother={() => goLanding()}
-          />
-        )}
-        {view === 'card' && mappedData && (
-          <FighterCard
-            data={mappedData}
-            username={mappedData.username}
-            onBack={() => switchView('wrapped')}
-            fetchProfile={fetchProfile}
-          />
+        {view === 'profile' && mappedData && (
+          <ProfilePage data={mappedData} onBack={() => goLanding()} />
         )}
       </Suspense>
 

@@ -1,18 +1,49 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import WrappedCard, { CARD_W, CARD_H } from './wrapped/WrappedCard';
 import useIsMobile from '../hooks/useIsMobile';
 import useReducedMotion from '../hooks/useReducedMotion';
 import { parseHandle } from '../utils/handle';
 
 const FEATURED = ['cpcs', 'votrubac', '1337c0d3r', 'Ma_Lin', 'leetgoat_dot_io'];
 
+// Illustrative numbers for the landing preview, not a real user
 const SAMPLE = {
-    username: 'you',
-    total: 742, hard: 96, maxStreak: 58, topTopic: 'Dynamic Programming',
-    personality: { code: 'HDNA', title: 'The Relentless Climber' },
-    roast: '742 solved. At this point it’s a personality trait.',
+    name: 'Your Name', handle: '@you',
+    numbers: [['742', 'Solved'], ['1,906', 'Contest rating'], ['58', 'Day streak']],
+    split: [['Easy', 284, 902], ['Medium', 362, 1886], ['Hard', 96, 824]],
 };
+
+/* Static miniature of the profile page (ledger header + numbers) */
+function LedgerPreview() {
+    return (
+        <div className="surface" style={{
+            width: '100%', maxWidth: 420, padding: 28, display: 'flex', flexDirection: 'column', gap: 20,
+            boxShadow: '0 30px 80px rgba(0,0,0,0.12), 0 0 0 1px var(--separator)',
+        }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--fill)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: 14, color: 'var(--secondary-label)' }}>YN</div>
+                <div>
+                    <div className="t-headline">{SAMPLE.name}</div>
+                    <div className="num t-footnote">{SAMPLE.handle} · LeetCode</div>
+                </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12, borderTop: '1px solid var(--label)', borderBottom: '1px solid var(--separator)', padding: '16px 0' }}>
+                {SAMPLE.numbers.map(([v, l]) => (
+                    <div key={l}><div className="num" style={{ fontSize: '1.5rem', fontWeight: 500 }}>{v}</div><div className="t-footnote">{l}</div></div>
+                ))}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {SAMPLE.split.map(([l, n, of]) => (
+                    <div key={l} style={{ display: 'grid', gridTemplateColumns: '64px minmax(0, 1fr) 84px', gap: 10, alignItems: 'center', fontSize: '0.875rem' }}>
+                        <span>{l}</span>
+                        <div className="bar"><span style={{ width: `${(n / of) * 100}%` }} /></div>
+                        <span className="num t-footnote" style={{ textAlign: 'right' }}>{n} / {of}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
 
 const EGGS = {
     rocky: { title: 'Amaze.', body: 'Question? … Answer: yes. Fist my bump, human engineer.', by: 'Rocky' },
@@ -62,7 +93,6 @@ function LandingUI({ onSearch, recent = [] }) {
         onSearch(handle);
     };
 
-    const scale = isMobile ? 0.5 : 0.62;
     const enter = (delay) => reduced ? {} : {
         initial: { opacity: 0, y: 12 },
         animate: { opacity: 1, y: 0 },
@@ -79,7 +109,7 @@ function LandingUI({ onSearch, recent = [] }) {
             }}
         >
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="t-headline">LeetCode Wrapped</span>
+                <span className="t-headline">LeetCode Profile</span>
                 <a href="https://github.com/froster02/leetcode-galaxy" target="_blank" rel="noreferrer"
                     className="t-footnote hit" style={{ color: 'var(--tint)', textDecoration: 'none', padding: '0 4px' }}>GitHub</a>
             </header>
@@ -90,10 +120,10 @@ function LandingUI({ onSearch, recent = [] }) {
                 padding: isMobile ? '40px 0 24px' : '32px 0',
             }}>
                 <section style={{ width: '100%', maxWidth: 520 }}>
-                    <motion.h1 className="t-display" {...enter(0)}>Your LeetCode,<br />wrapped.</motion.h1>
+                    <motion.h1 className="t-display" {...enter(0)}>Your LeetCode,<br />on one page.</motion.h1>
                     <motion.p className="t-body" {...enter(0.06)}
                         style={{ fontSize: '1.1875rem', color: 'var(--secondary-label)', marginTop: 16, maxWidth: 440 }}>
-                        Your problems, streaks, and coder personality — in one story worth sharing.
+                        Every public stat in one clean page, ready to post on LinkedIn.
                     </motion.p>
 
                     <motion.form onSubmit={submit} {...enter(0.12)} style={{ display: 'flex', gap: 10, marginTop: 32, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
@@ -108,7 +138,7 @@ function LandingUI({ onSearch, recent = [] }) {
                             enterKeyHint="go"
                         />
                         <button type="submit" className="btn btn-primary press" style={{ minHeight: 52, padding: '0 26px', width: isMobile ? '100%' : 'auto' }}>
-                            Wrap it
+                            View profile
                         </button>
                     </motion.form>
                     {!isMobile && (
@@ -137,13 +167,9 @@ function LandingUI({ onSearch, recent = [] }) {
                 <motion.div
                     aria-hidden
                     {...(reduced ? {} : { initial: { opacity: 0, y: 24 }, animate: { opacity: 1, y: 0 }, transition: { type: 'spring', bounce: 0, duration: 0.8, delay: 0.15 } })}
-                    style={{
-                        width: CARD_W * scale, height: CARD_H * scale, flexShrink: 0,
-                        borderRadius: 26, overflow: 'hidden',
-                        boxShadow: '0 30px 80px rgba(0,0,0,0.25), 0 0 0 1px var(--separator)',
-                    }}
+                    style={{ width: '100%', maxWidth: 420, flexShrink: 0, display: 'flex', justifyContent: 'center' }}
                 >
-                    <WrappedCard w={SAMPLE} site={window.location.host} style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }} />
+                    <LedgerPreview />
                 </motion.div>
             </div>
 
