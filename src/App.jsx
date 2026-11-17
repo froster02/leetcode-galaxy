@@ -14,6 +14,8 @@ const FighterCard = lazy(() => import('./components/FighterCard'));
 const MAX_RECENT = 8;
 // '/leetcode-galaxy/' → '/leetcode-galaxy', '/' → ''
 const BASE_PATH = import.meta.env.BASE_URL.replace(/\/$/, '');
+// Vercel's insight scripts only exist on Vercel; elsewhere (GitHub Pages) they 404
+const ON_VERCEL = import.meta.env.VITE_VERCEL === '1';
 
 function profileUrl(username, view) {
   return `${BASE_PATH}/u/${encodeURIComponent(username)}${view === 'card' ? '?view=card' : ''}`;
@@ -177,8 +179,8 @@ function App() {
 
       <ErrorToast message={searchError} onRetry={handleRetry} onClose={dismissError} />
 
-      <Analytics />
-      <SpeedInsights />
+      {ON_VERCEL && <Analytics />}
+      {ON_VERCEL && <SpeedInsights />}
     </div>
   );
 }

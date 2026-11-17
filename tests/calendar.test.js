@@ -25,6 +25,12 @@ describe('calendarStats', () => {
         expect(calendarStats({})).toEqual({ activeDays: 0, maxStreak: 0, totalSubmissions: 0 });
     });
 
+    it('sorts timestamps numerically, not as strings', () => {
+        // 9-digit and 10-digit keys: a string sort would put the later day first
+        const stats = calendarStats({ [String(11575 * DAY)]: 1, [String(11574 * DAY)]: 1 });
+        expect(stats.maxStreak).toBe(2);
+    });
+
     it('single day → streak of 1', () => {
         const stats = calendarStats({ [String(100 * DAY)]: 5 });
         expect(stats).toEqual({ activeDays: 1, maxStreak: 1, totalSubmissions: 5 });

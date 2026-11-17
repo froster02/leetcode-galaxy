@@ -11,7 +11,7 @@ export function parseCalendar(cal) {
 /** Active days, longest consecutive-day streak, and total submissions from a raw calendar map. */
 export function calendarStats(rawMap) {
     const activeDays = Object.keys(rawMap).length;
-    const timestamps = Object.keys(rawMap).map(Number).sort();
+    const timestamps = Object.keys(rawMap).map(Number).sort((a, b) => a - b);
     let maxStreak = 0, cur = 0, prev = null;
     for (const ts of timestamps) {
         const day = Math.floor(ts / 86400);
